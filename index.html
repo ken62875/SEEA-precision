@@ -212,42 +212,42 @@
 <!-- ═══════════════════════════════════════
      NAVIGATION
 ═══════════════════════════════════════ -->
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-navy">
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
   <div class="max-w-7xl mx-auto px-6">
-    <div class="flex items-center justify-between h-16">
+    <div class="flex items-center justify-between h-24">
 
       <!-- Logo -->
       <a href="#home" onclick="navigate('home')" class="flex items-center flex-shrink-0">
-        <img src="brand_logo/SEEA Simple_ff0000_C.png" alt="SEEA Precision" class="h-8 w-auto">
+        <img src="brand_logo/SEEA Precison_ff0000_R.png" alt="SEEA Precision" class="h-12 w-auto">
       </a>
 
       <!-- Desktop links -->
-      <div class="hidden md:flex items-center gap-7">
-        <a onclick="navigate('home')"    data-page="home"    class="nav-link text-white/75 hover:text-white text-sm font-medium cursor-pointer">홈</a>
-        <a onclick="navigate('about')"   data-page="about"   class="nav-link text-white/75 hover:text-white text-sm font-medium cursor-pointer">소개</a>
-        <a onclick="navigate('guide')"   data-page="guide"   class="nav-link text-white/75 hover:text-white text-sm font-medium cursor-pointer">사용법</a>
-        <a onclick="navigate('rules')"   data-page="rules"   class="nav-link text-white/75 hover:text-white text-sm font-medium cursor-pointer">규칙 안내</a>
-        <a onclick="navigate('athletes')" data-page="athletes" class="nav-link text-white/75 hover:text-white text-sm font-medium cursor-pointer flex items-center gap-1.5">
+      <div class="hidden md:flex items-center gap-9">
+        <a onclick="navigate('home')"    data-page="home"    class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">홈</a>
+        <a onclick="navigate('about')"   data-page="about"   class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">소개</a>
+        <a onclick="navigate('guide')"   data-page="guide"   class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">사용법</a>
+        <a onclick="navigate('rules')"   data-page="rules"   class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">규칙 안내</a>
+        <a onclick="navigate('athletes')" data-page="athletes" class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer flex items-center gap-1.5">
           선수 프로필
-          <span class="text-[10px] bg-gold text-white px-1.5 py-0.5 rounded font-bold leading-none">예정</span>
+          <span class="text-[11px] bg-gold text-white px-1.5 py-0.5 rounded font-bold leading-none">예정</span>
         </a>
       </div>
 
       <!-- Right CTA -->
-      <div class="hidden md:flex items-center gap-3">
+      <div class="hidden md:flex items-center gap-4">
         <button onclick="navigate('contact')"
-          class="text-sm font-semibold text-white/75 hover:text-white transition-colors px-3 py-2 cursor-pointer">
+          class="text-base font-semibold text-navy/70 hover:text-navy transition-colors px-4 py-2 cursor-pointer">
           문의
         </button>
         <button onclick="navigate('report')"
-          class="text-sm font-semibold bg-gold hover:bg-gold-dark text-white px-4 py-2 rounded-lg
+          class="text-base font-semibold bg-gold hover:bg-gold-dark text-white px-5 py-2.5 rounded-lg
                  transition-all hover:scale-[1.02] active:scale-[.98]">
           오류 신고
         </button>
       </div>
 
       <!-- Hamburger -->
-      <button id="menu-btn" onclick="toggleMenu()" class="md:hidden text-white p-2 -mr-2">
+      <button id="menu-btn" onclick="toggleMenu()" class="md:hidden text-navy p-2 -mr-2">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <line x1="3" y1="6"  x2="21" y2="6"/>
           <line x1="3" y1="12" x2="21" y2="12"/>
@@ -308,17 +308,14 @@
           </div>
 
           <!-- Headline -->
-          <h1 class="text-5xl sm:text-6xl md:text-7xl font-extrabold text-white leading-[1.04] tracking-tight mb-6">
-            ISSF 규정을,<br>
-            <span class="text-gold">한국어로</span><br>
-            즉시.
+          <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.1] tracking-tight mb-6">
+            흔들림 없는 <span class="text-gold">확신.</span><br>
+            오심을 넘는<br class="sm:hidden"> 가장 빠른 해답.
           </h1>
 
           <!-- Sub copy -->
-          <p class="text-white/55 text-lg md:text-xl leading-relaxed mb-10 max-w-lg">
-            SEEA Precision은 한국 사격 선수들을 위한<br class="hidden sm:block">
-            AI 규정 어시스턴트입니다.<br>
-            국제사격연맹(ISSF) 최신 규정을 한국어로 빠르게 확인하세요.
+          <p class="text-white/60 text-base md:text-lg leading-relaxed mb-10 max-w-xl">
+            시합 직전의 긴박한 순간이든, 판정에 이의를 제기해야 하는 결정적인 찰나이든. 애매한 규정 해석으로 인한 억울함은 이제 없습니다. 방대한 ISSF 규정 속 당신에게 당장 필요한 단 하나의 해답을, 가장 정확하고 빠르게.
           </p>
 
           <!-- CTA -->
@@ -1065,10 +1062,10 @@
 
       <!-- Brand -->
       <div class="md:col-span-2">
-        <img src="brand_logo/SEEA Simple_ff0000_C.png" alt="SEEA Precision" class="h-8 w-auto mb-4">
-        <p class="text-white/45 text-sm leading-relaxed max-w-xs">
-          한국 사격 선수들을 위한 ISSF 규정 AI 어시스턴트.<br>
-          최신 국제사격연맹 규정을 한국어로 즉시 확인하세요.
+        <img src="brand_logo/SEEA Precison_ff0000_R.png" alt="SEEA Precision" class="h-8 w-auto mb-4">
+        <p class="text-white/55 text-sm leading-relaxed max-w-sm">
+          시합 직전의 긴박한 순간이든, 판정에 이의를 제기해야 하는 결정적인 찰나이든.<br>
+          방대한 ISSF 규정 속 당신에게 필요한 단 하나의 해답을, 가장 정확하고 빠르게.
         </p>
         <div class="mt-6 p-4 bg-white/5 rounded-xl border border-white/10 text-xs text-white/35 leading-relaxed">
           ⚠️ 본 서비스는 ISSF의 공식 서비스가 아닙니다. 모든 답변은 참고용으로만 사용하시고
@@ -1103,8 +1100,8 @@
     </div>
 
     <div class="border-t border-white/10 mt-10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-white/25">
-      <p>© 2024 SEEA Precision. All rights reserved.</p>
-      <p>참조 규정: ISSF Technical Rules 2024 Edition</p>
+      <p>© 2026 SEEA Precision. All rights reserved.</p>
+      <p>참조 규정: ISSF Rule Book 2026.01.01</p>
     </div>
   </div>
 </footer>
