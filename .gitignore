@@ -1,0 +1,8 @@
+.env
+.env.local
+.env.*.local
+node_modules/
+.DS_Store
+Thumbs.db
+.claude/
+# rules/ 폴더는 포함 (규정집 PDF 배포 필요)

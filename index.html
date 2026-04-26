@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SEEA Precision — 한국 사격 선수를 위한 ISSF 규정 AI 어시스턴트. 최신 국제사격연맹 규정을 한국어로 즉시 확인하세요.">
+  <title>SEEA Precision — ISSF 규정 AI 어시스턴트</title>
+
+  <!-- Pretendard -->
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"/>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy:  { DEFAULT:'#0B1E3F', light:'#162D5F', dark:'#070F20' },
+            gold:  { DEFAULT:'#C9A24A', light:'#D9BA7A', dark:'#A6842A' },
+            cream: '#F8F9FA',
+          },
+          fontFamily: {
+            sans: ['Pretendard','-apple-system','system-ui','sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *, *::before, *::after {
+      font-family: 'Pretendard', -apple-system, system-ui, sans-serif;
+      box-sizing: border-box;
+    }
+    html { scroll-behavior: smooth; }
+    body { overflow-x: hidden; background: #F8F9FA; }
+
+    /* ── Page routing ── */
+    .page-section { display: none; min-height: calc(100vh - 64px); }
+    .page-section.active { display: block; }
+
+    /* ── Navbar ── */
+    #navbar { transition: box-shadow .3s; }
+    #navbar.scrolled { box-shadow: 0 2px 24px rgba(0,0,0,.35); }
+
+    /* ── Hero ── */
+    .hero-target {
+      position: absolute; top: 50%; right: -4%;
+      transform: translateY(-50%);
+      width: 580px; height: 580px;
+      opacity: .055; pointer-events: none;
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      background: #C9A24A; color: #fff; font-weight: 600;
+      padding: 13px 28px; border-radius: 8px; border: none;
+      cursor: pointer; font-size: 15px;
+      transition: background .2s, transform .15s;
+    }
+    .btn-primary:hover  { background: #A6842A; transform: scale(1.02); }
+    .btn-primary:focus  { outline: none; box-shadow: 0 0 0 3px rgba(201,162,74,.4); }
+    .btn-primary:active { transform: scale(.98); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .btn-navy {
+      background: #0B1E3F; color: #fff; font-weight: 600;
+      padding: 13px 28px; border-radius: 8px; border: none;
+      cursor: pointer; font-size: 15px;
+      transition: background .2s, transform .15s;
+    }
+    .btn-navy:hover  { background: #162D5F; transform: scale(1.02); }
+    .btn-navy:focus  { outline: none; box-shadow: 0 0 0 3px rgba(11,30,63,.35); }
+    .btn-navy:active { transform: scale(.98); }
+    .btn-navy:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .btn-outline-white {
+      background: transparent; color: rgba(255,255,255,.85); font-weight: 600;
+      padding: 13px 28px; border-radius: 8px;
+      border: 1.5px solid rgba(255,255,255,.3);
+      cursor: pointer; font-size: 15px;
+      transition: background .2s, color .2s, border-color .2s, transform .15s;
+    }
+    .btn-outline-white:hover  { background: #fff; color: #0B1E3F; border-color: #fff; }
+    .btn-outline-white:focus  { outline: none; }
+    .btn-outline-white:active { transform: scale(.98); }
+
+    /* ── Chat bubbles ── */
+    .chat-bubble {
+      max-width: 78%; padding: 11px 15px;
+      border-radius: 12px; line-height: 1.65; font-size: 14px;
+    }
+    .chat-bubble.user {
+      background: #0B1E3F; color: #fff;
+      margin-left: auto; border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.ai {
+      background: #fff; color: #1F2937;
+      border: 1px solid #E5E7EB;
+      border-bottom-left-radius: 4px;
+    }
+    .chat-bubble.thinking {
+      background: #F3F4F6; color: #9CA3AF;
+    }
+
+    /* ── Chip ── */
+    .chip {
+      display: inline-block; padding: 6px 14px;
+      border: 1px solid #D1D5DB; border-radius: 100px;
+      font-size: 13px; color: #374151; cursor: pointer;
+      background: #fff; white-space: nowrap;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .chip:hover { background: #0B1E3F; color: #fff; border-color: #0B1E3F; }
+
+    /* ── Form ── */
+    .form-input {
+      width: 100%; padding: 12px 16px;
+      border: 1.5px solid #E5E7EB; border-radius: 8px;
+      font-size: 15px; outline: none; background: #fff;
+      transition: border-color .15s;
+    }
+    .form-input:focus { border-color: #0B1E3F; }
+    .form-label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: #374151; margin-bottom: 6px; letter-spacing: .3px;
+    }
+
+    /* ── Category card ── */
+    .cat-card {
+      background: #fff; border: 1px solid #E5E7EB;
+      border-radius: 12px; padding: 28px; cursor: pointer;
+      transition: transform .2s, box-shadow .2s, border-color .2s;
+    }
+    .cat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(11,30,63,.11);
+      border-color: #C9A24A;
+    }
+    .cat-card .card-num {
+      font-size: 46px; font-weight: 800;
+      color: #F3F4F6; line-height: 1; margin-bottom: 8px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      background: #0B1E3F;
+      padding: 80px 0 48px;
+      color: #fff;
+    }
+
+    /* ── Disclaimer box ── */
+    .disclaimer-box {
+      background: #FFF9EC; border: 1px solid #F0D87A;
+      border-left: 4px solid #C9A24A; border-radius: 8px;
+      padding: 16px 20px; font-size: 13px; color: #92400E;
+    }
+
+    /* ── Nav active ── */
+    .nav-link { position: relative; transition: color .15s; }
+    .nav-link.active { color: #C9A24A !important; }
+    .nav-link.active::after {
+      content: ''; position: absolute;
+      bottom: -4px; left: 0; right: 0;
+      height: 2px; background: #C9A24A; border-radius: 1px;
+    }
+
+    /* ── Typing dots ── */
+    .typing-dot {
+      display: inline-block; width: 6px; height: 6px;
+      border-radius: 50%; background: #9CA3AF;
+      animation: tdBounce 1.4s infinite both;
+    }
+    .typing-dot:nth-child(2) { animation-delay: .2s; }
+    .typing-dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes tdBounce {
+      0%,80%,100% { transform: translateY(0); }
+      40%          { transform: translateY(-6px); }
+    }
+
+    /* ── Coming soon badge ── */
+    .cs-badge {
+      display: inline-block;
+      background: rgba(201,162,74,.15); color: #C9A24A;
+      border: 1px solid rgba(201,162,74,.4);
+      padding: 3px 11px; border-radius: 100px;
+      font-size: 11px; font-weight: 700; letter-spacing: .8px;
+    }
+
+    /* ── Scrollbar (chat) ── */
+    #chat-messages::-webkit-scrollbar { width: 4px; }
+    #chat-messages::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 2px; }
+
+    /* ── Mobile menu ── */
+    #mobile-menu { display: none; }
+    #mobile-menu.open { display: block; }
+
+    /* ── Rule item hover ── */
+    .rule-item:hover { border-color: #C9A24A; }
+
+    /* ── Details/Summary reset ── */
+    details summary { list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    details[open] summary .chevron { transform: rotate(180deg); }
+    .chevron { transition: transform .2s; display: inline-block; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     NAVIGATION
+═══════════════════════════════════════ -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-navy">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex items-center justify-between h-16">
+
+      <!-- Logo -->
+      <a href="#home" onclick="navigate('home')" class="flex items-center flex-shrink-0">
+        <img src="brand_logo/SEEA Simple_ff0000_C.png" alt="SEEA Precision" class="h-8 w-auto">
+      </a>
+
+      <!-- Desktop links -->
+      <div class="hidden md:flex items-center gap-7">
+        <a onclick="navigate('home')"    data-page="home"    class="nav-link text-white/75 hover:text-white text-sm font-medium cursor-pointer">홈</a>
+        <a onclick="navigate('about')"   data-page="about"   class="nav-link text-white/75 hover:text-white text-sm font-medium cursor-pointer">소개</a>
+        <a onclick="navigate('guide')"   data-page="guide"   class="nav-link text-white/75 hover:text-white text-sm font-medium cursor-pointer">사용법</a>
+        <a onclick="navigate('rules')"   data-page="rules"   class="nav-link text-white/75 hover:text-white text-sm font-medium cursor-pointer">규칙 안내</a>
+        <a onclick="navigate('athletes')" data-page="athletes" class="nav-link text-white/75 hover:text-white text-sm font-medium cursor-pointer flex items-center gap-1.5">
+          선수 프로필
+          <span class="text-[10px] bg-gold text-white px-1.5 py-0.5 rounded font-bold leading-none">예정</span>
+        </a>
+      </div>
+
+      <!-- Right CTA -->
+      <div class="hidden md:flex items-center gap-3">
+        <button onclick="navigate('contact')"
+          class="text-sm font-semibold text-white/75 hover:text-white transition-colors px-3 py-2 cursor-pointer">
+          문의
+        </button>
+        <button onclick="navigate('report')"
+          class="text-sm font-semibold bg-gold hover:bg-gold-dark text-white px-4 py-2 rounded-lg
+                 transition-all hover:scale-[1.02] active:scale-[.98]">
+          오류 신고
+        </button>
+      </div>
+
+      <!-- Hamburger -->
+      <button id="menu-btn" onclick="toggleMenu()" class="md:hidden text-white p-2 -mr-2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6"  x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="bg-navy-dark border-t border-white/10 md:hidden">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex flex-col">
+      <a onclick="navigate('home');closeMenu()"    class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">홈</a>
+      <a onclick="navigate('about');closeMenu()"   class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">소개</a>
+      <a onclick="navigate('guide');closeMenu()"   class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">사용법</a>
+      <a onclick="navigate('rules');closeMenu()"   class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">규칙 안내</a>
+      <a onclick="navigate('athletes');closeMenu()" class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">
+        선수 프로필 <span class="text-[10px] text-gold font-bold ml-1">예정</span>
+      </a>
+      <a onclick="navigate('contact');closeMenu()" class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">문의</a>
+      <a onclick="navigate('report');closeMenu()"  class="text-gold hover:text-gold-light py-3 text-sm font-semibold cursor-pointer">오류 신고</a>
+    </div>
+  </div>
+</nav>
+
+
+<!-- ═══════════════════════════════════════
+     MAIN
+═══════════════════════════════════════ -->
+<main class="pt-16">
+
+
+  <!-- ─────────────────────────────────────
+       PAGE: HOME
+  ───────────────────────────────────── -->
+  <section id="page-home" class="page-section">
+
+    <!-- HERO -->
+    <div class="relative bg-navy min-h-screen flex items-center overflow-hidden">
+      <!-- Target decoration (SVG) -->
+      <svg class="hero-target" viewBox="0 0 580 580" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="290" cy="290" r="270" stroke="white" stroke-width="1" fill="none"/>
+        <circle cx="290" cy="290" r="210" stroke="white" stroke-width="1" fill="none"/>
+        <circle cx="290" cy="290" r="150" stroke="white" stroke-width="1" fill="none"/>
+        <circle cx="290" cy="290" r="95"  stroke="white" stroke-width="1" fill="none"/>
+        <circle cx="290" cy="290" r="46"  stroke="white" stroke-width="2" fill="none"/>
+        <circle cx="290" cy="290" r="18"  stroke="white" stroke-width="2" fill="none"/>
+        <line x1="290" y1="0"   x2="290" y2="580" stroke="white" stroke-width=".5"/>
+        <line x1="0"   y1="290" x2="580" y2="290" stroke="white" stroke-width=".5"/>
+      </svg>
+
+      <div class="max-w-7xl mx-auto px-6 py-28 relative z-10 w-full">
+        <div class="max-w-2xl">
+          <!-- Badge -->
+          <div class="inline-flex items-center gap-2 mb-8">
+            <span class="w-2 h-2 rounded-full bg-gold animate-pulse"></span>
+            <span class="text-white/55 text-xs font-semibold tracking-widest uppercase">ISSF 최신 규정 기반 · 한국 선수 전용</span>
+          </div>
+
+          <!-- Headline -->
+          <h1 class="text-5xl sm:text-6xl md:text-7xl font-extrabold text-white leading-[1.04] tracking-tight mb-6">
+            ISSF 규정을,<br>
+            <span class="text-gold">한국어로</span><br>
+            즉시.
+          </h1>
+
+          <!-- Sub copy -->
+          <p class="text-white/55 text-lg md:text-xl leading-relaxed mb-10 max-w-lg">
+            SEEA Precision은 한국 사격 선수들을 위한<br class="hidden sm:block">
+            AI 규정 어시스턴트입니다.<br>
+            국제사격연맹(ISSF) 최신 규정을 한국어로 빠르게 확인하세요.
+          </p>
+
+          <!-- CTA -->
+          <div class="flex flex-wrap gap-4">
+            <button onclick="scrollToChat()" class="btn-primary flex items-center gap-2 text-base">
+              지금 질문하기
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+            <button onclick="navigate('about')" class="btn-outline-white text-base">
+              서비스 소개
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scroll hint -->
+      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-white/25 select-none">
+        <span class="text-[10px] tracking-widest uppercase">Scroll</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-bounce">
+          <path d="M12 5v14M5 12l7 7 7-7"/>
+        </svg>
+      </div>
+    </div>
+    <!-- /HERO -->
+
+
+    <!-- CHATBOT -->
+    <div id="chatbot-section" class="bg-white py-20">
+      <div class="max-w-3xl mx-auto px-6">
+        <div class="text-center mb-10">
+          <p class="text-xs font-bold text-gold tracking-widest uppercase mb-3">AI 규정 어시스턴트</p>
+          <h2 class="text-3xl md:text-4xl font-extrabold text-navy">사격 규정이 궁금하신가요?</h2>
+          <p class="text-gray-400 mt-3 text-sm">한국어로 자유롭게 질문하세요. AI가 ISSF 규정을 기반으로 답변합니다.</p>
+        </div>
+
+        <!-- Chat container -->
+        <div class="rounded-2xl border border-gray-200 overflow-hidden shadow-xl">
+          <!-- Chat header bar -->
+          <div class="bg-navy px-5 py-3.5 flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+            <span class="text-white font-semibold text-sm">SEEA AI · ISSF 규정 어시스턴트</span>
+            <span class="ml-auto text-white/35 text-xs hidden sm:block">규정 버전: ISSF 2026.01.01</span>
+          </div>
+
+          <!-- Messages -->
+          <div id="chat-messages" class="h-96 md:h-[520px] overflow-y-auto p-5 flex flex-col gap-4 bg-gray-50">
+            <!-- Welcome message -->
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full bg-navy flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span class="text-gold text-[11px] font-bold">AI</span>
+              </div>
+              <div>
+                <div class="chat-bubble ai">
+                  안녕하세요! 저는 <strong>SEEA Precision AI</strong>입니다.<br><br>
+                  ISSF(국제사격연맹) 규정에 대해 한국어로 자유롭게 질문하세요.
+                  공기소총, 공기권총, 50m 소총, 25m 권총 등 모든 종목 규정을 안내해 드립니다.<br><br>
+                  <span class="text-xs text-gray-400">⚠️ 이 서비스는 참고용이며 공식 판정의 근거가 될 수 없습니다.</span>
+                </div>
+                <span class="text-xs text-gray-400 mt-1 ml-1">SEEA AI</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input -->
+          <div class="border-t border-gray-200 p-4 bg-white">
+            <!-- Sample chips -->
+            <div class="flex flex-wrap gap-2 mb-3">
+              <button class="chip" onclick="sendChip(this)">10m 공기소총 표적 규격</button>
+              <button class="chip" onclick="sendChip(this)">재킷 두께 규정</button>
+              <button class="chip" onclick="sendChip(this)">오발 처리 절차</button>
+              <button class="chip" onclick="sendChip(this)">총기 검사 기준</button>
+              <button class="chip" onclick="sendChip(this)">경기 복장 규정</button>
+            </div>
+            <div class="flex gap-2">
+              <input id="chat-input" type="text"
+                placeholder="규정에 대해 궁금한 것을 입력하세요..."
+                class="form-input flex-1"
+                onkeydown="if(event.key==='Enter')sendMessage()"/>
+              <button onclick="sendMessage()" id="send-btn" class="btn-navy px-4 flex items-center gap-1.5 whitespace-nowrap">
+                <span class="hidden sm:inline">전송</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- API notice -->
+        <div id="api-notice" class="mt-4 disclaimer-box text-xs">
+          <strong>📋 API 연동 안내:</strong>
+          현재는 UI 미리보기 상태입니다.
+          <code class="bg-yellow-100 px-1 rounded font-mono">.env</code> 파일에
+          <code class="bg-yellow-100 px-1 rounded font-mono">GEMINI_API_KEY</code>를 입력하고
+          <code class="bg-yellow-100 px-1 rounded font-mono">node server.mjs</code>로 실행하면 실제 AI 답변이 작동합니다.
+        </div>
+      </div>
+    </div>
+    <!-- /CHATBOT -->
+
+
+    <!-- CATEGORY CARDS -->
+    <div class="py-20 px-6" style="background:#F8F9FA;">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-12">
+          <p class="text-xs font-bold text-gold tracking-widest uppercase mb-3">서비스 메뉴</p>
+          <h2 class="text-3xl md:text-4xl font-extrabold text-navy">무엇을 도와드릴까요?</h2>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          <div class="cat-card" onclick="navigate('about')">
+            <div class="card-num">01</div>
+            <h3 class="text-base font-bold text-navy mb-2">서비스 소개</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">SEEA Precision이 탄생한 이유와 서비스 미션을 소개합니다.</p>
+            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
+              자세히 보기
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+
+          <div class="cat-card" onclick="navigate('guide')">
+            <div class="card-num">02</div>
+            <h3 class="text-base font-bold text-navy mb-2">사용법</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">챗봇을 효과적으로 사용하는 방법과 종목별 질문 예시를 제공합니다.</p>
+            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
+              사용법 보기
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+
+          <div class="cat-card" onclick="navigate('rules')">
+            <div class="card-num">03</div>
+            <h3 class="text-base font-bold text-navy mb-2">헷갈리는 규칙</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">선수들이 자주 혼동하는 규정들을 모아 알기 쉽게 정리했습니다.</p>
+            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
+              규칙 확인
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+
+          <div class="cat-card" onclick="navigate('contact')">
+            <div class="card-num">04</div>
+            <h3 class="text-base font-bold text-navy mb-2">문의하기</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">서비스 이용 중 궁금한 사항이나 건의사항이 있으면 연락해주세요.</p>
+            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
+              문의하기
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+
+          <div class="cat-card" onclick="navigate('report')">
+            <div class="card-num">05</div>
+            <h3 class="text-base font-bold text-navy mb-2">오류 수정 요청</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">AI 답변에서 잘못된 내용을 발견하셨나요? 제보해주시면 빠르게 수정합니다.</p>
+            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
+              오류 신고
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+
+          <div class="cat-card opacity-70" onclick="navigate('athletes')">
+            <div class="card-num">06</div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-base font-bold text-navy">선수 프로필</h3>
+              <span class="cs-badge">Coming Soon</span>
+            </div>
+            <p class="text-gray-400 text-sm leading-relaxed">한국 대표 선수들의 경기 사진과 사용 장비를 인터랙티브하게 제공합니다.</p>
+            <div class="mt-5 text-gray-300 text-sm font-semibold flex items-center gap-1">
+              준비 중
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <!-- /CATEGORY CARDS -->
+
+  </section>
+  <!-- /HOME -->
+
+
+  <!-- ─────────────────────────────────────
+       PAGE: ABOUT
+  ───────────────────────────────────── -->
+  <section id="page-about" class="page-section">
+    <div class="page-header">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">ABOUT</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">SEEA Precision 소개</h1>
+        <p class="text-white/55 text-lg">한국 사격 선수들을 위한 ISSF 규정 AI 어시스턴트</p>
+      </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-6 py-16 space-y-14">
+
+      <!-- 01 Why -->
+      <div>
+        <h2 class="text-2xl font-bold text-navy mb-6 flex items-center gap-3">
+          <span class="w-8 h-8 bg-navy text-white text-xs flex items-center justify-center rounded font-bold flex-shrink-0">01</span>
+          왜 만들었나요?
+        </h2>
+        <div class="pl-11 space-y-4 text-gray-700 leading-relaxed">
+          <p>국제사격연맹(ISSF)은 매년 규정을 업데이트합니다. 그러나 이 규정이 한국어로 번역되어 배포되기까지
+            <strong>수개월에서 1년 이상</strong>이 소요됩니다.</p>
+          <p>선수들은 그 사이 전문 용어가 가득한 영문 규정서를 직접 확인해야 합니다. <strong>SEEA Precision</strong>은
+            이 공백을 메우기 위해 만들어졌습니다. ISSF 영문 규정을 AI가 실시간으로 한국어로 해석해 드립니다.</p>
+          <div class="p-5 bg-navy/5 rounded-xl border-l-4 border-navy text-navy font-medium text-sm">
+            💡 경기 당일 장비 규격이 변경됐는지 확인해야 할 때, 재킷 두께 기준이 헷갈릴 때,
+            오발 처리 절차를 정확히 알아야 할 때 — 바로 물어보세요.
+          </div>
+        </div>
+      </div>
+
+      <!-- 02 Mission -->
+      <div>
+        <h2 class="text-2xl font-bold text-navy mb-6 flex items-center gap-3">
+          <span class="w-8 h-8 bg-navy text-white text-xs flex items-center justify-center rounded font-bold flex-shrink-0">02</span>
+          서비스 미션
+        </h2>
+        <div class="pl-11 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-5 bg-white rounded-xl border border-gray-200">
+            <div class="text-2xl mb-3">⚡</div>
+            <h3 class="font-bold text-navy mb-1.5 text-sm">빠른 접근</h3>
+            <p class="text-gray-400 text-xs leading-relaxed">영문 PDF 없이 한국어로 즉시 확인</p>
+          </div>
+          <div class="p-5 bg-white rounded-xl border border-gray-200">
+            <div class="text-2xl mb-3">🎯</div>
+            <h3 class="font-bold text-navy mb-1.5 text-sm">정확한 출처</h3>
+            <p class="text-gray-400 text-xs leading-relaxed">모든 답변에 ISSF 조항 번호 인용</p>
+          </div>
+          <div class="p-5 bg-white rounded-xl border border-gray-200">
+            <div class="text-2xl mb-3">🇰🇷</div>
+            <h3 class="font-bold text-navy mb-1.5 text-sm">한국 선수 맞춤</h3>
+            <p class="text-gray-400 text-xs leading-relaxed">한국 선수의 관점에서 설명</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03 Disciplines -->
+      <div>
+        <h2 class="text-2xl font-bold text-navy mb-6 flex items-center gap-3">
+          <span class="w-8 h-8 bg-navy text-white text-xs flex items-center justify-center rounded font-bold flex-shrink-0">03</span>
+          지원 종목
+        </h2>
+        <div class="pl-11 flex flex-wrap gap-2.5">
+          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">10m 공기소총</span>
+          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">10m 공기권총</span>
+          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">50m 소총 3자세</span>
+          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">50m 소총 복사</span>
+          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">25m 권총</span>
+          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">25m 스포츠 권총</span>
+          <span class="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg text-sm font-medium">트랩 (예정)</span>
+          <span class="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg text-sm font-medium">스키트 (예정)</span>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer-box">
+        <p class="font-semibold mb-2">⚠️ 중요 안내</p>
+        <ul class="text-xs space-y-1.5 list-disc list-inside leading-relaxed">
+          <li>SEEA Precision은 ISSF(국제사격연맹)의 공식 서비스가 아닙니다.</li>
+          <li>AI 답변은 <strong>참고용</strong>이며 공식 판정의 근거로 사용할 수 없습니다.</li>
+          <li>정확한 규정은 ISSF 공식 웹사이트의 최신 원문을 기준으로 하십시오.</li>
+          <li>오류 발견 시 <button onclick="navigate('report')" class="underline font-semibold">오류 신고</button> 페이지를 이용해 주세요.</li>
+        </ul>
+      </div>
+
+      <div class="p-5 bg-white rounded-xl border border-gray-200 text-sm text-gray-400">
+        <strong class="text-gray-600">참조 규정:</strong> ISSF Technical Rules &amp; General Technical Rules, 2024 Edition<br>
+        <strong class="text-gray-600">마지막 업데이트:</strong> 2024년 (추후 최신화 예정)
+      </div>
+
+    </div>
+  </section>
+  <!-- /ABOUT -->
+
+
+  <!-- ─────────────────────────────────────
+       PAGE: GUIDE
+  ───────────────────────────────────── -->
+  <section id="page-guide" class="page-section">
+    <div class="page-header">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">GUIDE</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">사용법</h1>
+        <p class="text-white/55 text-lg">챗봇을 가장 효과적으로 활용하는 방법을 알아보세요</p>
+      </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-6 py-16 space-y-14">
+
+      <!-- How it works -->
+      <div>
+        <h2 class="text-2xl font-bold text-navy mb-8">어떻게 작동하나요?</h2>
+        <div class="relative pl-10">
+          <div class="absolute left-4 top-2 bottom-2 w-px bg-gray-200"></div>
+          <div class="space-y-8">
+            <div class="flex gap-5">
+              <div class="w-8 h-8 rounded-full bg-navy text-white text-xs font-bold flex items-center justify-center flex-shrink-0 -ml-4 relative z-10 border-2 border-white">1</div>
+              <div>
+                <h3 class="font-bold text-navy mb-1">한국어로 자유롭게 질문</h3>
+                <p class="text-gray-400 text-sm">일상적인 한국어로 규정에 대한 궁금증을 입력하세요.</p>
+              </div>
+            </div>
+            <div class="flex gap-5">
+              <div class="w-8 h-8 rounded-full bg-navy text-white text-xs font-bold flex items-center justify-center flex-shrink-0 -ml-4 relative z-10 border-2 border-white">2</div>
+              <div>
+                <h3 class="font-bold text-navy mb-1">AI가 ISSF 규정 분석</h3>
+                <p class="text-gray-400 text-sm">AI가 ISSF 규정서에서 관련 조항을 찾아 분석합니다.</p>
+              </div>
+            </div>
+            <div class="flex gap-5">
+              <div class="w-8 h-8 rounded-full bg-gold text-white text-xs font-bold flex items-center justify-center flex-shrink-0 -ml-4 relative z-10 border-2 border-white">3</div>
+              <div>
+                <h3 class="font-bold text-navy mb-1">출처와 함께 한국어 답변</h3>
+                <p class="text-gray-400 text-sm">조항 번호(예: ISSF TR 6.4.1.2)와 함께 한국어로 설명합니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Good vs Bad -->
+      <div>
+        <h2 class="text-2xl font-bold text-navy mb-6">좋은 질문 vs 피해야 할 질문</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+            <h3 class="font-bold text-green-800 mb-4 text-sm">✅ 좋은 질문 예시</h3>
+            <ul class="space-y-2.5">
+              <li class="text-xs text-green-700 flex gap-2 leading-relaxed"><span>•</span>"10m 공기소총 표적 X링 직경이 몇 mm예요?"</li>
+              <li class="text-xs text-green-700 flex gap-2 leading-relaxed"><span>•</span>"재킷 소매 끝에서 손목까지 간격 규정이 있나요?"</li>
+              <li class="text-xs text-green-700 flex gap-2 leading-relaxed"><span>•</span>"오발이 발생했을 때 심판에게 보고해야 하나요?"</li>
+              <li class="text-xs text-green-700 flex gap-2 leading-relaxed"><span>•</span>"총기 무게 제한이 종목마다 다른가요?"</li>
+            </ul>
+          </div>
+          <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+            <h3 class="font-bold text-red-800 mb-4 text-sm">❌ 피해야 할 질문</h3>
+            <ul class="space-y-2.5">
+              <li class="text-xs text-red-700 flex gap-2 leading-relaxed"><span>•</span>"규정 다 알려줘" (너무 광범위)</li>
+              <li class="text-xs text-red-700 flex gap-2 leading-relaxed"><span>•</span>"이 총 써도 돼요?" (사진 제공 불가)</li>
+              <li class="text-xs text-red-700 flex gap-2 leading-relaxed"><span>•</span>"이번 대회 규정이 뭐예요?" (특정 대회 정보 없음)</li>
+              <li class="text-xs text-red-700 flex gap-2 leading-relaxed"><span>•</span>"내가 실격당했어요" (판정 불복 불가)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Per-discipline samples -->
+      <div>
+        <h2 class="text-2xl font-bold text-navy mb-6">종목별 질문 예시</h2>
+        <div class="space-y-3">
+
+          <details class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <summary class="px-6 py-4 cursor-pointer font-semibold text-navy text-sm flex justify-between items-center">
+              🎯 10m 공기소총 / 공기권총
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron text-gray-400 flex-shrink-0">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </summary>
+            <div class="px-6 pb-5 pt-3 border-t border-gray-100">
+              <ul class="space-y-2">
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"공기소총 10m 표적 10링 직경은 몇 mm인가요?"</li>
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"공기소총 총기 무게 최대 제한이 있나요?"</li>
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"입사 자세에서 팔꿈치가 엉덩이에 닿아도 되나요?"</li>
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"보조 장비(글러브 등) 사용 규정이 어떻게 되나요?"</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <summary class="px-6 py-4 cursor-pointer font-semibold text-navy text-sm flex justify-between items-center">
+              🏹 50m 소총
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron text-gray-400 flex-shrink-0">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </summary>
+            <div class="px-6 pb-5 pt-3 border-t border-gray-100">
+              <ul class="space-y-2">
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"50m 소총 3자세 경기 순서와 시간 제한은?"</li>
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"소총 재킷 두께 측정 방법과 기준은?"</li>
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"슈팅 글러브 착용 규정이 있나요?"</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <summary class="px-6 py-4 cursor-pointer font-semibold text-navy text-sm flex justify-between items-center">
+              🔫 25m 권총
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron text-gray-400 flex-shrink-0">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </summary>
+            <div class="px-6 pb-5 pt-3 border-t border-gray-100">
+              <ul class="space-y-2">
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"25m 권총 경기에서 사용 가능한 탄약 규격은?"</li>
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"권총 방아쇠 무게 최소 기준이 있나요?"</li>
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"총기 불량으로 경기 중단 요청 절차는?"</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <summary class="px-6 py-4 cursor-pointer font-semibold text-navy text-sm flex justify-between items-center">
+              ⚡ 경기 진행 / 심판 규정
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron text-gray-400 flex-shrink-0">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </summary>
+            <div class="px-6 pb-5 pt-3 border-t border-gray-100">
+              <ul class="space-y-2">
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"오발이 발생했을 때 처리 절차는?"</li>
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"경기 중 외부와 통신이 금지되어 있나요?"</li>
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"동점 처리 기준은 어떻게 되나요?"</li>
+                <li class="text-sm text-navy/70 hover:text-navy cursor-pointer" onclick="sendSampleQ(this)">"복장 검사는 언제, 어떻게 진행되나요?"</li>
+              </ul>
+            </div>
+          </details>
+
+        </div>
+      </div>
+
+      <!-- Reliability -->
+      <div class="bg-navy text-white rounded-2xl p-8">
+        <h2 class="text-lg font-bold mb-4">답변 신뢰도 확인하는 방법</h2>
+        <div class="space-y-2.5 text-white/70 text-sm leading-relaxed">
+          <p>✅ 모든 답변에 출처가 포함됩니다 <span class="text-gold">(예: ISSF TR 6.4.1.2, p.34)</span></p>
+          <p>✅ 불확실한 내용은 AI가 "정확하지 않을 수 있습니다"라고 명시합니다</p>
+          <p>✅ 답변이 틀린 것 같으면 <button onclick="navigate('report')" class="underline text-white">오류 신고</button> 페이지를 이용해 주세요</p>
+          <p>⚠️ 최종 규정 확인은 항상 <strong class="text-white">ISSF 공식 원문</strong>을 기준으로 하세요</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+  <!-- /GUIDE -->
+
+
+  <!-- ─────────────────────────────────────
+       PAGE: RULES
+  ───────────────────────────────────── -->
+  <section id="page-rules" class="page-section">
+    <div class="page-header">
+      <div class="max-w-5xl mx-auto px-6">
+        <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">RULES</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">헷갈리는 규칙</h1>
+        <p class="text-white/55 text-lg">선수들이 자주 혼동하는 ISSF 규정 모음</p>
+      </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-6 py-16">
+      <!-- Filter chips -->
+      <div class="flex flex-wrap gap-2 mb-10">
+        <button id="f-all"       onclick="filterRules('all')"       class="chip" style="background:#0B1E3F;color:#fff;border-color:#0B1E3F;">전체</button>
+        <button id="f-equipment" onclick="filterRules('equipment')" class="chip">장비</button>
+        <button id="f-clothing"  onclick="filterRules('clothing')"  class="chip">복장</button>
+        <button id="f-procedure" onclick="filterRules('procedure')" class="chip">경기 절차</button>
+        <button id="f-scoring"   onclick="filterRules('scoring')"   class="chip">채점·실격</button>
+      </div>
+
+      <div id="rules-list" class="space-y-4">
+
+        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="equipment">
+          <div class="flex items-start justify-between gap-4 mb-3">
+            <h3 class="font-bold text-navy">공기소총 총기 무게 제한</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 flex-shrink-0">장비</span>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            10m 공기소총 경기에서 총기 무게 제한은 <strong>없습니다</strong>. 무게 제한이 있다고 알고 있는 선수가 많으나
+            ISSF 규정상 공기소총의 무게 상한은 별도로 명시되어 있지 않습니다.
+            단, 총기의 규격·발사속도 등 다른 검사 기준은 엄격히 적용됩니다.
+          </p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 6.4 — Air Rifle Equipment</p>
+        </div>
+
+        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="clothing">
+          <div class="flex items-start justify-between gap-4 mb-3">
+            <h3 class="font-bold text-navy">재킷 두께 측정 기준</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-green-50 text-green-700 flex-shrink-0">복장</span>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            소총 재킷 두께는 <strong>2.5mm</strong>를 초과할 수 없습니다.
+            두께 측정은 두 겹이 아닌 <strong>단일 레이어</strong> 기준입니다. 심판이 측정 장치로 직접 측정하며
+            측정 위치는 심판 재량으로 선택합니다.
+          </p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 7.5 — Clothing Regulations</p>
+        </div>
+
+        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="procedure">
+          <div class="flex items-start justify-between gap-4 mb-3">
+            <h3 class="font-bold text-navy">오발(Misfire) 처리 절차</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 flex-shrink-0">경기 절차</span>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            오발 발생 시 선수는 즉시 총구를 표적 방향으로 유지한 채 <strong>손을 들어 심판을 호출</strong>해야 합니다.
+            총기를 임의로 작동하거나 분해하면 규정 위반이 될 수 있습니다.
+            심판 확인 후 보충 시간 또는 추가 발수가 부여될 수 있습니다.
+          </p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 6.12 — Malfunctions and Equipment Failures</p>
+        </div>
+
+        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="scoring">
+          <div class="flex items-start justify-between gap-4 mb-3">
+            <h3 class="font-bold text-navy">동점 처리 기준</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-700 flex-shrink-0">채점·실격</span>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            전자 표적 도입 이후 동점은 극히 드물지만, 발생 시
+            <strong>마지막 발 점수가 높은 선수</strong>가 우선합니다.
+            계속 동점이면 그 이전 발부터 역순으로 비교합니다.
+          </p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 6.22 — Tie-Breaking</p>
+        </div>
+
+        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="equipment">
+          <div class="flex items-start justify-between gap-4 mb-3">
+            <h3 class="font-bold text-navy">공기권총 손잡이(Grip) 규격</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 flex-shrink-0">장비</span>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            공기권총 그립은 손목 관절 이상을 지지하거나 덮어서는 안 됩니다.
+            그립이 손목 방향으로 <strong>25mm 이상 연장되지 않아야</strong> 하며,
+            손가락을 각각 잡아주는 형태(핑거레스트)는 허용되지 않습니다.
+          </p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 9.4 — Air Pistol Equipment</p>
+        </div>
+
+        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="clothing">
+          <div class="flex items-start justify-between gap-4 mb-3">
+            <h3 class="font-bold text-navy">슈팅 글래스 규정</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-green-50 text-green-700 flex-shrink-0">복장</span>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            슈팅 글래스의 렌즈 크기 제한은 없습니다.
+            단, <strong>전자 장치·원격 조작 장치</strong>가 내장된 안경은 금지됩니다.
+            블라인더(시야 차단 판)는 양 눈 모두에 부착 가능하며 크기 제한이 없습니다.
+          </p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 7.7 — Eyewear</p>
+        </div>
+
+      </div>
+
+      <div class="mt-10 disclaimer-box text-xs">
+        위 내용은 참고용이며 최신 ISSF 원문을 반드시 확인하세요.
+        오류를 발견하시면 <button onclick="navigate('report')" class="underline font-semibold">오류 신고</button>를 이용해 주세요.
+      </div>
+    </div>
+  </section>
+  <!-- /RULES -->
+
+
+  <!-- ─────────────────────────────────────
+       PAGE: CONTACT
+  ───────────────────────────────────── -->
+  <section id="page-contact" class="page-section">
+    <div class="page-header">
+      <div class="max-w-3xl mx-auto px-6">
+        <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">CONTACT</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">문의하기</h1>
+        <p class="text-white/55 text-lg">서비스에 대한 질문이나 건의사항을 남겨주세요</p>
+      </div>
+    </div>
+
+    <div class="max-w-3xl mx-auto px-6 py-16">
+      <div id="contact-success" class="hidden bg-green-50 border border-green-200 rounded-xl p-10 text-center mb-8">
+        <div class="text-4xl mb-3">✅</div>
+        <h3 class="text-lg font-bold text-green-800 mb-2">문의가 접수되었습니다</h3>
+        <p class="text-green-600 text-sm">빠른 시일 내에 답변드리겠습니다. 감사합니다.</p>
+      </div>
+
+      <form id="contact-form" onsubmit="submitContact(event)" class="bg-white rounded-2xl border border-gray-200 p-8 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="form-label">이름 <span class="text-red-400">*</span></label>
+            <input type="text" name="name" required class="form-input" placeholder="홍길동">
+          </div>
+          <div>
+            <label class="form-label">이메일 <span class="text-red-400">*</span></label>
+            <input type="email" name="email" required class="form-input" placeholder="example@email.com">
+          </div>
+        </div>
+        <div>
+          <label class="form-label">소속 (선택)</label>
+          <input type="text" name="affiliation" class="form-input" placeholder="팀 / 클럽 / 학교">
+        </div>
+        <div>
+          <label class="form-label">문의 유형 <span class="text-red-400">*</span></label>
+          <select name="type" required class="form-input">
+            <option value="">선택해주세요</option>
+            <option>서비스 이용 문의</option>
+            <option>규정 관련 문의</option>
+            <option>제휴 / 협업 제안</option>
+            <option>기타</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">문의 내용 <span class="text-red-400">*</span></label>
+          <textarea name="message" required class="form-input" rows="5" placeholder="내용을 자세히 적어주세요..."></textarea>
+        </div>
+        <!-- Honeypot -->
+        <input type="text" name="website" style="display:none" tabindex="-1" autocomplete="off">
+        <button type="submit" class="btn-primary w-full">문의 제출하기</button>
+      </form>
+    </div>
+  </section>
+  <!-- /CONTACT -->
+
+
+  <!-- ─────────────────────────────────────
+       PAGE: REPORT
+  ───────────────────────────────────── -->
+  <section id="page-report" class="page-section">
+    <div class="page-header">
+      <div class="max-w-3xl mx-auto px-6">
+        <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">REPORT</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">오류 수정 요청</h1>
+        <p class="text-white/55 text-lg">AI 답변에서 오류를 발견하셨나요? 제보해주시면 빠르게 수정합니다</p>
+      </div>
+    </div>
+
+    <div class="max-w-3xl mx-auto px-6 py-16">
+      <div id="report-success" class="hidden bg-green-50 border border-green-200 rounded-xl p-10 text-center mb-8">
+        <div class="text-4xl mb-3">✅</div>
+        <h3 class="text-lg font-bold text-green-800 mb-2">오류 신고가 접수되었습니다</h3>
+        <p class="text-green-600 text-sm">소중한 제보 감사합니다. 검토 후 빠르게 수정하겠습니다.</p>
+      </div>
+
+      <div class="disclaimer-box mb-8 text-xs">
+        <strong>📋 제보 방법:</strong> 챗봇에서 받은 답변을 복사해서 붙여넣기 하시고, 어떤 부분이 틀렸는지 알려주세요.
+        ISSF 조항 번호나 페이지도 함께 적어주시면 빠르게 반영됩니다.
+      </div>
+
+      <form id="report-form" onsubmit="submitReport(event)" class="bg-white rounded-2xl border border-gray-200 p-8 space-y-6">
+        <div>
+          <label class="form-label">질문 원문 <span class="text-red-400">*</span></label>
+          <input type="text" name="question" required class="form-input" placeholder="챗봇에 입력했던 질문">
+        </div>
+        <div>
+          <label class="form-label">챗봇 답변 <span class="text-red-400">*</span></label>
+          <textarea name="answer" required class="form-input" rows="4" placeholder="챗봇에서 받은 답변을 붙여넣기 해주세요..."></textarea>
+        </div>
+        <div>
+          <label class="form-label">어떤 부분이 잘못되었나요? <span class="text-red-400">*</span></label>
+          <textarea name="error_desc" required class="form-input" rows="3" placeholder="잘못된 내용을 설명해주세요..."></textarea>
+        </div>
+        <div>
+          <label class="form-label">정확한 규정 출처 (있다면)</label>
+          <input type="text" name="source" class="form-input" placeholder="예: ISSF Technical Rules 6.4.1.2, p.34">
+        </div>
+        <div>
+          <label class="form-label">이메일 (답변 받으실 경우)</label>
+          <input type="email" name="email" class="form-input" placeholder="example@email.com">
+        </div>
+        <button type="submit" class="btn-primary w-full">오류 신고하기</button>
+      </form>
+    </div>
+  </section>
+  <!-- /REPORT -->
+
+
+  <!-- ─────────────────────────────────────
+       PAGE: ATHLETES (Coming Soon)
+  ───────────────────────────────────── -->
+  <section id="page-athletes" class="page-section">
+    <div class="page-header">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">ATHLETES</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">선수 프로필</h1>
+        <div class="flex items-center gap-3">
+          <span class="cs-badge">Coming Soon</span>
+          <p class="text-white/55 text-base">준비 중입니다</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-6 py-20 text-center">
+      <p class="text-gray-400 text-lg mb-10 leading-relaxed">
+        한국 대표 선수들의 경기 사진과 함께 사용 장비를<br class="hidden sm:block">
+        인터랙티브하게 확인할 수 있는 페이지를 준비 중입니다.
+      </p>
+
+      <!-- Wireframe mockup -->
+      <div class="max-w-xl mx-auto bg-white border-2 border-dashed border-gray-200 rounded-2xl p-8 mb-12 text-left">
+        <p class="text-[10px] text-gray-400 uppercase tracking-widest mb-4 text-center">컨셉 미리보기</p>
+        <div class="bg-gray-100 rounded-xl overflow-hidden h-52 relative mb-4">
+          <img src="https://placehold.co/640x210/1F2937/4B5563?text=선수+경기+사진"
+               alt="선수 사진 예시" class="w-full h-full object-cover opacity-50">
+          <!-- Hotspots -->
+          <div class="absolute" style="top:32%;left:42%;">
+            <span class="absolute inline-flex w-5 h-5 rounded-full bg-gold opacity-60 animate-ping"></span>
+            <span class="relative inline-flex w-5 h-5 rounded-full bg-gold border-2 border-white shadow cursor-pointer"></span>
+          </div>
+          <div class="absolute" style="top:20%;left:54%;">
+            <span class="absolute inline-flex w-5 h-5 rounded-full bg-gold opacity-60 animate-ping"></span>
+            <span class="relative inline-flex w-5 h-5 rounded-full bg-gold border-2 border-white shadow cursor-pointer"></span>
+          </div>
+          <div class="absolute" style="bottom:22%;left:38%;">
+            <span class="absolute inline-flex w-5 h-5 rounded-full bg-gold opacity-60 animate-ping"></span>
+            <span class="relative inline-flex w-5 h-5 rounded-full bg-gold border-2 border-white shadow cursor-pointer"></span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 text-center">
+          📍 <span class="text-gold font-semibold">●</span> 를 클릭하면 해당 장비의 상세 정보가 표시됩니다
+        </p>
+      </div>
+
+      <!-- Feature preview cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto mb-12">
+        <div class="p-5 bg-white border border-gray-200 rounded-xl">
+          <div class="text-2xl mb-2">📸</div>
+          <h3 class="font-bold text-navy text-sm mb-1">고화질 경기 사진</h3>
+          <p class="text-gray-400 text-xs">실제 경기 장면</p>
+        </div>
+        <div class="p-5 bg-white border border-gray-200 rounded-xl">
+          <div class="text-2xl mb-2">🎯</div>
+          <h3 class="font-bold text-navy text-sm mb-1">장비 핫스팟</h3>
+          <p class="text-gray-400 text-xs">클릭으로 장비 확인</p>
+        </div>
+        <div class="p-5 bg-white border border-gray-200 rounded-xl">
+          <div class="text-2xl mb-2">🏆</div>
+          <h3 class="font-bold text-navy text-sm mb-1">선수 프로필</h3>
+          <p class="text-gray-400 text-xs">종목·성적·장비 정보</p>
+        </div>
+      </div>
+
+      <button onclick="navigate('home')" class="btn-navy">홈으로 돌아가기</button>
+    </div>
+  </section>
+  <!-- /ATHLETES -->
+
+
+</main><!-- /MAIN -->
+
+
+<!-- ═══════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════ -->
+<footer class="bg-navy text-white">
+  <div class="max-w-7xl mx-auto px-6 py-16">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
+
+      <!-- Brand -->
+      <div class="md:col-span-2">
+        <img src="brand_logo/SEEA Simple_ff0000_C.png" alt="SEEA Precision" class="h-8 w-auto mb-4">
+        <p class="text-white/45 text-sm leading-relaxed max-w-xs">
+          한국 사격 선수들을 위한 ISSF 규정 AI 어시스턴트.<br>
+          최신 국제사격연맹 규정을 한국어로 즉시 확인하세요.
+        </p>
+        <div class="mt-6 p-4 bg-white/5 rounded-xl border border-white/10 text-xs text-white/35 leading-relaxed">
+          ⚠️ 본 서비스는 ISSF의 공식 서비스가 아닙니다. 모든 답변은 참고용으로만 사용하시고
+          공식 판정의 근거로 사용하실 수 없습니다.
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <div>
+        <h4 class="text-white/40 text-[10px] font-bold tracking-widest uppercase mb-4">메뉴</h4>
+        <ul class="space-y-3">
+          <li><button onclick="navigate('about')"   class="text-white/65 hover:text-white text-sm transition-colors">서비스 소개</button></li>
+          <li><button onclick="navigate('guide')"   class="text-white/65 hover:text-white text-sm transition-colors">사용법</button></li>
+          <li><button onclick="navigate('rules')"   class="text-white/65 hover:text-white text-sm transition-colors">헷갈리는 규칙</button></li>
+          <li><button onclick="navigate('athletes')" class="text-white/65 hover:text-white text-sm transition-colors flex items-center gap-1.5">
+            선수 프로필 <span class="text-[10px] text-gold">예정</span>
+          </button></li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div>
+        <h4 class="text-white/40 text-[10px] font-bold tracking-widest uppercase mb-4">지원</h4>
+        <ul class="space-y-3">
+          <li><button onclick="navigate('contact')" class="text-white/65 hover:text-white text-sm transition-colors">문의하기</button></li>
+          <li><button onclick="navigate('report')"  class="text-white/65 hover:text-white text-sm transition-colors">오류 신고</button></li>
+          <li><span class="text-white/30 text-sm cursor-default">개인정보처리방침</span></li>
+          <li><span class="text-white/30 text-sm cursor-default">이용약관</span></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="border-t border-white/10 mt-10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-white/25">
+      <p>© 2024 SEEA Precision. All rights reserved.</p>
+      <p>참조 규정: ISSF Technical Rules 2024 Edition</p>
+    </div>
+  </div>
+</footer>
+
+
+<!-- ═══════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════ -->
+<script>
+// ── ROUTER ───────────────────────────────────────
+const PAGES = ['home','about','guide','rules','contact','report','athletes'];
+
+function navigate(page) {
+  if (!PAGES.includes(page)) page = 'home';
+  PAGES.forEach(p => document.getElementById('page-' + p).classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.querySelectorAll('.nav-link').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === page);
+  });
+  window.history.pushState(null, '', '#' + page);
+}
+
+window.addEventListener('popstate', () => {
+  navigate(location.hash.replace('#','') || 'home');
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  navigate(location.hash.replace('#','') || 'home');
+});
+
+// ── NAVBAR SCROLL SHADOW ─────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+});
+
+// ── MOBILE MENU ──────────────────────────────────
+function toggleMenu() {
+  document.getElementById('mobile-menu').classList.toggle('open');
+}
+function closeMenu() {
+  document.getElementById('mobile-menu').classList.remove('open');
+}
+
+// ── SCROLL TO CHAT ────────────────────────────────
+function scrollToChat() {
+  navigate('home');
+  setTimeout(() => {
+    document.getElementById('chatbot-section')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+// ── CHATBOT ───────────────────────────────────────
+let chatHistory = [];
+let isThinking  = false;
+
+function sendChip(btn) { sendText(btn.textContent.trim()); }
+
+function sendSampleQ(el) {
+  const raw = el.textContent.trim().replace(/^[""]|[""]$/g,'');
+  navigate('home');
+  setTimeout(() => {
+    document.getElementById('chatbot-section')?.scrollIntoView({ behavior:'smooth', block:'start' });
+    setTimeout(() => sendText(raw), 350);
+  }, 120);
+}
+
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const txt   = input.value.trim();
+  if (!txt || isThinking) return;
+  input.value = '';
+  sendText(txt);
+}
+
+async function sendText(text) {
+  if (!text || isThinking) return;
+  isThinking = true;
+  document.getElementById('send-btn').disabled = true;
+
+  appendUser(text);
+  chatHistory.push({ role:'user', content:text });
+  const thinkId = appendThinking();
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: chatHistory }),
+    });
+    removeMsg(thinkId);
+
+    if (res.ok) {
+      const { content } = await res.json();
+      appendAI(content || '답변을 가져오지 못했습니다.');
+      chatHistory.push({ role:'assistant', content });
+      document.getElementById('api-notice').style.display = 'none';
+    } else if (res.status === 503) {
+      appendAI('⚠️ API 키가 설정되지 않았습니다.<br><code style="background:#F3F4F6;padding:2px 4px;border-radius:3px;font-size:12px;">.env</code> 파일에 <code style="background:#F3F4F6;padding:2px 4px;border-radius:3px;font-size:12px;">GEMINI_API_KEY</code>를 추가하고 서버를 재시작해주세요.');
+    } else {
+      appendAI('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  } catch {
+    removeMsg(thinkId);
+    appendAI('⚠️ 서버에 연결할 수 없습니다.<br><code style="background:#F3F4F6;padding:2px 4px;border-radius:3px;font-size:12px;">node server.mjs</code>로 서버를 실행 중인지 확인해주세요.');
+  }
+
+  isThinking = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+function appendUser(text) {
+  const box = document.getElementById('chat-messages');
+  const d   = document.createElement('div');
+  d.className = 'flex justify-end';
+  d.innerHTML = `<div>
+    <div class="chat-bubble user">${esc(text)}</div>
+    <div class="text-right text-xs text-gray-400 mt-1 mr-1">나</div>
+  </div>`;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function appendAI(html) {
+  const box = document.getElementById('chat-messages');
+  const d   = document.createElement('div');
+  d.className = 'flex items-start gap-3';
+  const formatted = html
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code style="background:#F3F4F6;padding:2px 5px;border-radius:3px;font-size:12px;font-family:monospace;">$1</code>')
+    .replace(/\n/g,'<br>');
+  d.innerHTML = `
+    <div class="w-8 h-8 rounded-full bg-navy flex items-center justify-center flex-shrink-0 mt-0.5">
+      <span class="text-gold text-[11px] font-bold">AI</span>
+    </div>
+    <div>
+      <div class="chat-bubble ai">${formatted}</div>
+      <div class="text-xs text-gray-400 mt-1 ml-1">SEEA AI</div>
+    </div>`;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function appendThinking() {
+  const box = document.getElementById('chat-messages');
+  const id  = 'thinking-' + Date.now();
+  const d   = document.createElement('div');
+  d.id = id; d.className = 'flex items-start gap-3';
+  d.innerHTML = `
+    <div class="w-8 h-8 rounded-full bg-navy flex items-center justify-center flex-shrink-0">
+      <span class="text-gold text-[11px] font-bold">AI</span>
+    </div>
+    <div class="chat-bubble thinking flex items-center gap-1.5 px-4 py-3">
+      <span class="typing-dot"></span>
+      <span class="typing-dot"></span>
+      <span class="typing-dot"></span>
+    </div>`;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+  return id;
+}
+
+function removeMsg(id) { document.getElementById(id)?.remove(); }
+
+function esc(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+          .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── RULES FILTER ─────────────────────────────────
+const FILTER_IDS = ['all','equipment','clothing','procedure','scoring'];
+
+function filterRules(cat) {
+  FILTER_IDS.forEach(id => {
+    const btn = document.getElementById('f-' + id);
+    const on  = id === cat;
+    btn.style.background   = on ? '#0B1E3F' : '#fff';
+    btn.style.color        = on ? '#fff'     : '#374151';
+    btn.style.borderColor  = on ? '#0B1E3F' : '#D1D5DB';
+  });
+  document.querySelectorAll('.rule-item').forEach(el => {
+    el.style.display = (cat === 'all' || el.dataset.cat === cat) ? 'block' : 'none';
+  });
+}
+
+// ── FORMS ────────────────────────────────────────
+function submitContact(e) {
+  e.preventDefault();
+  if (e.target.querySelector('[name="website"]').value) return;
+  e.target.style.display = 'none';
+  document.getElementById('contact-success').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function submitReport(e) {
+  e.preventDefault();
+  e.target.style.display = 'none';
+  document.getElementById('report-success').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
