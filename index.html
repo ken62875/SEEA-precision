@@ -214,11 +214,11 @@
 ═══════════════════════════════════════ -->
 <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
   <div class="max-w-7xl mx-auto px-6">
-    <div class="flex items-center justify-between h-24">
+    <div class="flex items-center justify-between h-16 md:h-24">
 
       <!-- Logo -->
       <a href="#home" onclick="navigate('home')" class="flex items-center flex-shrink-0">
-        <img src="brand_logo/SEEA Precison_ff0000_R.png" alt="SEEA Precision" class="h-12 w-auto">
+        <img src="brand_logo/SEEA Precison_ff0000_R.png" alt="SEEA Precision" class="h-8 md:h-12 w-auto">
       </a>
 
       <!-- Desktop links -->
@@ -360,6 +360,14 @@
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
             <span class="text-white font-semibold text-sm">SEEA AI · ISSF 규정 어시스턴트</span>
             <span class="ml-auto text-white/35 text-xs hidden sm:block">규정 버전: ISSF 2026.01.01</span>
+            <button onclick="toggleChatFullscreen()" id="chat-expand-btn" class="ml-2 text-white/50 hover:text-white transition-colors flex-shrink-0" title="전체화면">
+              <svg id="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+              </svg>
+              <svg id="icon-shrink" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+              </svg>
+            </button>
           </div>
 
           <!-- Messages -->
@@ -384,12 +392,7 @@
           <!-- Input -->
           <div class="border-t border-gray-200 p-4 bg-white">
             <!-- Sample chips -->
-            <div class="flex flex-wrap gap-2 mb-3">
-              <button class="chip" onclick="sendChip(this)">10m 공기소총 표적 규격</button>
-              <button class="chip" onclick="sendChip(this)">재킷 두께 규정</button>
-              <button class="chip" onclick="sendChip(this)">오발 처리 절차</button>
-              <button class="chip" onclick="sendChip(this)">총기 검사 기준</button>
-              <button class="chip" onclick="sendChip(this)">경기 복장 규정</button>
+            <div id="chip-container" class="flex gap-2 mb-3 overflow-x-auto"></div>
             </div>
             <div class="flex gap-2">
               <input id="chat-input" type="text"
@@ -571,8 +574,8 @@
           <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">50m 소총 복사</span>
           <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">25m 권총</span>
           <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">25m 스포츠 권총</span>
-          <span class="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg text-sm font-medium">트랩 (예정)</span>
-          <span class="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg text-sm font-medium">스키트 (예정)</span>
+          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">트랩</span>
+          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">스키트</span>
         </div>
       </div>
 
@@ -588,8 +591,8 @@
       </div>
 
       <div class="p-5 bg-white rounded-xl border border-gray-200 text-sm text-gray-400">
-        <strong class="text-gray-600">참조 규정:</strong> ISSF Technical Rules &amp; General Technical Rules, 2024 Edition<br>
-        <strong class="text-gray-600">마지막 업데이트:</strong> 2024년 (추후 최신화 예정)
+        <strong class="text-gray-600">참조 규정:</strong> ISSF Rule Book 2026 Edition (Effective 1 January 2026)<br>
+        <strong class="text-gray-600">마지막 업데이트:</strong> 2026년 1월 1일
       </div>
 
     </div>
@@ -781,82 +784,109 @@
 
       <div id="rules-list" class="space-y-4">
 
-        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="equipment">
-          <div class="flex items-start justify-between gap-4 mb-3">
-            <h3 class="font-bold text-navy">공기소총 총기 무게 제한</h3>
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 flex-shrink-0">장비</span>
-          </div>
-          <p class="text-gray-600 text-sm leading-relaxed mb-3">
-            10m 공기소총 경기에서 총기 무게 제한은 <strong>없습니다</strong>. 무게 제한이 있다고 알고 있는 선수가 많으나
-            ISSF 규정상 공기소총의 무게 상한은 별도로 명시되어 있지 않습니다.
-            단, 총기의 규격·발사속도 등 다른 검사 기준은 엄격히 적용됩니다.
-          </p>
-          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 6.4 — Air Rifle Equipment</p>
-        </div>
-
+        <!-- 1 -->
         <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="clothing">
           <div class="flex items-start justify-between gap-4 mb-3">
-            <h3 class="font-bold text-navy">재킷 두께 측정 기준</h3>
+            <h3 class="font-bold text-navy">소총 재킷·바지 두께 & 경도 — 둘 다 통과해야 합니다</h3>
             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-green-50 text-green-700 flex-shrink-0">복장</span>
           </div>
           <p class="text-gray-600 text-sm leading-relaxed mb-3">
-            소총 재킷 두께는 <strong>2.5mm</strong>를 초과할 수 없습니다.
-            두께 측정은 두 겹이 아닌 <strong>단일 레이어</strong> 기준입니다. 심판이 측정 장치로 직접 측정하며
-            측정 위치는 심판 재량으로 선택합니다.
+            많은 선수들이 두께(2.5mm)만 확인하지만, 실제로는 <strong>경도(5N)도 별도로 측정</strong>합니다.
+            두께 측정은 단일 레이어 기준이며, 경도는 ISSF 공인 측정 장치로 심판이 직접 측정합니다.
+            <strong>두 기준 중 하나라도 초과하면 장비 검사에서 탈락</strong>하므로, 재킷 구입 전 반드시 두 수치를 확인하세요.
           </p>
-          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 7.5 — Clothing Regulations</p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 7.5 — Clothing Regulations (Rifle)</p>
         </div>
 
+        <!-- 2 -->
+        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="equipment">
+          <div class="flex items-start justify-between gap-4 mb-3">
+            <h3 class="font-bold text-navy">권총 그립 규격 — 손목 관절을 넘으면 안 됩니다</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 flex-shrink-0">장비</span>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            공기권총·소구경 권총의 그립은 손목 관절 방향으로 <strong>최대 25mm까지만</strong> 연장될 수 있습니다.
+            손목을 감싸거나 지지하는 형태, 손가락 홈이 각각 파인 핑거레스트(finger rest) 형태는 허용되지 않습니다.
+            검사 시 그립을 분리하지 않아도 외관으로 판단하므로, 구입 전에 심판에게 사전 확인을 받는 것을 권장합니다.
+          </p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 9.4 / 10.4 — Pistol Equipment</p>
+        </div>
+
+        <!-- 3 -->
         <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="procedure">
           <div class="flex items-start justify-between gap-4 mb-3">
-            <h3 class="font-bold text-navy">오발(Misfire) 처리 절차</h3>
+            <h3 class="font-bold text-navy">오발·총기 고장 처리 — 절대 임의로 조작하지 마세요</h3>
             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 flex-shrink-0">경기 절차</span>
           </div>
           <p class="text-gray-600 text-sm leading-relaxed mb-3">
-            오발 발생 시 선수는 즉시 총구를 표적 방향으로 유지한 채 <strong>손을 들어 심판을 호출</strong>해야 합니다.
-            총기를 임의로 작동하거나 분해하면 규정 위반이 될 수 있습니다.
-            심판 확인 후 보충 시간 또는 추가 발수가 부여될 수 있습니다.
+            소총·권총 종목에서 오발(misfire)·고장 발생 시 즉시 <strong>총구를 표적 방향으로 유지하고 손을 들어 심판을 호출</strong>해야 합니다.
+            심판 확인 없이 총기를 임의로 작동·분해하면 규정 위반으로 경고 또는 실격 처리될 수 있습니다.
+            트랩·스키트에서도 장전 불량 발생 시 동일하게 총구를 하늘로 향하게 한 뒤 심판을 기다려야 합니다.
+            심판 확인 후 보충 시간 또는 재사격 기회가 부여됩니다.
           </p>
-          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 6.12 — Malfunctions and Equipment Failures</p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 6.12 / Shotgun Rules 6.12 — Malfunctions</p>
         </div>
 
+        <!-- 4 -->
         <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="scoring">
           <div class="flex items-start justify-between gap-4 mb-3">
-            <h3 class="font-bold text-navy">동점 처리 기준</h3>
+            <h3 class="font-bold text-navy">트랩·스키트 파선(Lost Target) 판정 — 심판 콜이 최종입니다</h3>
             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-700 flex-shrink-0">채점·실격</span>
           </div>
           <p class="text-gray-600 text-sm leading-relaxed mb-3">
-            전자 표적 도입 이후 동점은 극히 드물지만, 발생 시
-            <strong>마지막 발 점수가 높은 선수</strong>가 우선합니다.
-            계속 동점이면 그 이전 발부터 역순으로 비교합니다.
+            트랩·스키트에서 클레이가 파괴되었는지 여부는 <strong>심판의 "Hit(맞음)" 또는 "Lost(파선)"</strong> 콜이 최종 결정입니다.
+            선수 눈에는 맞은 것처럼 보여도 눈에 띄는 파편이 없으면 "Lost"로 판정됩니다. 반대로 작은 파편이라도 분리되면 "Hit"입니다.
+            판정에 이의가 있으면 즉시 <strong>손을 들어 항의(protest)</strong>해야 하며, 다음 표적 발사 후에는 항의가 불가합니다.
           </p>
-          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 6.22 — Tie-Breaking</p>
+          <p class="text-xs text-gray-400">출처: ISSF Shotgun Rules, Section 6.17 / 7.17 — Scoring (Trap / Skeet)</p>
         </div>
 
-        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="equipment">
+        <!-- 5 -->
+        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="procedure">
           <div class="flex items-start justify-between gap-4 mb-3">
-            <h3 class="font-bold text-navy">공기권총 손잡이(Grip) 규격</h3>
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 flex-shrink-0">장비</span>
+            <h3 class="font-bold text-navy">트랩·스키트 재사격(Re-shoot) 조건 — 아무 때나 되지 않습니다</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 flex-shrink-0">경기 절차</span>
           </div>
           <p class="text-gray-600 text-sm leading-relaxed mb-3">
-            공기권총 그립은 손목 관절 이상을 지지하거나 덮어서는 안 됩니다.
-            그립이 손목 방향으로 <strong>25mm 이상 연장되지 않아야</strong> 하며,
-            손가락을 각각 잡아주는 형태(핑거레스트)는 허용되지 않습니다.
+            재사격은 <strong>심판이 인정한 경우에만</strong> 허용됩니다. 주요 재사격 인정 조건:
+            <strong>① 클레이 투척기 결함</strong> (경로 이상, 미출발 등),
+            <strong>② 선수 호출 전 조기 출발</strong>,
+            <strong>③ 복수 표적이 동시에 투출된 경우</strong> (단일 신청 시).
+            총기 고장은 즉시 신고해야만 재사격 검토 대상이 되며, 신고 전에 발사하면 해당 발이 점수에 기록됩니다.
           </p>
-          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 9.4 — Air Pistol Equipment</p>
+          <p class="text-xs text-gray-400">출처: ISSF Shotgun Rules, Section 6.12 / 7.12 — Re-shoots (Trap / Skeet)</p>
         </div>
 
-        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="clothing">
+        <!-- 6 -->
+        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="scoring">
           <div class="flex items-start justify-between gap-4 mb-3">
-            <h3 class="font-bold text-navy">슈팅 글래스 규정</h3>
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-green-50 text-green-700 flex-shrink-0">복장</span>
+            <h3 class="font-bold text-navy">결선(Final) 감점·실격 요인 — 전 종목 공통</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-700 flex-shrink-0">채점·실격</span>
           </div>
           <p class="text-gray-600 text-sm leading-relaxed mb-3">
-            슈팅 글래스의 렌즈 크기 제한은 없습니다.
-            단, <strong>전자 장치·원격 조작 장치</strong>가 내장된 안경은 금지됩니다.
-            블라인더(시야 차단 판)는 양 눈 모두에 부착 가능하며 크기 제한이 없습니다.
+            소총·권총 결선에서 감점 또는 실격이 되는 주요 상황:
+            <strong>① 시간 초과 발사</strong> — 경고 후 반복 시 해당 발 0점,
+            <strong>② 잘못된 표적 사격</strong> — 해당 발 0점,
+            <strong>③ 총기 고장 미신고 후 사격 강행</strong>,
+            <strong>④ 사격 금지 신호 중 발사</strong>.
+            트랩·스키트 결선에서는 <strong>스테이션 이탈·절차 위반</strong>이 추가 실격 사유가 됩니다.
+            모든 위반은 경고 1회 후 반복 시 실격 처리됩니다.
           </p>
-          <p class="text-xs text-gray-400">출처: ISSF Technical Rules, Section 7.7 — Eyewear</p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules 6.20 / Shotgun Rules 6.20 — Penalties and Disqualification</p>
+        </div>
+
+        <!-- 7 -->
+        <div class="rule-item bg-white border border-gray-200 rounded-xl p-6 transition-colors" data-cat="scoring">
+          <div class="flex items-start justify-between gap-4 mb-3">
+            <h3 class="font-bold text-navy">동점 처리 기준 — 종목마다 방식이 다릅니다</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-700 flex-shrink-0">채점·실격</span>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            <strong>소총·권총 종목:</strong> 동점 발생 시 <strong>마지막 발부터 역순으로</strong> 점수를 비교합니다. 모든 발이 같으면 순위가 공동으로 처리될 수 있습니다.
+            <strong>트랩·스키트 종목:</strong> 동점 시 <strong>슛-오프(shoot-off)</strong>를 진행합니다. 추가 1발씩 교대로 발사하여 한쪽이 "Hit", 반대가 "Lost"가 될 때까지 계속됩니다.
+            결선 진출을 위한 예선 동점은 종목별 별도 규정에 따릅니다.
+          </p>
+          <p class="text-xs text-gray-400">출처: ISSF Technical Rules 6.22 / Shotgun Rules 6.22 — Tie-Breaking</p>
         </div>
 
       </div>
@@ -1131,6 +1161,7 @@ window.addEventListener('popstate', () => {
 
 window.addEventListener('DOMContentLoaded', () => {
   navigate(location.hash.replace('#','') || 'home');
+  refreshChips();
 });
 
 // ── NAVBAR SCROLL SHADOW ─────────────────────────
@@ -1159,7 +1190,51 @@ function scrollToChat() {
 let chatHistory = [];
 let isThinking  = false;
 
-function sendChip(btn) { sendText(btn.textContent.trim()); }
+function sendChip(btn) {
+  sendText(btn.textContent.trim());
+  setTimeout(refreshChips, 300);
+}
+
+const CHIP_POOL = [
+  '10m 공기소총 표적 규격', '재킷 두께 규정', '오발 처리 절차',
+  '총기 검사 기준', '경기 복장 규정', '결선 감점 요인',
+  '3자세 결선 입장 복장', '공기권총 그립 규격', '슈팅 글래스 규정',
+  '동점 처리 기준', '50m 3자세 시간 제한', '사격복 강도 규정',
+  '트랩 재사격 조건', '스키트 파선 판정 기준', '트랩 총기 고장 처리',
+  '스키트 스테이션 절차', '트랩 동점 슛오프 방식', '산탄총 장비 검사 기준',
+];
+
+function refreshChips() {
+  const container = document.getElementById('chip-container');
+  if (!container) return;
+  const shuffled = [...CHIP_POOL].sort(() => Math.random() - 0.5);
+  container.innerHTML = shuffled.slice(0, 2).map(q =>
+    `<button class="chip flex-shrink-0" onclick="sendChip(this)">${q}</button>`
+  ).join('');
+}
+
+function toggleChatFullscreen() {
+  const section = document.getElementById('chatbot-section');
+  const chatBox  = document.getElementById('chat-messages');
+  const expand   = document.getElementById('icon-expand');
+  const shrink   = document.getElementById('icon-shrink');
+  const isFullscreen = section.classList.contains('chat-fullscreen');
+
+  if (isFullscreen) {
+    section.classList.remove('chat-fullscreen');
+    chatBox.style.height = '';
+    expand.classList.remove('hidden');
+    shrink.classList.add('hidden');
+    document.body.style.overflow = '';
+  } else {
+    section.classList.add('chat-fullscreen');
+    chatBox.style.height = 'calc(100dvh - 180px)';
+    expand.classList.add('hidden');
+    shrink.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
 
 function sendSampleQ(el) {
   const raw = el.textContent.trim().replace(/^[""]|[""]$/g,'');
