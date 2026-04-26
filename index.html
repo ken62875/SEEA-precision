@@ -53,6 +53,24 @@
       opacity: .055; pointer-events: none;
     }
 
+    /* ── Chat fullscreen ── */
+    #chat-container.is-fullscreen {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 9999;
+      border-radius: 0;
+      border: none;
+      display: flex;
+      flex-direction: column;
+    }
+    #chat-container.is-fullscreen #chat-messages {
+      flex: 1;
+      height: auto !important;
+    }
+    #chat-container.is-fullscreen #chat-input-area {
+      flex-shrink: 0;
+    }
+
     /* ── Buttons ── */
     .btn-primary {
       background: #C9A24A; color: #fff; font-weight: 600;
@@ -354,7 +372,7 @@
         </div>
 
         <!-- Chat container -->
-        <div class="rounded-2xl border border-gray-200 overflow-hidden shadow-xl">
+        <div id="chat-container" class="rounded-2xl border border-gray-200 overflow-hidden shadow-xl">
           <!-- Chat header bar -->
           <div class="bg-navy px-5 py-3.5 flex items-center gap-2.5">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
@@ -390,7 +408,7 @@
           </div>
 
           <!-- Input -->
-          <div class="border-t border-gray-200 p-4 bg-white">
+          <div id="chat-input-area" class="border-t border-gray-200 p-4 bg-white">
             <!-- Sample chips -->
             <div id="chip-container" class="flex gap-2 mb-3 overflow-x-auto"></div>
             </div>
@@ -1214,25 +1232,23 @@ function refreshChips() {
 }
 
 function toggleChatFullscreen() {
-  const section = document.getElementById('chatbot-section');
-  const chatBox  = document.getElementById('chat-messages');
-  const expand   = document.getElementById('icon-expand');
-  const shrink   = document.getElementById('icon-shrink');
-  const isFullscreen = section.classList.contains('chat-fullscreen');
+  const container = document.getElementById('chat-container');
+  const chatBox   = document.getElementById('chat-messages');
+  const expand    = document.getElementById('icon-expand');
+  const shrink    = document.getElementById('icon-shrink');
+  const isFullscreen = container.classList.contains('is-fullscreen');
 
   if (isFullscreen) {
-    section.classList.remove('chat-fullscreen');
-    chatBox.style.height = '';
+    container.classList.remove('is-fullscreen');
     expand.classList.remove('hidden');
     shrink.classList.add('hidden');
     document.body.style.overflow = '';
   } else {
-    section.classList.add('chat-fullscreen');
-    chatBox.style.height = 'calc(100dvh - 180px)';
+    container.classList.add('is-fullscreen');
     expand.classList.add('hidden');
     shrink.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => chatBox.scrollTop = chatBox.scrollHeight, 50);
   }
 }
 
