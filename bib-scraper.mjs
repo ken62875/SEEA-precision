@@ -132,9 +132,18 @@ function parseGameLinks(html) {
     // "출전자정보" 앞 부분 = 종목 정보 영역
     const infoText = rowText.split(/출전자\s*정보/)[0].trim();
 
-    // 시작 시간: infoText 내 첫 번째 시간
-    const timeM = infoText.match(/(\d{1,2}:\d{2})/);
-    const scheduleTime = timeM ? timeM[1] : '';
+    // 시작 시간: 전반/후반이 있으면 각 시작 시간, 없으면 첫 번째 시간
+    let scheduleTime = '';
+    if (/전반|후반/.test(infoText)) {
+      const jeM = infoText.match(/전반\S*\s*(\d{1,2}:\d{2})/);
+      const huM = infoText.match(/후반\S*\s*(\d{1,2}:\d{2})/);
+      if (jeM && huM)    scheduleTime = `전반 ${jeM[1]} / 후반 ${huM[1]}`;
+      else if (jeM)      scheduleTime = `전반 ${jeM[1]}`;
+      else if (huM)      scheduleTime = `후반 ${huM[1]}`;
+    } else {
+      const timeM = infoText.match(/(\d{1,2}:\d{2})/);
+      scheduleTime = timeM ? timeM[1] : '';
+    }
 
     // 종목명: infoText에서 불필요한 요소 제거
     let eventLabel = infoText
@@ -198,7 +207,7 @@ function parsePlayerTable(html, eventLabel) {
     allTds.push(stripTags(m[1]).trim());
   }
 
-  const BIB_RE = /^\d{1,3}\s*[-–]\s*\d{1,4}$/;
+  const BIB_RE = /^\d{1,3}\s*[-–]\s*[\dA-Za-z]{1,4}$/;
 
   for (let i = 0; i < allTds.length; i++) {
     const bib = allTds[i];

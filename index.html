@@ -1901,9 +1901,16 @@ function bibResultFound(c, name, matched, total, searchMode) {
         </tr>`;
       }).join('');
 
-      const dateTag = g.scheduleDate
-        ? `<span class="shrink-0 text-[10px] font-bold text-gold-dark bg-gold/10 border border-gold/20 px-2 py-1 rounded-md whitespace-nowrap">${esc(g.scheduleDate)}${g.scheduleTime ? ' ' + esc(g.scheduleTime) : ''}</span>`
-        : (g.scheduleTime ? `<span class="shrink-0 text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">${esc(g.scheduleTime)}</span>` : '');
+      const _dt = g.scheduleDate, _tm = g.scheduleTime || '';
+      const _halfTime = _tm.includes('전반');
+      const dateTag = _dt
+        ? (_halfTime
+          ? `<span class="shrink-0 text-[10px] font-bold text-gold-dark bg-gold/10 border border-gold/20 px-2 py-1 rounded-md leading-tight">
+               <span class="block">${esc(_dt)}</span>
+               <span class="block font-normal opacity-80">${esc(_tm)}</span>
+             </span>`
+          : `<span class="shrink-0 text-[10px] font-bold text-gold-dark bg-gold/10 border border-gold/20 px-2 py-1 rounded-md whitespace-nowrap">${esc(_dt)}${_tm ? ' ' + esc(_tm) : ''}</span>`)
+        : (_tm ? `<span class="shrink-0 text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">${esc(_tm)}</span>` : '');
 
       return `
         <div class="border-b border-gray-100 last:border-0">
