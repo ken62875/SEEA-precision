@@ -8,6 +8,7 @@ import http   from 'http';
 import fs     from 'fs';
 import path   from 'path';
 import { fileURLToPath } from 'url';
+import { searchBib, getCompInfo } from './bib-scraper.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT      = 3000;
@@ -316,6 +317,111 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ error: err.message }));
       }
     });
+    return;
+  }
+
+  // ── GET /api/bib-debug?comp=N01H&sex=2&bb=5&i1=11 ──────
+  // 인코딩·구조 진단용: td 목록 + 파싱 시뮬레이션 결과 반환
+  if (req.method === 'GET' && req.url.startsWith('/api/bib-debug')) {
+    const params = new URL(req.url, 'http://localhost').searchParams;
+    const comp   = (params.get('comp') || 'N01H').trim();
+    const sex    = params.get('sex')  || '2';
+    const bb     = params.get('bb')   || '5';
+    const i1     = params.get('i1')   || '11';
+
+    try {
+      const targetUrl = `https://www.shooting.or.kr/score/score_2015_player.asp?jname=${comp}&sex=${sex}&bb=${bb}&i1=${i1}`;
+      const r   = await fetch(targetUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
+          'Referer':    'https://www.shooting.or.kr',
+          'Accept':     'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+        }
+      });
+      const buf = await r.arrayBuffer();
+      const ct  = r.headers.get('content-type') || '';
+
+      // EUC-KR 디코딩
+      let html = '';
+      try { html = new TextDecoder('euc-kr', { fatal: false }).decode(buf); }
+      catch { html = new TextDecoder('utf-8', { fatal: false }).decode(buf); }
+
+      // td 내용 전체 추출
+      const stripTags = s => (s||'').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim();
+      const allTds = [...html.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m => stripTags(m[1]));
+      const BIB_RE = /^\d{1,3}\s*[-–]\s*\d{1,4}$/; // "2-72" or "2 - 72"
+      const bibTds = allTds.filter(t => BIB_RE.test(t));
+
+      // 처음 60개 td와 전체 HTML 앞부분
+      const lines = [
+        `── 진단 URL ─────────────────────────────────────`,
+        `URL: ${targetUrl}`,
+        `Content-Type 헤더: ${ct}`,
+        `버퍼 크기: ${buf.byteLength} bytes`,
+        ``,
+        `── TD 통계 ──────────────────────────────────────`,
+        `전체 <td> 수: ${allTds.length}`,
+        `사대번호 패턴 셀 수: ${bibTds.length}`,
+        bibTds.length > 0 ? `사대번호 샘플: ${bibTds.slice(0,10).join(', ')}` : '→ 사대번호 셀 없음 (배정표 미게시 or 구조 다름)',
+        ``,
+        `── 첫 100개 TD 내용 ─────────────────────────────`,
+        ...allTds.slice(0, 100).map((t, i) => `[${i}] ${t || '(empty)'}`),
+        ``,
+        `── HTML 앞 2000자 (EUC-KR 디코딩) ───────────────`,
+        html.slice(0, 2000),
+      ];
+
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end(lines.join('\n'));
+    } catch(e) {
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('오류: ' + e.message + '\n' + e.stack);
+    }
+    return;
+  }
+
+  // ── GET /api/bib?comp=N01H&name=홍길동 ──────────────────
+  if (req.method === 'GET' && req.url.startsWith('/api/bib')) {
+    const params   = new URL(req.url, 'http://localhost').searchParams;
+    const comp     = (params.get('comp') || '').trim();
+    const name     = (params.get('name') || '').trim();
+
+    if (!comp || !name) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'comp(대회코드)와 name(이름)이 필요합니다.' }));
+      return;
+    }
+
+    try {
+      const result = await searchBib(comp, name);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(result));
+    } catch (err) {
+      console.error('[/api/bib]', err.message);
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // ── GET /api/comp-info?comp=N01H ────────────────────────
+  if (req.method === 'GET' && req.url.startsWith('/api/comp-info')) {
+    const params = new URL(req.url, 'http://localhost').searchParams;
+    const comp   = (params.get('comp') || '').trim();
+    if (!comp) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'comp 파라미터가 필요합니다.' }));
+      return;
+    }
+    try {
+      const info = await getCompInfo(comp);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(info));
+    } catch (err) {
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
     return;
   }
 

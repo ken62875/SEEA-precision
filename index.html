@@ -245,6 +245,10 @@
         <a onclick="navigate('about')"   data-page="about"   class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">소개</a>
         <a onclick="navigate('guide')"   data-page="guide"   class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">사용법</a>
         <a onclick="navigate('rules')"   data-page="rules"   class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">규칙 안내</a>
+        <a onclick="navigate('bib')"     data-page="bib"     class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer flex items-center gap-1.5">
+          사대번호 조회
+          <span class="text-[11px] bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.5 rounded font-bold leading-none">BETA</span>
+        </a>
         <a onclick="navigate('athletes')" data-page="athletes" class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer flex items-center gap-1.5">
           선수 프로필
           <span class="text-[11px] bg-gold text-white px-1.5 py-0.5 rounded font-bold leading-none">예정</span>
@@ -282,6 +286,9 @@
       <a onclick="navigate('about');closeMenu()"   class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">소개</a>
       <a onclick="navigate('guide');closeMenu()"   class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">사용법</a>
       <a onclick="navigate('rules');closeMenu()"   class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">규칙 안내</a>
+      <a onclick="navigate('bib');closeMenu()"     class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">
+        사대번호 조회 <span class="text-[10px] text-gold font-bold ml-1">BETA</span>
+      </a>
       <a onclick="navigate('athletes');closeMenu()" class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">
         선수 프로필 <span class="text-[10px] text-gold font-bold ml-1">예정</span>
       </a>
@@ -360,6 +367,48 @@
       </div>
     </div>
     <!-- /HERO -->
+
+
+    <!-- ─────────────────────────────────────
+         COMPETITION BANNER (sliding)
+    ───────────────────────────────────── -->
+    <div class="bg-navy-dark border-y border-white/10 overflow-hidden">
+      <div class="max-w-6xl mx-auto px-6 py-7 md:py-9 relative">
+
+        <!-- Header row -->
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-gold animate-pulse"></span>
+            <p class="text-white/55 text-[11px] font-bold tracking-widest uppercase">다가오는 시합</p>
+            <span class="text-[10px] bg-gold/15 text-gold border border-gold/30 px-2 py-0.5 rounded font-bold ml-1">BETA</span>
+          </div>
+          <div id="bib-banner-dots" class="flex gap-1.5"></div>
+        </div>
+
+        <!-- Slider track -->
+        <div class="relative">
+          <div id="bib-banner-viewport" class="overflow-hidden">
+            <div id="bib-banner-track" class="flex transition-transform duration-500 ease-out"></div>
+          </div>
+
+          <!-- Prev/Next -->
+          <button onclick="bibBannerPrev()" aria-label="이전"
+            class="hidden md:flex absolute -left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-gold text-white items-center justify-center transition-colors active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold/40">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+          <button onclick="bibBannerNext()" aria-label="다음"
+            class="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-gold text-white items-center justify-center transition-colors active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold/40">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+    <!-- /COMPETITION BANNER -->
 
 
     <!-- CHATBOT -->
@@ -500,8 +549,21 @@
             </div>
           </div>
 
-          <div class="cat-card opacity-70" onclick="navigate('athletes')">
+          <div class="cat-card" onclick="navigate('bib')">
             <div class="card-num">06</div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-base font-bold text-navy">사대번호 조회</h3>
+              <span class="cs-badge" style="background:rgba(201,162,74,.15);color:#A6842A;border-color:rgba(201,162,74,.4);">BETA</span>
+            </div>
+            <p class="text-gray-400 text-sm leading-relaxed">시합과 이름을 입력하면 본인의 종목별 사대번호와 세부일정을 확인할 수 있습니다.</p>
+            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
+              내 사대번호 찾기
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+
+          <div class="cat-card opacity-70" onclick="navigate('athletes')">
+            <div class="card-num">07</div>
             <div class="flex items-center gap-2 mb-2">
               <h3 class="text-base font-bold text-navy">선수 프로필</h3>
               <span class="cs-badge">Coming Soon</span>
@@ -1028,6 +1090,119 @@
 
 
   <!-- ─────────────────────────────────────
+       PAGE: BIB (사대번호 조회)
+  ───────────────────────────────────── -->
+  <section id="page-bib" class="page-section">
+    <div class="page-header">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">BIB LOOKUP</p>
+        <div class="flex items-center gap-3 mb-3">
+          <h1 class="text-4xl md:text-5xl font-extrabold text-white">사대번호 조회</h1>
+          <span class="cs-badge">BETA</span>
+        </div>
+        <p class="text-white/55 text-base leading-relaxed">
+          시합과 이름을 입력하면 본인의 종목·조·사대번호를 한 번에 확인할 수 있습니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="max-w-3xl mx-auto px-6 py-14">
+
+      <!-- Notice -->
+      <div class="disclaimer-box mb-8 text-sm">
+        <strong>📡 데이터 출처 안내</strong><br>
+        본 기능은 <strong>대한사격연맹(KSF)</strong> 공식 사이트에서 자동 수집한 사대배정표를 기반으로 합니다.
+        연맹이 새 시합 배정표를 게시하면 최대 1시간 이내에 반영됩니다.<br><br>
+        <span class="text-yellow-800/80">
+          ⚠️ 현재 KSF 사이트 복구 중으로 자동 수집이 일시 중단된 상태입니다. 복구 후 정상 작동합니다.
+        </span>
+      </div>
+
+      <!-- Search Card -->
+      <div class="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-sm mb-8">
+
+        <!-- Step 1: Competition -->
+        <div class="mb-6">
+          <label class="form-label">
+            <span class="inline-block w-5 h-5 rounded-full bg-navy text-white text-[11px] font-bold leading-5 text-center mr-2">1</span>
+            시합 선택
+          </label>
+          <select id="bib-competition" class="form-input cursor-pointer" onchange="bibUpdateCompetitionInfo()">
+            <option value="">— 시합을 선택하세요 —</option>
+          </select>
+          <div id="bib-competition-info" class="mt-3 hidden">
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span id="bib-info-dday" class="px-2.5 py-1 rounded-full bg-gold/15 text-gold-dark border border-gold/30 font-bold"></span>
+              <span id="bib-info-date"  class="text-gray-500"></span>
+              <span id="bib-info-host"  class="text-gray-400"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Name -->
+        <div class="mb-6">
+          <label class="form-label" for="bib-name">
+            <span class="inline-block w-5 h-5 rounded-full bg-navy text-white text-[11px] font-bold leading-5 text-center mr-2">2</span>
+            선수 이름
+          </label>
+          <input id="bib-name" type="text" class="form-input"
+            placeholder="예) 김연재"
+            onkeydown="if(event.key==='Enter')bibSearch()"/>
+          <p class="text-xs text-gray-400 mt-2">동명이인이 있을 경우 소속(학교/팀)이 함께 표시됩니다.</p>
+        </div>
+
+        <!-- Search button -->
+        <button onclick="bibSearch()" id="bib-search-btn" class="btn-navy w-full flex items-center justify-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>
+          </svg>
+          내 사대번호 찾기
+        </button>
+      </div>
+
+      <!-- Result area -->
+      <div id="bib-result" class="hidden"></div>
+
+      <!-- Empty state (default) -->
+      <div id="bib-empty" class="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-10 text-center">
+        <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-gray-50 flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>
+          </svg>
+        </div>
+        <p class="text-gray-500 text-sm leading-relaxed">
+          시합과 이름을 입력하고 <strong class="text-navy">[내 사대번호 찾기]</strong> 를 눌러주세요.
+        </p>
+      </div>
+
+      <!-- How it works -->
+      <div class="mt-12">
+        <h3 class="text-sm font-bold text-navy mb-4 tracking-wide">📍 작동 방식</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="p-5 bg-white border border-gray-200 rounded-xl">
+            <div class="text-gold text-xs font-bold mb-2">STEP 1</div>
+            <p class="text-sm text-navy font-semibold mb-1">자동 수집</p>
+            <p class="text-xs text-gray-500 leading-relaxed">KSF 홈페이지에서 새 시합 사대배정표를 1시간마다 자동 수집합니다.</p>
+          </div>
+          <div class="p-5 bg-white border border-gray-200 rounded-xl">
+            <div class="text-gold text-xs font-bold mb-2">STEP 2</div>
+            <p class="text-sm text-navy font-semibold mb-1">DB 저장</p>
+            <p class="text-xs text-gray-500 leading-relaxed">시합 · 종목 · 조 · 사대번호 정보를 데이터베이스에 정리하여 저장합니다.</p>
+          </div>
+          <div class="p-5 bg-white border border-gray-200 rounded-xl">
+            <div class="text-gold text-xs font-bold mb-2">STEP 3</div>
+            <p class="text-sm text-navy font-semibold mb-1">즉시 검색</p>
+            <p class="text-xs text-gray-500 leading-relaxed">선수가 이름만 입력하면 종목별 사대번호를 한눈에 확인합니다.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+  <!-- /BIB -->
+
+
+  <!-- ─────────────────────────────────────
        PAGE: ATHLETES (Coming Soon)
   ───────────────────────────────────── -->
   <section id="page-athletes" class="page-section">
@@ -1128,6 +1303,9 @@
           <li><button onclick="navigate('about')"   class="text-white/65 hover:text-white text-sm transition-colors">서비스 소개</button></li>
           <li><button onclick="navigate('guide')"   class="text-white/65 hover:text-white text-sm transition-colors">사용법</button></li>
           <li><button onclick="navigate('rules')"   class="text-white/65 hover:text-white text-sm transition-colors">헷갈리는 규칙</button></li>
+          <li><button onclick="navigate('bib')"     class="text-white/65 hover:text-white text-sm transition-colors flex items-center gap-1.5">
+            사대번호 조회 <span class="text-[10px] text-gold">BETA</span>
+          </button></li>
           <li><button onclick="navigate('athletes')" class="text-white/65 hover:text-white text-sm transition-colors flex items-center gap-1.5">
             선수 프로필 <span class="text-[10px] text-gold">예정</span>
           </button></li>
@@ -1160,7 +1338,7 @@
 ═══════════════════════════════════════ -->
 <script>
 // ── ROUTER ───────────────────────────────────────
-const PAGES = ['home','about','guide','rules','contact','report','athletes'];
+const PAGES = ['home','about','guide','rules','bib','contact','report','athletes'];
 
 function navigate(page) {
   if (!PAGES.includes(page)) page = 'home';
@@ -1180,6 +1358,8 @@ window.addEventListener('popstate', () => {
 window.addEventListener('DOMContentLoaded', () => {
   navigate(location.hash.replace('#','') || 'home');
   refreshChips();
+  bibBannerInit();
+  bibPopulateCompetitions();
 });
 
 // ── NAVBAR SCROLL SHADOW ─────────────────────────
@@ -1360,8 +1540,9 @@ function appendThinking() {
 function removeMsg(id) { document.getElementById(id)?.remove(); }
 
 function esc(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;')
-          .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return (t == null ? '' : String(t))
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ── RULES FILTER ─────────────────────────────────
@@ -1394,6 +1575,343 @@ function submitReport(e) {
   e.target.style.display = 'none';
   document.getElementById('report-success').classList.remove('hidden');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── BIB / COMPETITION DATA (KSF 2026 전국대회 일정) ─────
+// 출처: https://www.shooting.or.kr/score/score_2015_list.asp?fg=1
+// 실제 운영 시 /api/competitions 엔드포인트에서 가져옴 (자동 수집 예정)
+const COMPETITIONS = [
+  { id:'2026-01', name:'제9회 대구광역시장배 전국사격대회',                          start:'2026-03-16', end:'2026-03-22', venue:'대구',  ksfCode:null },
+  { id:'2026-02', name:'제27회 미추홀기 전국사격대회',                                start:'2026-03-25', end:'2026-03-31', venue:'인천',  ksfCode:null },
+  { id:'2026-03', name:'제40회 문화체육관광부장관기 전국체육고등학교 체육대회',         start:'2026-04-02', end:'2026-04-03', venue:'춘천',  ksfCode:null },
+  { id:'2026-04', name:'아이치·나고야 아시안게임 별도 선발전',                          start:'2026-04-04', end:'2026-04-26', venue:'창원',  ksfCode:null },
+  { id:'2026-05', name:'제1회 NH농협은행배 전국사격대회',                              start:'2026-04-30', end:'2026-05-06', venue:'창원',  ksfCode:'N01H' },
+  { id:'2026-06', name:'제2회 IBK기업은행장배 전국사격대회',                           start:'2026-05-14', end:'2026-05-21', venue:'청주',  ksfCode:null },
+  { id:'2026-07', name:'제55회 전국소년체육대회',                                      start:'2026-05-23', end:'2026-05-24', venue:'창원',  ksfCode:null },
+  { id:'2026-08', name:'제6회 홍범도장군배 전국사격대회',                              start:'2026-06-05', end:'2026-06-12', venue:'청주',  ksfCode:null },
+  { id:'2026-09', name:'제55회 문화체육관광부장관기 전국학생사격대회',                   start:'2026-07-13', end:'2026-07-17', venue:'임실',  ksfCode:null },
+  { id:'2026-10', name:'제50회 회장기 전국중고등학생사격대회',                          start:'2026-07-19', end:'2026-07-23', venue:'임실',  ksfCode:null },
+  { id:'2026-11', name:'제35회 경찰청장기 전국사격대회',                               start:'2026-07-27', end:'2026-08-03', venue:'창원',  ksfCode:null },
+  { id:'2026-12', name:'제8회 창원시장배 전국사격대회',                                start:'2026-08-22', end:'2026-08-28', venue:'창원',  ksfCode:null },
+  { id:'2026-13', name:'제19회 대통령경호처장기 전국사격대회',                          start:'2026-08-31', end:'2026-09-06', venue:'나주',  ksfCode:null },
+  { id:'2026-14', name:'제38회 대학연맹기 전국대학생사격대회',                          start:'2026-09-12', end:'2026-09-13', venue:'춘천',  ksfCode:null },
+  { id:'2026-15', name:'2026 춘천시장배 전국사격대회',                                 start:'2026-09-14', end:'2026-09-18', venue:'춘천',  ksfCode:null },
+  { id:'2026-16', name:'제107회 전국체육대회',                                         start:'2026-10-16', end:'2026-10-20', venue:'창원',  ksfCode:null },
+];
+
+function compStatus(c) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const s = new Date(c.start); s.setHours(0,0,0,0);
+  const e = new Date(c.end);   e.setHours(0,0,0,0);
+  if (today > e) return 'past';
+  if (today >= s) return 'ongoing';
+  return 'upcoming';
+}
+
+// 시작일 기준 D-Day (시합 시작까지 남은 일수)
+function dDay(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const t = new Date(dateStr); t.setHours(0,0,0,0);
+  return Math.round((t - today) / 86400000);
+}
+
+function fmtDate(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// "2026.05.14 ~ 05.21" — 같은 연/월이면 뒤쪽 생략
+function fmtRange(startStr, endStr) {
+  const s = new Date(startStr), e = new Date(endStr);
+  const sY = s.getFullYear(), sM = s.getMonth(), sD = s.getDate();
+  const eY = e.getFullYear(), eM = e.getMonth(), eD = e.getDate();
+  const pad = n => String(n).padStart(2,'0');
+  if (sY === eY && sM === eM && sD === eD) return `${sY}.${pad(sM+1)}.${pad(sD)}`;
+  if (sY === eY && sM === eM)               return `${sY}.${pad(sM+1)}.${pad(sD)} ~ ${pad(eD)}`;
+  if (sY === eY)                             return `${sY}.${pad(sM+1)}.${pad(sD)} ~ ${pad(eM+1)}.${pad(eD)}`;
+  return `${sY}.${pad(sM+1)}.${pad(sD)} ~ ${eY}.${pad(eM+1)}.${pad(eD)}`;
+}
+
+// ── BIB BANNER (sliding) ────────────────────────────
+let bibBannerIdx = 0;
+let bibBannerTimer = null;
+
+function bibBannerInit() {
+  // 다가오는 시합 + 진행 중인 시합 (시작일 기준 가까운 순)
+  const upcoming = COMPETITIONS
+    .filter(c => { const s = compStatus(c); return s === 'upcoming' || s === 'ongoing'; })
+    .sort((a,b) => new Date(a.start) - new Date(b.start))
+    .slice(0, 5);
+  if (!upcoming.length) return;
+
+  const track = document.getElementById('bib-banner-track');
+  const dots  = document.getElementById('bib-banner-dots');
+  if (!track || !dots) return;
+
+  track.innerHTML = upcoming.map(c => {
+    const status = compStatus(c);
+    const d = dDay(c.start);
+    let dLabel;
+    if (status === 'ongoing')   dLabel = '진행중';
+    else if (d === 0)            dLabel = 'D-DAY';
+    else if (d > 0)              dLabel = `D-${d}`;
+    else                         dLabel = `D+${-d}`;
+    return `
+      <div class="flex-shrink-0 w-full px-1">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5 bg-white/[.04] border border-white/10 rounded-xl p-5 md:p-6 hover:border-gold/40 transition-colors">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 mb-2 flex-wrap">
+              <span class="px-2.5 py-1 rounded-full bg-gold text-navy-dark text-[11px] font-extrabold tracking-wider">${dLabel}</span>
+              <span class="text-white/45 text-xs">${fmtRange(c.start, c.end)} · ${esc(c.venue)}</span>
+            </div>
+            <h3 class="text-white text-lg md:text-xl font-extrabold leading-tight mb-1">${esc(c.name)}</h3>
+            <p class="text-white/55 text-sm">내 세부일정과 사대번호는?</p>
+          </div>
+          <button onclick="bibGoFromBanner('${c.id}')" class="btn-primary flex-shrink-0 flex items-center gap-1.5 text-sm whitespace-nowrap">
+            확인하러 가기
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+
+  dots.innerHTML = upcoming.map((_, i) =>
+    `<button onclick="bibBannerGo(${i})" data-idx="${i}" aria-label="배너 ${i+1}"
+       class="w-1.5 h-1.5 rounded-full bg-white/25 transition-all focus:outline-none"></button>`
+  ).join('');
+
+  bibBannerGo(0);
+  bibBannerStartAuto();
+
+  // 호버 시 자동 슬라이드 일시 정지
+  const wrap = document.getElementById('bib-banner-viewport')?.parentElement?.parentElement;
+  if (wrap) {
+    wrap.addEventListener('mouseenter', bibBannerStopAuto);
+    wrap.addEventListener('mouseleave', bibBannerStartAuto);
+  }
+}
+
+function bibBannerGo(i) {
+  const track = document.getElementById('bib-banner-track');
+  if (!track) return;
+  const total = track.children.length;
+  if (!total) return;
+  bibBannerIdx = (i + total) % total;
+  track.style.transform = `translateX(-${bibBannerIdx * 100}%)`;
+  document.querySelectorAll('#bib-banner-dots button').forEach((btn, idx) => {
+    const on = idx === bibBannerIdx;
+    btn.style.width = on ? '18px' : '6px';
+    btn.style.background = on ? '#C9A24A' : 'rgba(255,255,255,.25)';
+  });
+}
+
+function bibBannerNext() { bibBannerGo(bibBannerIdx + 1); bibBannerStartAuto(); }
+function bibBannerPrev() { bibBannerGo(bibBannerIdx - 1); bibBannerStartAuto(); }
+
+function bibBannerStartAuto() {
+  bibBannerStopAuto();
+  bibBannerTimer = setInterval(() => bibBannerGo(bibBannerIdx + 1), 5000);
+}
+function bibBannerStopAuto() {
+  if (bibBannerTimer) { clearInterval(bibBannerTimer); bibBannerTimer = null; }
+}
+
+function bibGoFromBanner(id) {
+  navigate('bib');
+  setTimeout(() => {
+    const sel = document.getElementById('bib-competition');
+    if (sel) { sel.value = id; bibUpdateCompetitionInfo(); }
+    document.getElementById('bib-name')?.focus();
+  }, 150);
+}
+
+// ── BIB SEARCH PAGE ─────────────────────────────────
+function bibPopulateCompetitions() {
+  const sel = document.getElementById('bib-competition');
+  if (!sel) return;
+  // 다가오는/진행중 → 시작일 가까운 순, 종료된 시합 → 최근 종료 순
+  const annotated = COMPETITIONS.map(c => ({ ...c, _status: compStatus(c) }));
+  const upcoming = annotated.filter(c => c._status !== 'past').sort((a,b) => new Date(a.start) - new Date(b.start));
+  const past     = annotated.filter(c => c._status === 'past').sort((a,b) => new Date(b.end) - new Date(a.end));
+  [...upcoming, ...past].forEach(c => {
+    const d = dDay(c.start);
+    let tag;
+    if (c._status === 'past')         tag = '[종료]';
+    else if (c._status === 'ongoing') tag = '[진행중]';
+    else if (d === 0)                  tag = '[D-DAY]';
+    else                               tag = `[D-${d}]`;
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = `${tag} ${c.name} · ${fmtRange(c.start, c.end)}`;
+    sel.appendChild(opt);
+  });
+}
+
+function bibUpdateCompetitionInfo() {
+  const sel  = document.getElementById('bib-competition');
+  const info = document.getElementById('bib-competition-info');
+  if (!sel || !info) return;
+  const c = COMPETITIONS.find(x => x.id === sel.value);
+  if (!c) { info.classList.add('hidden'); return; }
+  const status = compStatus(c);
+  const d = dDay(c.start);
+  let dLabel;
+  if (status === 'past')         dLabel = '종료';
+  else if (status === 'ongoing') dLabel = '진행중';
+  else if (d === 0)              dLabel = 'D-DAY';
+  else                            dLabel = `D-${d}`;
+  document.getElementById('bib-info-dday').textContent = dLabel;
+  document.getElementById('bib-info-date').textContent = fmtRange(c.start, c.end);
+  document.getElementById('bib-info-host').textContent = '· ' + c.venue + ' 개최';
+  info.classList.remove('hidden');
+}
+
+async function bibSearch() {
+  const sel    = document.getElementById('bib-competition');
+  const name   = document.getElementById('bib-name').value.trim();
+  const empty  = document.getElementById('bib-empty');
+  const result = document.getElementById('bib-result');
+  const btn    = document.getElementById('bib-search-btn');
+
+  if (!sel.value) { alert('시합을 선택해주세요.'); sel.focus(); return; }
+  if (!name)      { alert('이름을 입력해주세요.'); document.getElementById('bib-name').focus(); return; }
+
+  const c = COMPETITIONS.find(x => x.id === sel.value);
+  empty.classList.add('hidden');
+  result.classList.remove('hidden');
+
+  // ── KSF 코드가 없는 시합 → 안내 ──────────────────────
+  if (!c.ksfCode) {
+    result.innerHTML = bibResultNotYet(c, name);
+    result.scrollIntoView({ behavior:'smooth', block:'start' });
+    return;
+  }
+
+  // ── 로딩 상태 ────────────────────────────────────────
+  btn.disabled = true;
+  result.innerHTML = `
+    <div class="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
+      <div class="flex justify-center gap-1.5 mb-4">
+        <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+      </div>
+      <p class="text-navy font-semibold">KSF 사이트에서 사대배정표 수집 중...</p>
+      <p class="text-gray-400 text-sm mt-1">종목 수에 따라 5~15초 소요될 수 있습니다.</p>
+    </div>`;
+
+  try {
+    const res  = await fetch(`/api/bib?comp=${encodeURIComponent(c.ksfCode)}&name=${encodeURIComponent(name)}`);
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      result.innerHTML = bibResultError(c, name, data.error || '서버 오류');
+    } else if (!data.ok) {
+      result.innerHTML = bibResultNotYet(c, name, data.error);
+    } else if (data.matched.length === 0) {
+      result.innerHTML = bibResultNotFound(c, name, data.total);
+    } else {
+      result.innerHTML = bibResultFound(c, name, data.matched, data.total);
+    }
+  } catch (e) {
+    console.error('[bibSearch error]', e);
+    const msg = e instanceof TypeError && e.message.includes('fetch')
+      ? '서버에 연결할 수 없습니다. node server.mjs가 실행 중인지 확인하세요.'
+      : '결과 표시 중 오류: ' + e.message;
+    result.innerHTML = bibResultError(c, name, msg);
+  }
+
+  btn.disabled = false;
+  result.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ── 결과 렌더러들 ─────────────────────────────────────────
+function bibResultHeader(c, name) {
+  return `
+    <div class="bg-navy px-6 py-4">
+      <p class="text-gold text-[10px] font-bold tracking-widest uppercase mb-1">검색 결과</p>
+      <h3 class="text-white font-extrabold text-lg">${esc(c.name)}</h3>
+      <p class="text-white/55 text-xs mt-1">${fmtRange(c.start, c.end)} · ${esc(c.venue)} 개최 · 검색 이름: <strong class="text-white/80">${esc(name)}</strong></p>
+    </div>`;
+}
+
+function bibResultFound(c, name, matched, total) {
+  const rows = matched.map(p => `
+    <tr class="border-t border-gray-100 hover:bg-gold/5 transition-colors">
+      <td class="px-4 py-3 text-sm text-navy font-medium">${esc(p.event)}</td>
+      <td class="px-4 py-3 text-sm text-gray-600">${esc(p.affiliation)}${p.teamType === '단체' ? ' <span class="text-[10px] text-gray-400 border border-gray-200 rounded px-1 ml-1">단체</span>' : ''}</td>
+      <td class="px-4 py-3 text-center font-mono font-bold text-navy text-lg">${esc(p.group)}</td>
+      <td class="px-4 py-3 text-center">
+        <span class="inline-block bg-gold text-navy-dark font-extrabold text-xl px-3 py-1 rounded-lg font-mono">${esc(p.lane)}</span>
+      </td>
+    </tr>`).join('');
+
+  return `
+    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+      ${bibResultHeader(c, name)}
+      <div class="px-6 py-3 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+        <p class="text-emerald-700 text-sm font-semibold">${matched.length}개 종목 사대번호를 찾았습니다 <span class="text-emerald-500 font-normal">(전체 ${total}명 중)</span></p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-gray-500 text-xs">
+            <tr>
+              <th class="text-left px-4 py-2.5 font-semibold">종목</th>
+              <th class="text-left px-4 py-2.5 font-semibold">소속</th>
+              <th class="text-center px-4 py-2.5 font-semibold">조</th>
+              <th class="text-center px-4 py-2.5 font-semibold">사대번호</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">
+        출처: 대한사격연맹 공식 사이트 · 실시간 수집
+      </div>
+    </div>`;
+}
+
+function bibResultNotFound(c, name, total) {
+  return `
+    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+      ${bibResultHeader(c, name)}
+      <div class="p-8 text-center">
+        <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        </div>
+        <p class="text-navy font-bold mb-2">「${esc(name)}」 선수를 찾을 수 없습니다</p>
+        <p class="text-gray-500 text-sm leading-relaxed">
+          전체 ${total}명 중 이름이 일치하는 선수가 없습니다.<br>
+          이름 오기 또는 미출전(미등록) 상태일 수 있습니다.
+        </p>
+      </div>
+    </div>`;
+}
+
+function bibResultNotYet(c, name, msg) {
+  return `
+    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+      ${bibResultHeader(c, name)}
+      <div class="p-8 text-center">
+        <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-yellow-50 border border-yellow-200 flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+        <p class="text-navy font-bold mb-2">아직 사대배정표가 게시되지 않았습니다</p>
+        <p class="text-gray-500 text-sm leading-relaxed">${msg ? esc(msg) + '<br>' : ''}보통 시합 1주~3일 전에 게시됩니다.</p>
+      </div>
+    </div>`;
+}
+
+function bibResultError(c, name, msg) {
+  return `
+    <div class="bg-white border border-red-200 rounded-2xl overflow-hidden shadow-sm">
+      ${bibResultHeader(c, name)}
+      <div class="p-8 text-center">
+        <p class="text-red-500 font-bold mb-2">오류가 발생했습니다</p>
+        <p class="text-gray-500 text-sm">${esc(msg)}</p>
+      </div>
+    </div>`;
 }
 </script>
 </body>
