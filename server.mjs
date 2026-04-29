@@ -8,7 +8,7 @@ import http   from 'http';
 import fs     from 'fs';
 import path   from 'path';
 import { fileURLToPath } from 'url';
-import { searchBib, getCompInfo } from './bib-scraper.mjs';
+import { searchBib, getCompInfo, getGamePageHtml } from './bib-scraper.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT      = 3000;
@@ -377,6 +377,37 @@ const server = http.createServer(async (req, res) => {
     } catch(e) {
       res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('오류: ' + e.message + '\n' + e.stack);
+    }
+    return;
+  }
+
+  // ── GET /api/game-debug?comp=N01H ───────────────────────
+  // 게임 페이지 원본 HTML + 파싱된 이벤트 목록 확인
+  if (req.method === 'GET' && req.url.startsWith('/api/game-debug')) {
+    const params = new URL(req.url, 'http://localhost').searchParams;
+    const comp   = (params.get('comp') || 'N01H').trim();
+    try {
+      const { html, events } = await getGamePageHtml(comp);
+      const lines = [
+        `── 게임 페이지 파싱 결과 ───────────────────────────`,
+        `URL: https://www.shooting.or.kr/score/score_2015_game.asp?jname=${comp}`,
+        `이벤트 수: ${events.length}`,
+        ``,
+        `── 이벤트 목록 ──────────────────────────────────────`,
+        ...events.map((e, i) =>
+          `[${i}] ${e.eventLabel}` +
+          (e.scheduleDate ? ` | ${e.scheduleDate} ${e.scheduleTime}` : '') +
+          `\n     → ${e.playerUrl}`
+        ),
+        ``,
+        `── 게임 페이지 HTML 앞 3000자 ───────────────────────`,
+        html.slice(0, 3000),
+      ];
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end(lines.join('\n'));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('오류: ' + e.message);
     }
     return;
   }
