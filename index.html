@@ -1839,18 +1839,14 @@ function bibResultFound(c, name, matched, total) {
   const hasSchedule = matched.some(p => p.scheduleDate || p.scheduleTime);
 
   const rows = matched.map(p => {
-    const schedule = p.scheduleDate
-      ? `${p.scheduleDate}${p.scheduleTime ? ' ' + p.scheduleTime : ''}`
-      : (p.scheduleTime || '');
+    const schedule = [p.scheduleDate, p.scheduleTime].filter(Boolean).join(' ');
     return `
     <tr class="border-t border-gray-100 hover:bg-gold/5 transition-colors">
       <td class="px-4 py-3 text-sm text-navy font-medium">${esc(p.event)}</td>
       <td class="px-4 py-3 text-sm text-gray-600">${esc(p.affiliation)}${p.teamType === '단체' ? ' <span class="text-[10px] text-gray-400 border border-gray-200 rounded px-1 ml-1">단체</span>' : ''}</td>
-      <td class="px-4 py-3 text-center font-mono font-bold text-navy text-lg">${esc(p.group)}</td>
-      <td class="px-4 py-3 text-center">
-        <span class="inline-block bg-gold text-navy-dark font-extrabold text-xl px-3 py-1 rounded-lg font-mono">${esc(p.lane)}</span>
-      </td>
       ${hasSchedule ? `<td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(schedule) || '—'}</td>` : ''}
+      <td class="px-4 py-3 text-center font-mono font-bold text-navy">${esc(p.group)}</td>
+      <td class="px-4 py-3 text-center font-mono font-bold text-navy">${esc(p.lane)}</td>
     </tr>`;
   }).join('');
 
@@ -1867,9 +1863,9 @@ function bibResultFound(c, name, matched, total) {
             <tr>
               <th class="text-left px-4 py-2.5 font-semibold">종목</th>
               <th class="text-left px-4 py-2.5 font-semibold">소속</th>
+              ${hasSchedule ? '<th class="text-left px-4 py-2.5 font-semibold">시합 일정</th>' : ''}
               <th class="text-center px-4 py-2.5 font-semibold">조</th>
-              <th class="text-center px-4 py-2.5 font-semibold">사대번호</th>
-              ${hasSchedule ? '<th class="text-left px-4 py-2.5 font-semibold">일정</th>' : ''}
+              <th class="text-center px-4 py-2.5 font-semibold">사대</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>

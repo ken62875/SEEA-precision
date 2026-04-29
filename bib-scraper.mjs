@@ -130,9 +130,12 @@ function parseGameLinks(html) {
         new RegExp(`href=["']${escaped}["'][^>]*>([\\s\\S]*?)<\\/a>`, 'i')
       );
       const anchorText = anchorM ? stripTags(anchorM[1]).trim() : '';
-      const isUseful   = anchorText.length >= 3
+      // KSF 링크 텍스트는 보통 "출전자정보", "선수명단" 등 비종목명 → 제외
+      const SKIP_TEXTS = ['선수명단','보기','클릭','확인','명단','출전자정보','출전자 정보','정보'];
+      const isUseful   = anchorText.length >= 4
         && /[가-힣]/.test(anchorText)
-        && !['선수명단','보기','클릭','확인','명단'].includes(anchorText);
+        && !SKIP_TEXTS.includes(anchorText)
+        && /(소총|권총|트랩|스키트|공기|복사|3자세|장애|권)/.test(anchorText);
 
       // td 중 KSF 종목 키워드 포함 셀 (한글 종목명)
       const eventKw = /(소총|권총|트랩|스키트|공기|복사|3자세|장애)/;
