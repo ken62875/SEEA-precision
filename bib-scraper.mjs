@@ -87,36 +87,69 @@ function generateLabel(href) {
   return [i1Label, sexLabel, bbLabel].filter(Boolean).join(' ');
 }
 
+// ── 날짜 문자열 정규화 + 요일 포함 ──────────────────────────
+const DOW_KR = ['일','월','화','수','목','금','토'];
+
+function normalizeDate(raw, year) {
+  const m = raw.match(/(\d{1,2})월\s*(\d{1,2})일/);
+  if (!m) return '';
+  const month = parseInt(m[1]);
+  const day   = parseInt(m[2]);
+  if (!month || !day || month > 12 || day > 31) return '';
+  if (year) {
+    const d = new Date(year, month - 1, day);
+    if (isNaN(d.getTime())) return '';
+    return `${month}월 ${day}일 (${DOW_KR[d.getDay()]})`;
+  }
+  return `${month}월 ${day}일`;
+}
+
 // ── 게임 페이지에서 이벤트 목록 + 일정 추출 ─────────────
+// 행(TR) 기반: 각 <tr>에 종목명·시간·선수URL이 함께 있으므로 같은 행 텍스트를 사용
 function parseGameLinks(html) {
-  const seen    = new Set();
+  const seen = new Set();
   const results = [];
 
-  // tr 행 단위로 스캔: 종목명 · URL · 날짜 · 시간 동시 추출
-  for (const rowMatch of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
-    const rowHtml = rowMatch[1];
+  // 연도 추출 (요일 계산용) — ISO 날짜 형식에서 추출
+  const yearM    = html.match(/\b(20\d{2})[.\-]\d{1,2}[.\-]\d{1,2}/);
+  const compYear = yearM ? parseInt(yearM[1]) : new Date().getFullYear();
 
-    // 이 행에 player URL 있는지 확인
-    const urlMatches = [
-      ...rowHtml.matchAll(/["']([^"']*score_2015_player\.asp\?[^"']+)["']/gi),
-    ];
-    if (urlMatches.length === 0) continue;
+  // 날짜 위치 수집 (한국어 "N월N일" 형식만 — 아코디언 헤더의 정확한 날짜)
+  const dateHits = [];
+  for (const m of html.matchAll(/\d{1,2}월\s*\d{1,2}일/g)) {
+    const text = normalizeDate(m[0], compYear);
+    if (text) dateHits.push({ pos: m.index, text });
+  }
 
-    // 이 행의 모든 td 텍스트
-    const tds = [...rowHtml.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
-      .map(m => stripTags(m[1]).trim());
-    const rowText = tds.join(' ');
+  // 선수 URL이 포함된 <tr> 행 단위로 파싱
+  for (const rowM of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const rowHtml = rowM[1];
+    if (!rowHtml.includes('score_2015_player.asp')) continue;
 
-    // 날짜 패턴 (2026.04.30, 2026-04-30, 4월30일, 04/30 등)
-    const dateM = rowText.match(
-      /(\d{4}[.\-]\d{1,2}[.\-]\d{1,2})|(\d{1,2}월\s*\d{1,2}일)|(\d{1,2}\/\d{1,2})/
-    );
-    // 시간 패턴 (09:00, 14:30 등)
-    const timeM = rowText.match(/\b(\d{1,2}:\d{2})\b/);
-    const scheduleDate = dateM ? dateM[0].replace(/\s/g, '') : '';
+    // 행 전체 텍스트 (태그 제거)
+    const rowText = stripTags(rowHtml).replace(/\s+/g, ' ').trim();
+
+    // "출전자정보" 앞 부분 = 종목 정보 영역
+    const infoText = rowText.split(/출전자\s*정보/)[0].trim();
+
+    // 시작 시간: infoText 내 첫 번째 시간
+    const timeM = infoText.match(/(\d{1,2}:\d{2})/);
     const scheduleTime = timeM ? timeM[1] : '';
 
-    for (const urlM of urlMatches) {
+    // 종목명: infoText에서 불필요한 요소 제거
+    let eventLabel = infoText
+      .replace(/\d{1,2}:\d{2}(?:[-~]\d{1,2}:\d{2})?/g, '') // 시간 범위 제거
+      .replace(/(?:전반|후반)\d+조?/g, '')                    // 전반N조, 후반N조 제거
+      .replace(/\d+조/g, '')                                  // 나머지 N조 제거
+      .replace(/산탄총\s*/g, '')                               // 산탄총 접두어 제거
+      .replace(/(\d+)M\b/g, '$1m')                           // 50M → 50m 정규화
+      .replace(/(\d+m)\s+\1/g, '$1')                         // 50m 50m → 50m 중복 제거
+      .replace(/\s+/g, ' ').trim();
+
+    if (eventLabel.length < 3) eventLabel = '';
+
+    // 행 내 선수 URL 추출
+    for (const urlM of rowHtml.matchAll(/["']([^"']*score_2015_player\.asp\?[^"']+)["']/g)) {
       let href = urlM[1];
       if (!href.startsWith('http')) {
         href = `${KSF_BASE}${href.startsWith('/') ? '' : '/score/'}${href}`;
@@ -124,44 +157,16 @@ function parseGameLinks(html) {
       if (seen.has(href)) continue;
       seen.add(href);
 
-      // 앵커 텍스트에서 종목명 추출 시도
-      const escaped = urlM[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const anchorM  = rowHtml.match(
-        new RegExp(`href=["']${escaped}["'][^>]*>([\\s\\S]*?)<\\/a>`, 'i')
-      );
-      const anchorText = anchorM ? stripTags(anchorM[1]).trim() : '';
-      // KSF 링크 텍스트는 보통 "출전자정보", "선수명단" 등 비종목명 → 제외
-      const SKIP_TEXTS = ['선수명단','보기','클릭','확인','명단','출전자정보','출전자 정보','정보'];
-      const isUseful   = anchorText.length >= 4
-        && /[가-힣]/.test(anchorText)
-        && !SKIP_TEXTS.includes(anchorText)
-        && /(소총|권총|트랩|스키트|공기|복사|3자세|장애|권)/.test(anchorText);
+      // 날짜: 이 행 위치 이전의 마지막 아코디언 날짜 헤더
+      const nearDate = dateHits.filter(d => d.pos <= rowM.index).at(-1);
 
-      // td 중 KSF 종목 키워드 포함 셀 (한글 종목명)
-      const eventKw = /(소총|권총|트랩|스키트|공기|복사|3자세|장애)/;
-      const rowHint = tds.find(t => eventKw.test(t) && /[가-힣]{2,}/.test(t)) || '';
-
-      const eventLabel = isUseful ? anchorText
-        : (rowHint || generateLabel(href));
-
-      results.push({ eventLabel, playerUrl: href, scheduleDate, scheduleTime });
+      results.push({
+        eventLabel:   eventLabel || generateLabel(href),
+        playerUrl:    href,
+        scheduleDate: nearDate?.text || '',
+        scheduleTime,
+      });
     }
-  }
-
-  // 폴백: <tr> 바깥에 있는 URL
-  for (const m of html.matchAll(/["']([^"']*score_2015_player\.asp\?[^"']+)["']/gi)) {
-    let href = m[1];
-    if (!href.startsWith('http')) {
-      href = `${KSF_BASE}${href.startsWith('/') ? '' : '/score/'}${href}`;
-    }
-    if (seen.has(href)) continue;
-    seen.add(href);
-    results.push({
-      eventLabel: generateLabel(href),
-      playerUrl:  href,
-      scheduleDate: '',
-      scheduleTime: '',
-    });
   }
 
   return results;
@@ -232,8 +237,9 @@ function parsePlayerTable(html, eventLabel) {
 }
 
 // ── 메인: 대회코드 + 이름으로 사대번호 검색 ─────────────
-export async function searchBib(compCode, searchName) {
-  console.log(`\n[BIB] ▶ 검색 시작 — 대회: ${compCode}, 이름: "${searchName}"`);
+// searchMode: 'name' (기본) | 'team' (소속 검색)
+export async function searchBib(compCode, searchName, searchMode = 'name') {
+  console.log(`\n[BIB] ▶ 검색 시작 — 대회: ${compCode}, ${searchMode === 'team' ? '소속' : '이름'}: "${searchName}"`);
 
   const gameUrl  = `${KSF_BASE}/score/score_2015_game.asp?jname=${compCode}`;
   const gameHtml = await fetchHtml(gameUrl);
@@ -244,17 +250,19 @@ export async function searchBib(compCode, searchName) {
     return { ok: false, error: '종목 링크를 찾을 수 없습니다. 사대배정표가 아직 게시되지 않았을 수 있습니다.' };
   }
 
-  // 병렬 fetch
+  // 병렬 fetch — td 10개 미만이면 빈 페이지(미사용 종목)로 간주하고 스킵
   const fetched = await Promise.allSettled(
     events.map(async ({ eventLabel, playerUrl, scheduleDate, scheduleTime }) => {
       try {
         const html      = await fetchHtml(playerUrl);
-        // 선수 페이지 자체에 종목명이 있으면 우선 사용
-        const pageTitle = extractPageTitle(html);
-        const label     = pageTitle || eventLabel;
-        const players   = parsePlayerTable(html, label);
-        console.log(`[BIB]   ${label} → ${players.length}명` +
-          (scheduleDate ? ` (${scheduleDate} ${scheduleTime})` : ''));
+        const tdCount   = (html.match(/<td/gi) || []).length;
+        if (tdCount < 10) {
+          console.log(`[BIB]   ${eventLabel} → 빈 페이지 (td ${tdCount}개) 스킵`);
+          return [];
+        }
+        const players   = parsePlayerTable(html, eventLabel);
+        console.log(`[BIB]   ${eventLabel} → ${players.length}명` +
+          (scheduleDate ? ` (${scheduleDate} ${scheduleTime})` : scheduleTime ? ` (${scheduleTime})` : ''));
         return players.map(p => ({ ...p, scheduleDate, scheduleTime }));
       } catch (e) {
         console.log(`[BIB]   ${eventLabel} → 오류: ${e.message}`);
@@ -269,10 +277,12 @@ export async function searchBib(compCode, searchName) {
 
   console.log(`[BIB] 총 ${allPlayers.length}명 파싱 완료`);
 
-  const matched = allPlayers.filter(p => p.name.includes(searchName));
-  console.log(`[BIB] "${searchName}" 검색 결과: ${matched.length}건`);
+  const matched = searchMode === 'team'
+    ? allPlayers.filter(p => p.affiliation && p.affiliation.includes(searchName))
+    : allPlayers.filter(p => p.name.includes(searchName));
+  console.log(`[BIB] "${searchName}" (${searchMode}) 검색 결과: ${matched.length}건`);
 
-  return { ok: true, total: allPlayers.length, matched };
+  return { ok: true, total: allPlayers.length, matched, searchMode };
 }
 
 export async function getCompInfo(compCode) {

@@ -388,17 +388,47 @@ const server = http.createServer(async (req, res) => {
     const comp   = (params.get('comp') || 'N01H').trim();
     try {
       const { html, events } = await getGamePageHtml(comp);
+      // 전체 HTML에서 날짜 패턴 검색
+      const allDates = [...html.matchAll(
+        /(\d{4}년?\s*\d{1,2}월\s*\d{1,2}일)|(\d{4}[.\-]\d{1,2}[.\-]\d{1,2})|(\d{1,2}월\s*\d{1,2}일)/g
+      )].map(m => m[0].replace(/\s+/g,''));
+      const uniqueDates = [...new Set(allDates)];
+
+      // 전체 HTML에서 시간 패턴 검색
+      const allTimes = [...html.matchAll(/\b(\d{1,2}:\d{2})\b/g)].map(m => m[1]);
+      const uniqueTimes = [...new Set(allTimes)];
+
+      // 위치 정보 포함 날짜 수집
+      const DATE_FULL = /(\d{4}년?\s*\d{1,2}월\s*\d{1,2}일)|(\d{4}[.\-]\d{1,2}[.\-]\d{1,2})|(\d{1,2}월\s*\d{1,2}일)/g;
+      const datePositions = [...html.matchAll(DATE_FULL)].map(m => ({ pos: m.index, text: m[0] }));
+      // 위치 정보 포함 URL 수집
+      const URL_FULL = /["']([^"']*score_2015_player\.asp\?[^"']+)["']/g;
+      const urlPositions = [...html.matchAll(URL_FULL)].map(m => ({ pos: m.index, url: m[1] }));
+
+      const firstUrlPos = urlPositions[0]?.pos ?? -1;
+      const lastUrlPos  = urlPositions[urlPositions.length - 1]?.pos ?? -1;
+
       const lines = [
         `── 게임 페이지 파싱 결과 ───────────────────────────`,
         `URL: https://www.shooting.or.kr/score/score_2015_game.asp?jname=${comp}`,
         `이벤트 수: ${events.length}`,
+        `HTML 총 길이: ${html.length}자`,
+        ``,
+        `── 날짜/시간 패턴 (전체 HTML) ───────────────────────`,
+        `날짜 발견: ${uniqueDates.length}개 → ${uniqueDates.join(', ') || '없음'}`,
+        `시간 발견: ${uniqueTimes.length}개 → ${uniqueTimes.join(', ') || '없음'}`,
+        ``,
+        `── 위치 분석 (날짜 vs URL) ──────────────────────────`,
+        `첫 번째 URL 위치: ${firstUrlPos}`,
+        `마지막 URL 위치: ${lastUrlPos}`,
+        `날짜 위치들:`,
+        ...datePositions.map(d => `  pos=${d.pos} (URL 대비 ${d.pos - firstUrlPos > 0 ? '+' : ''}${d.pos - firstUrlPos}) → ${d.text}`),
         ``,
         `── 이벤트 목록 ──────────────────────────────────────`,
-        ...events.map((e, i) =>
-          `[${i}] ${e.eventLabel}` +
-          (e.scheduleDate ? ` | ${e.scheduleDate} ${e.scheduleTime}` : '') +
-          `\n     → ${e.playerUrl}`
-        ),
+        ...events.map((e, i) => {
+          const sched = [e.scheduleDate, e.scheduleTime].filter(Boolean).join(' ');
+          return `[${i}] ${e.eventLabel}` + (sched ? ` | ${sched}` : '') + `\n     → ${e.playerUrl}`;
+        }),
         ``,
         `── 게임 페이지 HTML 앞 3000자 ───────────────────────`,
         html.slice(0, 3000),
@@ -415,8 +445,9 @@ const server = http.createServer(async (req, res) => {
   // ── GET /api/bib?comp=N01H&name=홍길동 ──────────────────
   if (req.method === 'GET' && req.url.startsWith('/api/bib')) {
     const params   = new URL(req.url, 'http://localhost').searchParams;
-    const comp     = (params.get('comp') || '').trim();
-    const name     = (params.get('name') || '').trim();
+    const comp       = (params.get('comp') || '').trim();
+    const name       = (params.get('name') || '').trim();
+    const searchMode = (params.get('mode') || 'name').trim();
 
     if (!comp || !name) {
       res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -425,7 +456,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      const result = await searchBib(comp, name);
+      const result = await searchBib(comp, name, searchMode);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(result));
     } catch (err) {

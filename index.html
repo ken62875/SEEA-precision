@@ -1139,16 +1139,25 @@
           </div>
         </div>
 
-        <!-- Step 2: Name -->
+        <!-- Step 2: Name / Team toggle -->
         <div class="mb-6">
-          <label class="form-label" for="bib-name">
-            <span class="inline-block w-5 h-5 rounded-full bg-navy text-white text-[11px] font-bold leading-5 text-center mr-2">2</span>
-            선수 이름
-          </label>
+          <div class="flex items-center justify-between mb-2">
+            <label class="form-label mb-0" for="bib-name">
+              <span class="inline-block w-5 h-5 rounded-full bg-navy text-white text-[11px] font-bold leading-5 text-center mr-2">2</span>
+              <span id="bib-mode-label">선수 이름</span>
+            </label>
+            <div class="flex rounded-lg border border-gray-200 overflow-hidden text-[11px] font-semibold">
+              <button id="bib-mode-btn-name" onclick="setBibMode('name')"
+                class="px-3 py-1.5 bg-navy text-white transition-colors">이름</button>
+              <button id="bib-mode-btn-team" onclick="setBibMode('team')"
+                class="px-3 py-1.5 bg-white text-gray-400 transition-colors">소속/팀</button>
+            </div>
+          </div>
+          <input type="hidden" id="bib-mode" value="name">
           <input id="bib-name" type="text" class="form-input"
             placeholder="예) 김연재"
             onkeydown="if(event.key==='Enter')bibSearch()"/>
-          <p class="text-xs text-gray-400 mt-2">동명이인이 있을 경우 소속(학교/팀)이 함께 표시됩니다.</p>
+          <p id="bib-mode-hint" class="text-xs text-gray-400 mt-2">동명이인이 있을 경우 소속(학교/팀)이 함께 표시됩니다.</p>
         </div>
 
         <!-- Search button -->
@@ -1718,6 +1727,28 @@ function bibBannerStopAuto() {
   if (bibBannerTimer) { clearInterval(bibBannerTimer); bibBannerTimer = null; }
 }
 
+function bibToggleAcc(idx) {
+  const body    = document.getElementById(`bib-acc-body-${idx}`);
+  const chevron = document.getElementById(`bib-acc-chev-${idx}`);
+  const opening = body.classList.contains('hidden');
+  body.classList.toggle('hidden', !opening);
+  chevron.style.transform = opening ? 'rotate(180deg)' : '';
+}
+
+function setBibMode(mode) {
+  document.getElementById('bib-mode').value = mode;
+  const isTeam = mode === 'team';
+  document.getElementById('bib-mode-label').textContent  = isTeam ? '소속 / 팀명' : '선수 이름';
+  document.getElementById('bib-name').placeholder        = isTeam ? '예) 우리은행, 육군, 경기도청' : '예) 김연재';
+  document.getElementById('bib-mode-hint').textContent   = isTeam
+    ? '팀명 일부만 입력해도 됩니다. 해당 소속 선수 전원이 표시됩니다.'
+    : '동명이인이 있을 경우 소속(학교/팀)이 함께 표시됩니다.';
+  document.getElementById('bib-mode-btn-name').className =
+    'px-3 py-1.5 transition-colors ' + (isTeam ? 'bg-white text-gray-400' : 'bg-navy text-white');
+  document.getElementById('bib-mode-btn-team').className =
+    'px-3 py-1.5 transition-colors ' + (isTeam ? 'bg-navy text-white' : 'bg-white text-gray-400');
+}
+
 function bibGoFromBanner(id) {
   navigate('bib');
   setTimeout(() => {
@@ -1801,7 +1832,8 @@ async function bibSearch() {
     </div>`;
 
   try {
-    const res  = await fetch(`/api/bib?comp=${encodeURIComponent(c.ksfCode)}&name=${encodeURIComponent(name)}`);
+    const mode = document.getElementById('bib-mode').value || 'name';
+    const res  = await fetch(`/api/bib?comp=${encodeURIComponent(c.ksfCode)}&name=${encodeURIComponent(name)}&mode=${mode}`);
     const data = await res.json();
 
     if (!res.ok || data.error) {
@@ -1809,9 +1841,9 @@ async function bibSearch() {
     } else if (!data.ok) {
       result.innerHTML = bibResultNotYet(c, name, data.error);
     } else if (data.matched.length === 0) {
-      result.innerHTML = bibResultNotFound(c, name, data.total);
+      result.innerHTML = bibResultNotFound(c, name, data.total, data.searchMode);
     } else {
-      result.innerHTML = bibResultFound(c, name, data.matched, data.total);
+      result.innerHTML = bibResultFound(c, name, data.matched, data.total, data.searchMode);
     }
   } catch (e) {
     console.error('[bibSearch error]', e);
@@ -1826,69 +1858,147 @@ async function bibSearch() {
 }
 
 // ── 결과 렌더러들 ─────────────────────────────────────────
-function bibResultHeader(c, name) {
+function bibResultHeader(c, name, searchMode) {
+  const label = searchMode === 'team' ? '검색 소속' : '검색 이름';
   return `
     <div class="bg-navy px-6 py-4">
       <p class="text-gold text-[10px] font-bold tracking-widest uppercase mb-1">검색 결과</p>
       <h3 class="text-white font-extrabold text-lg">${esc(c.name)}</h3>
-      <p class="text-white/55 text-xs mt-1">${fmtRange(c.start, c.end)} · ${esc(c.venue)} 개최 · 검색 이름: <strong class="text-white/80">${esc(name)}</strong></p>
+      <p class="text-white/55 text-xs mt-1">${fmtRange(c.start, c.end)} · ${esc(c.venue)} 개최 · ${label}: <strong class="text-white/80">${esc(name)}</strong></p>
     </div>`;
 }
 
-function bibResultFound(c, name, matched, total) {
+function bibResultFound(c, name, matched, total, searchMode) {
+  const isTeam      = searchMode === 'team';
   const hasSchedule = matched.some(p => p.scheduleDate || p.scheduleTime);
 
+  // ── 팀 검색: 아코디언 ───────────────────────────────────
+  if (isTeam) {
+    const eventGroups = new Map();
+    for (const p of matched) {
+      if (!eventGroups.has(p.event)) {
+        eventGroups.set(p.event, { event: p.event, scheduleDate: p.scheduleDate || '', scheduleTime: p.scheduleTime || '', players: [] });
+      }
+      eventGroups.get(p.event).players.push(p);
+    }
+    for (const g of eventGroups.values()) {
+      g.players.sort((a, b) => parseInt(a.lane || 0) - parseInt(b.lane || 0));
+    }
+    const parseDateNum = d => { const m = (d||'').match(/(\d+)월\s*(\d+)일/); return m ? parseInt(m[1])*100+parseInt(m[2]) : 999; };
+    const groups = [...eventGroups.values()].sort((a, b) => {
+      const dc = parseDateNum(a.scheduleDate) - parseDateNum(b.scheduleDate);
+      return dc !== 0 ? dc : (a.scheduleTime||'').localeCompare(b.scheduleTime||'');
+    });
+
+    const accordionHtml = groups.map((g, idx) => {
+      const playerRows = g.players.map(p => {
+        const bib   = p.group && p.lane ? `${p.group}-${p.lane}` : p.bib || '—';
+        const badge = p.teamType === '단체'
+          ? '<span class="ml-1.5 text-[9px] font-bold text-blue-500 border border-blue-200 bg-blue-50 rounded px-1">단체</span>' : '';
+        return `<tr class="border-t border-gray-50 hover:bg-gold/5">
+          <td class="px-5 py-2.5 text-sm font-semibold text-navy">${esc(p.name)}${badge}</td>
+          <td class="px-4 py-2.5 text-center font-mono font-bold text-navy">${esc(bib)}</td>
+        </tr>`;
+      }).join('');
+
+      const dateTag = g.scheduleDate
+        ? `<span class="shrink-0 text-[10px] font-bold text-gold-dark bg-gold/10 border border-gold/20 px-2 py-1 rounded-md whitespace-nowrap">${esc(g.scheduleDate)}${g.scheduleTime ? ' ' + esc(g.scheduleTime) : ''}</span>`
+        : (g.scheduleTime ? `<span class="shrink-0 text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">${esc(g.scheduleTime)}</span>` : '');
+
+      return `
+        <div class="border-b border-gray-100 last:border-0">
+          <button class="w-full flex items-center gap-2.5 px-4 py-3.5 text-left hover:bg-gray-50/80 transition-colors"
+                  onclick="bibToggleAcc(${idx})">
+            ${dateTag}
+            <span class="flex-1 text-sm font-semibold text-navy leading-snug">${esc(g.event)}</span>
+            <span class="shrink-0 text-[10px] text-gray-400">${g.players.length}명</span>
+            <svg id="bib-acc-chev-${idx}" class="shrink-0 w-4 h-4 text-gray-300 transition-transform duration-200"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+          <div id="bib-acc-body-${idx}" class="hidden">
+            <table class="w-full">
+              <thead class="bg-gray-50/80 text-gray-400 text-[10px]">
+                <tr>
+                  <th class="text-left px-5 py-2 font-semibold">이름</th>
+                  <th class="text-center px-4 py-2 font-semibold">조-사대</th>
+                </tr>
+              </thead>
+              <tbody>${playerRows}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        ${bibResultHeader(c, name, searchMode)}
+        <div class="px-5 py-3 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          <p class="text-emerald-700 text-sm"><strong>${matched.length}명</strong> 선수 · <strong>${groups.length}개</strong> 종목 <span class="text-emerald-500 font-normal">(전체 ${total}명 중)</span></p>
+        </div>
+        <div>${accordionHtml}</div>
+        <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">
+          출처: 대한사격연맹 공식 사이트 · 실시간 수집
+        </div>
+      </div>`;
+  }
+
+  // ── 이름 검색: 테이블 ───────────────────────────────────
   const rows = matched.map(p => {
-    const schedule = [p.scheduleDate, p.scheduleTime].filter(Boolean).join(' ');
+    const bib = p.group && p.lane ? `${p.group}-${p.lane}` : p.bib || '—';
+    const dateCell = p.scheduleDate ? `<span class="block text-[11px] font-medium text-gray-700">${esc(p.scheduleDate)}</span>` : '';
+    const timeCell = p.scheduleTime ? `<span class="block text-[11px] text-gray-400 mt-0.5">${esc(p.scheduleTime)}</span>` : '';
+    const schedCell = (dateCell || timeCell) ? dateCell + timeCell : '<span class="text-gray-300 text-xs">—</span>';
     return `
     <tr class="border-t border-gray-100 hover:bg-gold/5 transition-colors">
-      <td class="px-4 py-3 text-sm text-navy font-medium">${esc(p.event)}</td>
-      <td class="px-4 py-3 text-sm text-gray-600">${esc(p.affiliation)}${p.teamType === '단체' ? ' <span class="text-[10px] text-gray-400 border border-gray-200 rounded px-1 ml-1">단체</span>' : ''}</td>
-      ${hasSchedule ? `<td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${esc(schedule) || '—'}</td>` : ''}
-      <td class="px-4 py-3 text-center font-mono font-bold text-navy">${esc(p.group)}</td>
-      <td class="px-4 py-3 text-center font-mono font-bold text-navy">${esc(p.lane)}</td>
+      <td class="px-2 py-2.5 text-[11px] text-navy font-medium leading-snug">${esc(p.event)}</td>
+      <td class="px-2 py-2.5 text-xs text-gray-600 whitespace-nowrap">${esc(p.affiliation)}${p.teamType==='단체'?'<span class="ml-1 text-[9px] text-gray-400 border border-gray-200 rounded px-1">단체</span>':''}</td>
+      ${hasSchedule ? `<td class="px-2 py-2.5">${schedCell}</td>` : ''}
+      <td class="px-2 py-2.5 text-center font-mono font-bold text-navy text-sm whitespace-nowrap">${esc(bib)}</td>
     </tr>`;
   }).join('');
 
   return `
     <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-      ${bibResultHeader(c, name)}
-      <div class="px-6 py-3 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
+      ${bibResultHeader(c, name, searchMode)}
+      <div class="px-5 py-3 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-        <p class="text-emerald-700 text-sm font-semibold">${matched.length}개 종목 사대번호를 찾았습니다 <span class="text-emerald-500 font-normal">(전체 ${total}명 중)</span></p>
+        <p class="text-emerald-700 text-sm"><strong>${matched.length}개</strong> 종목 사대번호를 찾았습니다 <span class="text-emerald-500 font-normal">(전체 ${total}명 중)</span></p>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50 text-gray-500 text-xs">
+        <table class="w-full min-w-[340px]">
+          <thead class="bg-gray-50 text-gray-500 text-[11px]">
             <tr>
-              <th class="text-left px-4 py-2.5 font-semibold">종목</th>
-              <th class="text-left px-4 py-2.5 font-semibold">소속</th>
-              ${hasSchedule ? '<th class="text-left px-4 py-2.5 font-semibold">시합 일정</th>' : ''}
-              <th class="text-center px-4 py-2.5 font-semibold">조</th>
-              <th class="text-center px-4 py-2.5 font-semibold">사대</th>
+              <th class="text-left px-2 py-2 font-semibold">종목</th>
+              <th class="text-left px-2 py-2 font-semibold">소속</th>
+              ${hasSchedule ? '<th class="text-left px-2 py-2 font-semibold">일정</th>' : ''}
+              <th class="text-center px-2 py-2 font-semibold">조-사대</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">
+      <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">
         출처: 대한사격연맹 공식 사이트 · 실시간 수집
       </div>
     </div>`;
 }
 
-function bibResultNotFound(c, name, total) {
+function bibResultNotFound(c, name, total, searchMode) {
+  const isTeam = searchMode === 'team';
   return `
     <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-      ${bibResultHeader(c, name)}
+      ${bibResultHeader(c, name, searchMode)}
       <div class="p-8 text-center">
         <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         </div>
-        <p class="text-navy font-bold mb-2">「${esc(name)}」 선수를 찾을 수 없습니다</p>
+        <p class="text-navy font-bold mb-2">「${esc(name)}」${isTeam ? ' 소속 선수를' : ' 선수를'} 찾을 수 없습니다</p>
         <p class="text-gray-500 text-sm leading-relaxed">
-          전체 ${total}명 중 이름이 일치하는 선수가 없습니다.<br>
-          이름 오기 또는 미출전(미등록) 상태일 수 있습니다.
+          전체 ${total}명 중 ${isTeam ? '소속이' : '이름이'} 일치하는 선수가 없습니다.<br>
+          ${isTeam ? '소속명을 다시 확인해주세요.' : '이름 오기 또는 미출전(미등록) 상태일 수 있습니다.'}
         </p>
       </div>
     </div>`;
