@@ -223,6 +223,28 @@
     details summary::-webkit-details-marker { display: none; }
     details[open] summary .chevron { transform: rotate(180deg); }
     .chevron { transition: transform .2s; display: inline-block; }
+
+    /* ── LIVE badge (진행중 시합) ── */
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.45);
+      color: #22c55e; padding: 4px 10px; border-radius: 100px;
+      font-size: 11px; font-weight: 800; letter-spacing: .9px;
+    }
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #22c55e;
+      animation: livePulse 1.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes livePulse {
+      0%, 100% { transform: scale(1);   box-shadow: 0 0 0 0   rgba(34,197,94,.6); }
+      50%       { transform: scale(1.15); box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+    }
+    .banner-card-ongoing {
+      border-color: rgba(34,197,94,.3) !important;
+      background: rgba(34,197,94,.04) !important;
+    }
+    .banner-card-ongoing:hover { border-color: rgba(34,197,94,.6) !important; }
   </style>
 </head>
 <body>
@@ -311,7 +333,7 @@
   <section id="page-home" class="page-section">
 
     <!-- HERO -->
-    <div class="relative bg-navy min-h-screen flex items-center overflow-hidden">
+    <div class="relative bg-navy min-h-[78vh] md:min-h-[82vh] flex items-center overflow-hidden">
       <!-- Target decoration (SVG) -->
       <svg class="hero-target" viewBox="0 0 580 580" xmlns="http://www.w3.org/2000/svg">
         <circle cx="290" cy="290" r="270" stroke="white" stroke-width="1" fill="none"/>
@@ -324,7 +346,7 @@
         <line x1="0"   y1="290" x2="580" y2="290" stroke="white" stroke-width=".5"/>
       </svg>
 
-      <div class="max-w-7xl mx-auto px-6 py-28 relative z-10 w-full">
+      <div class="max-w-7xl mx-auto px-6 py-14 md:py-20 relative z-10 w-full">
         <div class="max-w-2xl">
           <!-- Badge -->
           <div class="inline-flex items-center gap-2 mb-8">
@@ -391,15 +413,15 @@
             <div id="bib-banner-track" class="flex transition-transform duration-500 ease-out"></div>
           </div>
 
-          <!-- Prev/Next -->
+          <!-- Prev/Next (모바일 포함) -->
           <button onclick="bibBannerPrev()" aria-label="이전"
-            class="hidden md:flex absolute -left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-gold text-white items-center justify-center transition-colors active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold/40">
+            class="flex absolute -left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-gold text-white items-center justify-center transition-colors active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold/40">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M15 18l-6-6 6-6"/>
             </svg>
           </button>
           <button onclick="bibBannerNext()" aria-label="다음"
-            class="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-gold text-white items-center justify-center transition-colors active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold/40">
+            class="flex absolute -right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-gold text-white items-center justify-center transition-colors active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold/40">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M9 6l6 6-6 6"/>
             </svg>
@@ -1660,17 +1682,22 @@ function bibBannerInit() {
   track.innerHTML = upcoming.map(c => {
     const status = compStatus(c);
     const d = dDay(c.start);
-    let dLabel;
-    if (status === 'ongoing')   dLabel = '진행중';
-    else if (d === 0)            dLabel = 'D-DAY';
-    else if (d > 0)              dLabel = `D-${d}`;
-    else                         dLabel = `D+${-d}`;
+    const isOngoing = status === 'ongoing';
+    let dBadge;
+    if (isOngoing) {
+      dBadge = `<span class="live-badge"><span class="live-dot"></span>LIVE</span>`;
+    } else if (d === 0) {
+      dBadge = `<span class="px-2.5 py-1 rounded-full bg-gold text-navy-dark text-[11px] font-extrabold tracking-wider">D-DAY</span>`;
+    } else {
+      dBadge = `<span class="px-2.5 py-1 rounded-full bg-gold text-navy-dark text-[11px] font-extrabold tracking-wider">D-${d}</span>`;
+    }
+    const cardClass = isOngoing ? 'banner-card-ongoing' : '';
     return `
       <div class="flex-shrink-0 w-full px-1">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5 bg-white/[.04] border border-white/10 rounded-xl p-5 md:p-6 hover:border-gold/40 transition-colors">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5 bg-white/[.04] border border-white/10 rounded-xl p-5 md:p-6 hover:border-gold/40 transition-colors ${cardClass}">
           <div class="min-w-0">
             <div class="flex items-center gap-2 mb-2 flex-wrap">
-              <span class="px-2.5 py-1 rounded-full bg-gold text-navy-dark text-[11px] font-extrabold tracking-wider">${dLabel}</span>
+              ${dBadge}
               <span class="text-white/45 text-xs">${fmtRange(c.start, c.end)} · ${esc(c.venue)}</span>
             </div>
             <h3 class="text-white text-lg md:text-xl font-extrabold leading-tight mb-1">${esc(c.name)}</h3>
@@ -1694,11 +1721,22 @@ function bibBannerInit() {
   bibBannerGo(0);
   bibBannerStartAuto();
 
-  // 호버 시 자동 슬라이드 일시 정지
   const wrap = document.getElementById('bib-banner-viewport')?.parentElement?.parentElement;
   if (wrap) {
+    // 호버 시 자동 슬라이드 일시 정지
     wrap.addEventListener('mouseenter', bibBannerStopAuto);
     wrap.addEventListener('mouseleave', bibBannerStartAuto);
+
+    // 터치 스와이프 지원
+    let touchStartX = 0;
+    const vp = document.getElementById('bib-banner-viewport');
+    vp.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    vp.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) < 40) return;
+      if (dx < 0) { bibBannerGo(bibBannerIdx + 1); } else { bibBannerGo(bibBannerIdx - 1); }
+      bibBannerStartAuto();
+    }, { passive: true });
   }
 }
 
@@ -1721,7 +1759,7 @@ function bibBannerPrev() { bibBannerGo(bibBannerIdx - 1); bibBannerStartAuto(); 
 
 function bibBannerStartAuto() {
   bibBannerStopAuto();
-  bibBannerTimer = setInterval(() => bibBannerGo(bibBannerIdx + 1), 5000);
+  bibBannerTimer = setInterval(() => bibBannerGo(bibBannerIdx + 1), 5500);
 }
 function bibBannerStopAuto() {
   if (bibBannerTimer) { clearInterval(bibBannerTimer); bibBannerTimer = null; }
@@ -1770,7 +1808,7 @@ function bibPopulateCompetitions() {
     const d = dDay(c.start);
     let tag;
     if (c._status === 'past')         tag = '[종료]';
-    else if (c._status === 'ongoing') tag = '[진행중]';
+    else if (c._status === 'ongoing') tag = '🔴 LIVE';
     else if (d === 0)                  tag = '[D-DAY]';
     else                               tag = `[D-${d}]`;
     const opt = document.createElement('option');
@@ -1789,11 +1827,16 @@ function bibUpdateCompetitionInfo() {
   const status = compStatus(c);
   const d = dDay(c.start);
   let dLabel;
-  if (status === 'past')         dLabel = '종료';
-  else if (status === 'ongoing') dLabel = '진행중';
-  else if (d === 0)              dLabel = 'D-DAY';
-  else                            dLabel = `D-${d}`;
-  document.getElementById('bib-info-dday').textContent = dLabel;
+  const ddayEl = document.getElementById('bib-info-dday');
+  if (status === 'ongoing') {
+    ddayEl.className = 'live-badge';
+    ddayEl.innerHTML = '<span class="live-dot"></span>LIVE';
+  } else {
+    ddayEl.className = 'px-2.5 py-1 rounded-full bg-gold/15 text-gold-dark border border-gold/30 font-bold';
+    if (status === 'past')  ddayEl.textContent = '종료';
+    else if (d === 0)       ddayEl.textContent = 'D-DAY';
+    else                    ddayEl.textContent = `D-${d}`;
+  }
   document.getElementById('bib-info-date').textContent = fmtRange(c.start, c.end);
   document.getElementById('bib-info-host').textContent = '· ' + c.venue + ' 개최';
   info.classList.remove('hidden');
