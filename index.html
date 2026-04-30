@@ -2027,7 +2027,13 @@ function bibResultFound(c, name, matched, total, searchMode) {
       : '';
     return `
     <tr class="border-t border-gray-100 hover:bg-gold/5 transition-colors">
-      <td class="px-2 py-2.5 text-[11px] text-navy font-medium whitespace-nowrap">${esc(p.event)}</td>
+      <td class="px-2 py-2.5 text-[11px] text-navy font-medium">
+        ${(() => {
+          const m = p.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s+\S+부)?)$/);
+          if (m) return `<span class="whitespace-nowrap">${esc(m[1])}</span><span class="block mt-0.5 text-[9px] font-semibold text-indigo-400 bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5 w-fit whitespace-nowrap">${esc(m[2])}</span>`;
+          return `<span class="whitespace-nowrap">${esc(p.event)}</span>`;
+        })()}
+      </td>
       <td class="px-2 py-2.5 text-xs text-gray-600 whitespace-nowrap">${esc(p.affiliation)}${p.teamType==='단체'?'<span class="ml-1 text-[9px] text-gray-400 border border-gray-200 rounded px-1">단체</span>':''}</td>
       ${hasSchedule ? `<td class="px-2 py-2.5">${schedCell}</td>` : ''}
       <td class="px-2 py-2.5 text-center whitespace-nowrap">
