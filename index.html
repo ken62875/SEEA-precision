@@ -362,7 +362,7 @@
 
           <!-- Sub copy -->
           <p class="text-white/60 text-base md:text-lg leading-relaxed mb-10 max-w-xl">
-            시합 직전의 긴박한 순간이든, 판정에 이의를 제기해야 하는 결정적인 찰나이든. 애매한 규정 해석으로 인한 억울함은 이제 없습니다. 방대한 ISSF 규정 속 당신에게 당장 필요한 단 하나의 해답을, 가장 정확하고 빠르게.
+            규정이 막히는 그 순간.<br>당장 필요한 해답을, 가장 정확하고 빠르게.
           </p>
 
           <!-- CTA -->
@@ -498,14 +498,6 @@
           </div>
         </div>
 
-        <!-- API notice -->
-        <div id="api-notice" class="mt-4 disclaimer-box text-xs">
-          <strong>📋 API 연동 안내:</strong>
-          현재는 UI 미리보기 상태입니다.
-          <code class="bg-yellow-100 px-1 rounded font-mono">.env</code> 파일에
-          <code class="bg-yellow-100 px-1 rounded font-mono">GEMINI_API_KEY</code>를 입력하고
-          <code class="bg-yellow-100 px-1 rounded font-mono">node server.mjs</code>로 실행하면 실제 AI 답변이 작동합니다.
-        </div>
       </div>
     </div>
     <!-- /CHATBOT -->
@@ -1134,10 +1126,7 @@
       <div class="disclaimer-box mb-8 text-sm">
         <strong>📡 데이터 출처 안내</strong><br>
         본 기능은 <strong>대한사격연맹(KSF)</strong> 공식 사이트에서 자동 수집한 사대배정표를 기반으로 합니다.
-        연맹이 새 시합 배정표를 게시하면 최대 1시간 이내에 반영됩니다.<br><br>
-        <span class="text-yellow-800/80">
-          ⚠️ 현재 KSF 사이트 복구 중으로 자동 수집이 일시 중단된 상태입니다. 복구 후 정상 작동합니다.
-        </span>
+        연맹이 새 시합 배정표를 게시하면 최대 1시간 이내에 반영됩니다.
       </div>
 
       <!-- Search Card -->
@@ -1177,7 +1166,7 @@
           </div>
           <input type="hidden" id="bib-mode" value="name">
           <input id="bib-name" type="text" class="form-input"
-            placeholder="예) 김연재"
+            placeholder="예) 홍길동"
             onkeydown="if(event.key==='Enter')bibSearch()"/>
           <p id="bib-mode-hint" class="text-xs text-gray-400 mt-2">동명이인이 있을 경우 소속(학교/팀)이 함께 표시됩니다.</p>
         </div>
@@ -1316,7 +1305,7 @@
 
       <!-- Brand -->
       <div class="md:col-span-2">
-        <img src="brand_logo/SEEA Precison_ff0000_R.png" alt="SEEA Precision" class="h-8 w-auto mb-4">
+        <img src="brand_logo/SEEA Precison_ff0000_R.png" alt="SEEA Precision" class="h-14 w-auto mb-4">
         <p class="text-white/55 text-sm leading-relaxed max-w-sm">
           시합 직전의 긴박한 순간이든, 판정에 이의를 제기해야 하는 결정적인 찰나이든.<br>
           방대한 ISSF 규정 속 당신에게 필요한 단 하나의 해답을, 가장 정확하고 빠르게.
@@ -1501,7 +1490,7 @@ async function sendText(text) {
       const { content } = await res.json();
       appendAI(content || '답변을 가져오지 못했습니다.');
       chatHistory.push({ role:'assistant', content });
-      document.getElementById('api-notice').style.display = 'none';
+      /* api-notice removed */
     } else if (res.status === 503) {
       appendAI('⚠️ API 키가 설정되지 않았습니다.<br><code style="background:#F3F4F6;padding:2px 4px;border-radius:3px;font-size:12px;">.env</code> 파일에 <code style="background:#F3F4F6;padding:2px 4px;border-radius:3px;font-size:12px;">GEMINI_API_KEY</code>를 추가하고 서버를 재시작해주세요.');
     } else {
@@ -1773,11 +1762,19 @@ function bibToggleAcc(idx) {
   chevron.style.transform = opening ? 'rotate(180deg)' : '';
 }
 
+let bibTeamSamples = []; // 현재 대회 출전팀 목록 (팀 placeholder 랜덤화용)
+
+function bibTeamPlaceholder() {
+  if (!bibTeamSamples.length) return '예) 우리은행, 국군체육부대';
+  const shuffled = [...bibTeamSamples].sort(() => Math.random() - 0.5);
+  return '예) ' + shuffled.slice(0, 2).join(', ');
+}
+
 function setBibMode(mode) {
   document.getElementById('bib-mode').value = mode;
   const isTeam = mode === 'team';
   document.getElementById('bib-mode-label').textContent  = isTeam ? '소속 / 팀명' : '선수 이름';
-  document.getElementById('bib-name').placeholder        = isTeam ? '예) 우리은행, 육군, 경기도청' : '예) 김연재';
+  document.getElementById('bib-name').placeholder        = isTeam ? bibTeamPlaceholder() : '예) 홍길동';
   document.getElementById('bib-mode-hint').textContent   = isTeam
     ? '팀명 일부만 입력해도 됩니다. 해당 소속 선수 전원이 표시됩니다.'
     : '동명이인이 있을 경우 소속(학교/팀)이 함께 표시됩니다.';
@@ -1840,6 +1837,24 @@ function bibUpdateCompetitionInfo() {
   document.getElementById('bib-info-date').textContent = fmtRange(c.start, c.end);
   document.getElementById('bib-info-host').textContent = '· ' + c.venue + ' 개최';
   info.classList.remove('hidden');
+
+  // 팀 목록 fetch — 캐시 준비 중이면 완료될 때까지 재시도
+  if (!c.ksfCode) return;
+  const pollTeams = (retries = 8) => {
+    fetch(`/api/teams?comp=${encodeURIComponent(c.ksfCode)}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.teams?.length) {
+          bibTeamSamples = d.teams;
+          if (document.getElementById('bib-mode').value === 'team')
+            document.getElementById('bib-name').placeholder = bibTeamPlaceholder();
+        } else if (d.warming && retries > 0) {
+          setTimeout(() => pollTeams(retries - 1), 4000);
+        }
+      })
+      .catch(() => {});
+  };
+  pollTeams();
 }
 
 async function bibSearch() {
@@ -1960,7 +1975,7 @@ function bibResultFound(c, name, matched, total, searchMode) {
           <button class="w-full flex items-center gap-2.5 px-4 py-3.5 text-left hover:bg-gray-50/80 transition-colors"
                   onclick="bibToggleAcc(${idx})">
             ${dateTag}
-            <span class="flex-1 text-sm font-semibold text-navy leading-snug">${esc(g.event)}</span>
+            <span class="flex-1 min-w-0 text-sm font-semibold text-navy truncate">${esc(g.event)}</span>
             <span class="shrink-0 text-[10px] text-gray-400">${g.players.length}명</span>
             <svg id="bib-acc-chev-${idx}" class="shrink-0 w-4 h-4 text-gray-300 transition-transform duration-200"
                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -1996,17 +2011,36 @@ function bibResultFound(c, name, matched, total, searchMode) {
   }
 
   // ── 이름 검색: 테이블 ───────────────────────────────────
-  const rows = matched.map(p => {
+  const colSpan = hasSchedule ? 5 : 4;
+  const rows = matched.map((p, ri) => {
     const bib = p.group && p.lane ? `${p.group}-${p.lane}` : p.bib || '—';
     const dateCell = p.scheduleDate ? `<span class="block text-[11px] font-medium text-gray-700">${esc(p.scheduleDate)}</span>` : '';
     const timeCell = p.scheduleTime ? `<span class="block text-[11px] text-gray-400 mt-0.5">${esc(p.scheduleTime)}</span>` : '';
     const schedCell = (dateCell || timeCell) ? dateCell + timeCell : '<span class="text-gray-300 text-xs">—</span>';
+    const canAdj = !!(p.group && p.lane);
+    const adjBtn = canAdj
+      ? `<button onclick="bibShowAdjacent('${esc(c.ksfCode)}','${esc(p.event)}','${esc(p.group)}',${parseInt(p.lane)},${ri})"
+                 id="bib-adj-btn-${ri}" title="앞뒤 사대 확인"
+                 class="mt-1 text-[10px] font-medium text-gray-400 border border-gray-200 rounded-full px-2 py-0.5 hover:bg-navy hover:text-white hover:border-navy transition-colors whitespace-nowrap">
+           앞·뒤 사대
+         </button>`
+      : '';
     return `
     <tr class="border-t border-gray-100 hover:bg-gold/5 transition-colors">
-      <td class="px-2 py-2.5 text-[11px] text-navy font-medium leading-snug">${esc(p.event)}</td>
+      <td class="px-2 py-2.5 text-[11px] text-navy font-medium whitespace-nowrap">${esc(p.event)}</td>
       <td class="px-2 py-2.5 text-xs text-gray-600 whitespace-nowrap">${esc(p.affiliation)}${p.teamType==='단체'?'<span class="ml-1 text-[9px] text-gray-400 border border-gray-200 rounded px-1">단체</span>':''}</td>
       ${hasSchedule ? `<td class="px-2 py-2.5">${schedCell}</td>` : ''}
-      <td class="px-2 py-2.5 text-center font-mono font-bold text-navy text-sm whitespace-nowrap">${esc(bib)}</td>
+      <td class="px-2 py-2.5 text-center whitespace-nowrap">
+        <div class="flex flex-col items-center gap-0">
+          <span class="font-mono font-bold text-navy text-sm">${esc(bib)}</span>
+          ${adjBtn}
+        </div>
+      </td>
+    </tr>
+    <tr id="bib-adj-row-${ri}" class="hidden">
+      <td colspan="${colSpan}" class="px-3 pb-3 pt-0">
+        <div id="bib-adj-content-${ri}" class="bg-gray-50 rounded-lg px-4 py-3 text-xs text-gray-600 border border-gray-100"></div>
+      </td>
     </tr>`;
   }).join('');
 
@@ -2034,6 +2068,55 @@ function bibResultFound(c, name, matched, total, searchMode) {
         출처: 대한사격연맹 공식 사이트 · 실시간 수집
       </div>
     </div>`;
+}
+
+async function bibShowAdjacent(comp, event, group, lane, ri) {
+  const row     = document.getElementById(`bib-adj-row-${ri}`);
+  const content = document.getElementById(`bib-adj-content-${ri}`);
+  const btn     = document.getElementById(`bib-adj-btn-${ri}`);
+  if (!row || !content) return;
+
+  // 토글: 이미 열려있으면 닫기
+  if (!row.classList.contains('hidden')) {
+    row.classList.add('hidden');
+    btn.textContent = '앞·뒤 사대';
+    btn.classList.remove('bg-navy', 'text-white', 'border-navy');
+    btn.classList.add('text-gray-400', 'border-gray-200');
+    return;
+  }
+
+  content.innerHTML = '<span class="text-gray-400">조회 중...</span>';
+  row.classList.remove('hidden');
+  btn.textContent = '닫기';
+  btn.classList.add('bg-navy', 'text-white', 'border-navy');
+  btn.classList.remove('text-gray-400', 'border-gray-200');
+
+  try {
+    const url = `/api/bib-adjacent?comp=${encodeURIComponent(comp)}&event=${encodeURIComponent(event)}&group=${encodeURIComponent(group)}&lane=${lane}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '조회 실패');
+
+    const fmt = p => p
+      ? `<span class="font-semibold text-navy">${esc(p.name)}</span> <span class="text-gray-400">${esc(p.affiliation)}</span> <span class="font-mono text-gray-500">(${esc(p.bib)})</span>`
+      : '<span class="text-gray-300">없음</span>';
+
+    content.innerHTML = `
+      <div class="flex flex-col gap-1.5">
+        <div class="flex items-center gap-2">
+          <span class="shrink-0 w-5 h-5 rounded-full bg-navy/10 text-navy text-[10px] font-bold flex items-center justify-center">↑</span>
+          <span class="text-gray-500 text-xs shrink-0">앞 사대</span>
+          ${fmt(data.prev)}
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="shrink-0 w-5 h-5 rounded-full bg-navy/10 text-navy text-[10px] font-bold flex items-center justify-center">↓</span>
+          <span class="text-gray-500 text-xs shrink-0">뒤 사대</span>
+          ${fmt(data.next)}
+        </div>
+      </div>`;
+  } catch (e) {
+    content.innerHTML = `<span class="text-red-400">조회 실패: ${esc(e.message)}</span>`;
+  }
 }
 
 function bibResultNotFound(c, name, total, searchMode) {

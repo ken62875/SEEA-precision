@@ -9,9 +9,13 @@ import fs     from 'fs';
 import path   from 'path';
 import { fileURLToPath } from 'url';
 import { searchBib, getCompInfo, getGamePageHtml } from './bib-scraper.mjs';
+import { startWatcher } from './watcher.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT      = 3000;
+
+// 대회별 전체 선수 캐시 (메모리, 2시간 유지)
+const compPlayersCache = new Map(); // compCode → { players: [], ts: number }
 
 // ── .env 파일 로드 ────────────────────────────────────────
 function loadEnv() {
@@ -443,7 +447,8 @@ const server = http.createServer(async (req, res) => {
   }
 
   // ── GET /api/bib?comp=N01H&name=홍길동 ──────────────────
-  if (req.method === 'GET' && req.url.startsWith('/api/bib')) {
+  if (req.method === 'GET' && req.url.startsWith('/api/bib') &&
+      !req.url.startsWith('/api/bib-debug') && !req.url.startsWith('/api/bib-adjacent')) {
     const params   = new URL(req.url, 'http://localhost').searchParams;
     const comp       = (params.get('comp') || '').trim();
     const name       = (params.get('name') || '').trim();
@@ -457,10 +462,81 @@ const server = http.createServer(async (req, res) => {
 
     try {
       const result = await searchBib(comp, name, searchMode);
+      // allPlayers 캐시 (2시간 유지)
+      if (result.ok && result.allPlayers?.length) {
+        compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
+      }
+      const { allPlayers: _, ...clientResult } = result; // allPlayers 제외하고 클라이언트에 전송
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(result));
+      res.end(JSON.stringify(clientResult));
     } catch (err) {
       console.error('[/api/bib]', err.message);
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // ── GET /api/teams?comp=N01H ─────────────────────────────
+  // 해당 대회에 출전한 팀 목록 반환 (캐시 우선)
+  if (req.method === 'GET' && req.url.startsWith('/api/teams')) {
+    const params = new URL(req.url, 'http://localhost').searchParams;
+    const comp   = (params.get('comp') || '').trim();
+    if (!comp) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'comp 파라미터가 필요합니다.' }));
+      return;
+    }
+    const cached = compPlayersCache.get(comp);
+    if (cached && Date.now() - cached.ts < 2 * 60 * 60 * 1000) {
+      const teams = [...new Set(cached.players.map(p => p.affiliation).filter(Boolean))];
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ teams }));
+    } else {
+      // 캐시 없으면 백그라운드에서 전체 선수 fetch 시작
+      searchBib(comp, '', 'name').then(result => {
+        if (result.ok && result.allPlayers?.length) {
+          compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
+        }
+      }).catch(() => {});
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ teams: [], warming: true }));
+    }
+    return;
+  }
+
+  // ── GET /api/bib-adjacent?comp=N01H&event=…&group=2&lane=76 ──
+  if (req.method === 'GET' && req.url.startsWith('/api/bib-adjacent')) {
+    const params = new URL(req.url, 'http://localhost').searchParams;
+    const comp   = (params.get('comp')  || '').trim();
+    const event  = (params.get('event') || '').trim();
+    const group  = (params.get('group') || '').trim();
+    const lane   = parseInt(params.get('lane') || '0', 10);
+    if (!comp || !event || !group || !lane) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: '파라미터가 부족합니다.' }));
+      return;
+    }
+    try {
+      let players;
+      const cached = compPlayersCache.get(comp);
+      if (cached && Date.now() - cached.ts < 2 * 60 * 60 * 1000) {
+        players = cached.players;
+      } else {
+        const result = await searchBib(comp, '', 'name'); // 전체 가져오기
+        if (!result.ok) throw new Error(result.error || '데이터 없음');
+        compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
+        players = result.allPlayers;
+      }
+      const groupPlayers = players
+        .filter(p => p.event === event && p.group === group)
+        .sort((a, b) => parseInt(a.lane) - parseInt(b.lane));
+      const idx  = groupPlayers.findIndex(p => parseInt(p.lane) === lane);
+      const prev = idx > 0 ? groupPlayers[idx - 1] : null;
+      const next = idx !== -1 && idx < groupPlayers.length - 1 ? groupPlayers[idx + 1] : null;
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ prev, next }));
+    } catch (err) {
       res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ error: err.message }));
     }
@@ -531,4 +607,7 @@ server.listen(PORT, () => {
       uploadRulesPDF();
     }, 24 * 60 * 60 * 1000);
   }
+
+  // KSF 대회 목록 감시 시작
+  startWatcher();
 });

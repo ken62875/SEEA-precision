@@ -291,7 +291,7 @@ export async function searchBib(compCode, searchName, searchMode = 'name') {
     : allPlayers.filter(p => p.name.includes(searchName));
   console.log(`[BIB] "${searchName}" (${searchMode}) 검색 결과: ${matched.length}건`);
 
-  return { ok: true, total: allPlayers.length, matched, searchMode };
+  return { ok: true, total: allPlayers.length, matched, allPlayers, searchMode };
 }
 
 export async function getCompInfo(compCode) {
