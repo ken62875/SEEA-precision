@@ -2030,7 +2030,13 @@ function bibResultFound(c, name, matched, total, searchMode) {
       <td class="px-2 py-2.5 text-[11px] text-navy font-medium">
         ${(() => {
           const m = p.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s+\S+부)?)$/);
-          if (m) return `<span class="whitespace-nowrap">${esc(m[1])}</span><span class="block mt-0.5 text-[9px] font-semibold text-indigo-400 bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5 w-fit whitespace-nowrap">${esc(m[2])}</span>`;
+          if (m) {
+            const isF = m[2].startsWith('여자');
+            const badgeCls = isF
+              ? 'text-pink-500 bg-pink-50 border-pink-100'
+              : 'text-indigo-400 bg-indigo-50 border-indigo-100';
+            return `<span class="whitespace-nowrap">${esc(m[1])}</span><span class="block mt-0.5 text-[9px] font-semibold border rounded px-1.5 py-0.5 w-fit whitespace-nowrap ${badgeCls}">${esc(m[2])}</span>`;
+          }
           return `<span class="whitespace-nowrap">${esc(p.event)}</span>`;
         })()}
       </td>
