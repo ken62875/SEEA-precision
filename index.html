@@ -149,17 +149,18 @@
     /* ── Category card ── */
     .cat-card {
       background: #fff; border: 1px solid #E5E7EB;
-      border-radius: 12px; padding: 28px; cursor: pointer;
+      border-radius: 12px; padding: 18px 20px; cursor: pointer;
       transition: transform .2s, box-shadow .2s, border-color .2s;
+      display: flex; align-items: center; gap: 14px;
     }
     .cat-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 32px rgba(11,30,63,.11);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(11,30,63,.09);
       border-color: #C9A24A;
     }
     .cat-card .card-num {
-      font-size: 46px; font-weight: 800;
-      color: #F3F4F6; line-height: 1; margin-bottom: 8px;
+      font-size: 28px; font-weight: 800;
+      color: rgba(201,162,74,0.38); line-height: 1; flex-shrink: 0; width: 44px;
     }
 
     /* ── Page header ── */
@@ -184,6 +185,18 @@
       bottom: -4px; left: 0; right: 0;
       height: 2px; background: #C9A24A; border-radius: 1px;
     }
+    /* ── Nav dropdown ── */
+    .nav-dropdown .nav-dd-menu { display: none; }
+    .nav-dropdown.open .nav-dd-menu { display: block; }
+    .nav-dropdown.open .nav-dd-chevron { transform: rotate(180deg); }
+    .nav-dd-btn { background: none; border: none; padding: 0; font-family: inherit; }
+    .nav-dd-btn.active { color: #C9A24A !important; }
+    .nav-dd-btn.active::after {
+      content: ''; position: absolute;
+      bottom: -4px; left: 0; right: 0;
+      height: 2px; background: #C9A24A; border-radius: 1px;
+    }
+    .nav-dd-item:last-child { border-bottom: none !important; }
 
     /* ── Typing dots ── */
     .typing-dot {
@@ -240,6 +253,21 @@
       0%, 100% { transform: scale(1);   box-shadow: 0 0 0 0   rgba(34,197,94,.6); }
       50%       { transform: scale(1.15); box-shadow: 0 0 0 5px rgba(34,197,94,0); }
     }
+    @keyframes feedScroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    #live-ticker-bar { display: none; }
+    @keyframes chatMsgIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .chat-msg-new { animation: chatMsgIn 0.4s cubic-bezier(.22,1,.36,1); }
+    @keyframes cardPulse {
+      0%,100% { border-color: rgba(255,255,255,0.1); }
+      40%     { border-color: rgba(201,162,74,0.55); box-shadow: 0 0 18px rgba(201,162,74,0.18); }
+    }
+    .lounge-pulse { animation: cardPulse 1.2s ease; }
     .banner-card-ongoing {
       border-color: rgba(34,197,94,.3) !important;
       background: rgba(34,197,94,.04) !important;
@@ -262,31 +290,55 @@
       </a>
 
       <!-- Desktop links -->
-      <div class="hidden md:flex items-center gap-9">
-        <a onclick="navigate('home')"    data-page="home"    class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">홈</a>
-        <a onclick="navigate('about')"   data-page="about"   class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">소개</a>
-        <a onclick="navigate('guide')"   data-page="guide"   class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">사용법</a>
-        <a onclick="navigate('rules')"   data-page="rules"   class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">규칙 안내</a>
-        <a onclick="navigate('bib')"     data-page="bib"     class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer flex items-center gap-1.5">
-          사대번호 조회
-          <span class="text-[11px] bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.5 rounded font-bold leading-none">BETA</span>
-        </a>
-        <a onclick="navigate('athletes')" data-page="athletes" class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer flex items-center gap-1.5">
-          선수 프로필
-          <span class="text-[11px] bg-gold text-white px-1.5 py-0.5 rounded font-bold leading-none">예정</span>
-        </a>
+      <div class="hidden md:flex items-center gap-8">
+        <a onclick="navigate('home')" data-page="home" class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">홈</a>
+
+        <!-- 서비스 드롭다운 -->
+        <div class="nav-dropdown relative" id="nav-dd-service">
+          <button onclick="toggleNavDropdown('nav-dd-service')" data-pages="about,guide,bib" class="nav-dd-btn nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer flex items-center gap-1">
+            서비스
+            <svg class="nav-dd-chevron w-3.5 h-3.5 transition-transform duration-200" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+          <div class="nav-dd-menu absolute top-[calc(100%+10px)] left-1/2 -translate-x-1/2 bg-white border border-gray-100 rounded-xl shadow-[0_8px_32px_rgba(11,30,63,0.1)] min-w-[192px] py-2 z-50">
+            <a onclick="navigate('about');closeNavDropdowns()" class="flex items-center px-4 py-2.5 text-sm text-navy/65 hover:text-navy hover:bg-gray-50 cursor-pointer transition-colors">소개</a>
+            <a onclick="navigate('guide');closeNavDropdowns()" class="flex items-center px-4 py-2.5 text-sm text-navy/65 hover:text-navy hover:bg-gray-50 cursor-pointer transition-colors">AI 챗봇 사용법</a>
+            <a onclick="navigate('bib');closeNavDropdowns()" class="flex items-center justify-between px-4 py-2.5 text-sm text-navy/65 hover:text-navy hover:bg-gray-50 cursor-pointer transition-colors">
+              사대번호 조회
+              <span class="text-[10px] bg-gold/20 text-gold border border-gold/40 px-1.5 py-0.5 rounded font-bold leading-none">BETA</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- 정보 드롭다운 -->
+        <div class="nav-dropdown relative" id="nav-dd-info">
+          <button onclick="toggleNavDropdown('nav-dd-info')" data-pages="rules,athletes" class="nav-dd-btn nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer flex items-center gap-1">
+            정보
+            <svg class="nav-dd-chevron w-3.5 h-3.5 transition-transform duration-200" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+          <div class="nav-dd-menu absolute top-[calc(100%+10px)] left-1/2 -translate-x-1/2 bg-white border border-gray-100 rounded-xl shadow-[0_8px_32px_rgba(11,30,63,0.1)] min-w-[192px] py-2 z-50">
+            <a onclick="navigate('rules');closeNavDropdowns()" class="flex items-center px-4 py-2.5 text-sm text-navy/65 hover:text-navy hover:bg-gray-50 cursor-pointer transition-colors">규칙 안내</a>
+            <a onclick="navigate('athletes');closeNavDropdowns()" class="flex items-center justify-between px-4 py-2.5 text-sm text-navy/65 hover:text-navy hover:bg-gray-50 cursor-pointer transition-colors">
+              선수 프로필
+              <span class="text-[10px] bg-gold text-white px-1.5 py-0.5 rounded font-bold leading-none">예정</span>
+            </a>
+          </div>
+        </div>
+
+        <a onclick="navigate('feed')" data-page="feed" class="nav-link text-navy/70 hover:text-navy text-lg font-medium cursor-pointer">커뮤니티</a>
       </div>
 
       <!-- Right CTA -->
       <div class="hidden md:flex items-center gap-4">
         <button onclick="navigate('contact')"
-          class="text-base font-semibold text-navy/70 hover:text-navy transition-colors px-4 py-2 cursor-pointer">
+          class="text-base font-semibold text-navy/70 hover:text-navy transition-colors px-4 py-2 cursor-pointer flex items-center gap-1.5">
           문의
+          <span class="text-[10px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded font-bold leading-none">예정</span>
         </button>
         <button onclick="navigate('report')"
           class="text-base font-semibold bg-gold hover:bg-gold-dark text-white px-5 py-2.5 rounded-lg
-                 transition-all hover:scale-[1.02] active:scale-[.98]">
+                 transition-all hover:scale-[1.02] active:scale-[.98] flex items-center gap-1.5">
           오류 신고
+          <span class="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded font-bold leading-none">예정</span>
         </button>
       </div>
 
@@ -304,18 +356,44 @@
   <!-- Mobile Menu -->
   <div id="mobile-menu" class="bg-navy-dark border-t border-white/10 md:hidden">
     <div class="max-w-7xl mx-auto px-6 py-3 flex flex-col">
-      <a onclick="navigate('home');closeMenu()"    class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">홈</a>
-      <a onclick="navigate('about');closeMenu()"   class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">소개</a>
-      <a onclick="navigate('guide');closeMenu()"   class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">사용법</a>
-      <a onclick="navigate('rules');closeMenu()"   class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">규칙 안내</a>
-      <a onclick="navigate('bib');closeMenu()"     class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">
-        사대번호 조회 <span class="text-[10px] text-gold font-bold ml-1">BETA</span>
+      <a onclick="navigate('home');closeMenu()" class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">홈</a>
+
+      <!-- 서비스 아코디언 -->
+      <div>
+        <div onclick="toggleMobileAcc('mob-acc-service')" class="flex items-center justify-between text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer select-none">
+          서비스
+          <svg id="mob-acc-service-chev" class="w-4 h-4 transition-transform duration-200 flex-shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l4 4 4-4"/></svg>
+        </div>
+        <div id="mob-acc-service" class="hidden flex-col">
+          <a onclick="navigate('about');closeMenu()" class="text-white/55 hover:text-white py-2.5 px-4 text-sm cursor-pointer border-b border-white/5">소개</a>
+          <a onclick="navigate('guide');closeMenu()" class="text-white/55 hover:text-white py-2.5 px-4 text-sm cursor-pointer border-b border-white/5">AI 챗봇 사용법</a>
+          <a onclick="navigate('bib');closeMenu()" class="text-white/55 hover:text-white py-2.5 px-4 text-sm cursor-pointer flex items-center justify-between border-b border-white/10">
+            사대번호 조회 <span class="text-[10px] text-gold font-bold">BETA</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 정보 아코디언 -->
+      <div>
+        <div onclick="toggleMobileAcc('mob-acc-info')" class="flex items-center justify-between text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer select-none">
+          정보
+          <svg id="mob-acc-info-chev" class="w-4 h-4 transition-transform duration-200 flex-shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l4 4 4-4"/></svg>
+        </div>
+        <div id="mob-acc-info" class="hidden flex-col">
+          <a onclick="navigate('rules');closeMenu()" class="text-white/55 hover:text-white py-2.5 px-4 text-sm cursor-pointer border-b border-white/5">규칙 안내</a>
+          <a onclick="navigate('athletes');closeMenu()" class="text-white/55 hover:text-white py-2.5 px-4 text-sm cursor-pointer flex items-center justify-between border-b border-white/10">
+            선수 프로필 <span class="text-[10px] text-gold font-bold">예정</span>
+          </a>
+        </div>
+      </div>
+
+      <a onclick="navigate('feed');closeMenu()" class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">아이디어 라운지</a>
+      <a onclick="navigate('contact');closeMenu()" class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer flex items-center justify-between">
+        문의 <span class="text-[10px] text-white/35 font-bold">예정</span>
       </a>
-      <a onclick="navigate('athletes');closeMenu()" class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">
-        선수 프로필 <span class="text-[10px] text-gold font-bold ml-1">예정</span>
+      <a onclick="navigate('report');closeMenu()" class="text-gold hover:text-gold-light py-3 text-sm font-semibold cursor-pointer flex items-center justify-between">
+        오류 신고 <span class="text-[10px] text-gold/60 font-bold">예정</span>
       </a>
-      <a onclick="navigate('contact');closeMenu()" class="text-white/75 hover:text-white py-3 text-sm font-medium border-b border-white/10 cursor-pointer">문의</a>
-      <a onclick="navigate('report');closeMenu()"  class="text-gold hover:text-gold-light py-3 text-sm font-semibold cursor-pointer">오류 신고</a>
     </div>
   </div>
 </nav>
@@ -351,7 +429,7 @@
           <!-- Badge -->
           <div class="inline-flex items-center gap-2 mb-8">
             <span class="w-2 h-2 rounded-full bg-gold animate-pulse"></span>
-            <span class="text-white/55 text-xs font-semibold tracking-widest uppercase">ISSF 최신 규정 기반 · 한국 선수 전용</span>
+            <span class="text-white/55 text-xs font-semibold tracking-widest uppercase">한국 사격 선수를 위한 필수 플랫폼</span>
           </div>
 
           <!-- Headline -->
@@ -362,7 +440,7 @@
 
           <!-- Sub copy -->
           <p class="text-white/60 text-base md:text-lg leading-relaxed mb-10 max-w-xl">
-            규정이 막히는 그 순간.<br>당장 필요한 해답을, 가장 정확하고 빠르게.
+            내 사대번호 검색부터 복잡한 규정 확인까지.<br>오직 격발에만 집중하도록,<br>SEEA가 다 찾아드립니다.
           </p>
 
           <!-- CTA -->
@@ -389,6 +467,64 @@
       </div>
     </div>
     <!-- /HERO -->
+
+    <!-- LIVE 소식 티커 -->
+    <div id="live-ticker-bar" class="bg-navy-dark border-t border-white/10 py-2 overflow-hidden cursor-pointer" onclick="navigate('feed')" title="소식 더 보기">
+      <div class="flex items-center">
+        <span class="shrink-0 text-[10px] font-bold text-navy bg-gold px-2.5 py-1 mx-4 rounded whitespace-nowrap">LIVE</span>
+        <div class="flex-1 overflow-hidden relative">
+          <div id="live-ticker-inner" class="flex gap-8 whitespace-nowrap text-sm text-white/65 transition-transform duration-700"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 아이디어 라운지 -->
+    <div class="bg-navy-dark px-4 pt-6 pb-8">
+      <div class="max-w-md mx-auto">
+        <div id="lounge-card" class="rounded-2xl overflow-hidden border border-white/10 transition-all duration-500" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);">
+
+          <!-- 헤더 -->
+          <div class="px-4 py-3 flex items-center gap-3 border-b border-white/10">
+            <!-- 라이브 펄스 -->
+            <div class="relative flex items-center justify-center w-8 h-8 flex-shrink-0">
+              <span class="absolute w-8 h-8 rounded-full bg-gold/20 animate-ping" style="animation-duration:2s"></span>
+              <span class="absolute w-5 h-5 rounded-full bg-gold/15 animate-ping" style="animation-duration:2s;animation-delay:.4s"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-gold relative z-10"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5">
+                <p class="text-white text-sm font-bold leading-tight">아이디어 라운지</p>
+                <span class="text-[9px] font-bold text-gold/70 border border-gold/30 rounded px-1 py-px">LIVE</span>
+              </div>
+              <p class="text-white/35 text-[10px]">원하는 기능을 자유롭게 제안해보세요</p>
+            </div>
+            <button onclick="navigate('feed')" class="text-[11px] text-white/35 hover:text-white/60 transition-colors whitespace-nowrap">전체보기 →</button>
+          </div>
+
+          <!-- 메시지 목록 (3개 슬라이드) -->
+          <div id="chat-msg-list" style="overflow:hidden;padding:12px 16px 8px;height:212px;box-sizing:border-box;">
+            <div class="text-white/25 text-xs text-center py-3">첫 번째 아이디어를 남겨보세요</div>
+          </div>
+
+          <!-- 입력창 -->
+          <div class="px-3 py-2.5 flex items-center gap-2.5 border-t border-white/10">
+            <input id="chat-name" type="text" maxlength="20" placeholder="이름"
+              class="w-14 bg-transparent text-white/60 text-xs outline-none border-r border-white/10 pr-2 placeholder:text-white/25">
+            <input id="chat-msg" type="text" maxlength="120" placeholder="이런 기능이 있으면 좋겠어요..."
+              class="flex-1 bg-transparent text-white/80 text-xs outline-none placeholder:text-white/25"
+              onkeydown="if(event.key==='Enter')chatPost()">
+            <button onclick="chatPost()"
+              class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 hover:opacity-80 active:scale-90 transition-all"
+              style="background:#C9A24A">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <!-- /아이디어 라운지 -->
 
 
     <!-- ─────────────────────────────────────
@@ -504,88 +640,71 @@
 
 
     <!-- CATEGORY CARDS -->
-    <div class="py-20 px-6" style="background:#F8F9FA;">
-      <div class="max-w-7xl mx-auto">
-        <div class="text-center mb-12">
-          <p class="text-xs font-bold text-gold tracking-widest uppercase mb-3">서비스 메뉴</p>
-          <h2 class="text-3xl md:text-4xl font-extrabold text-navy">무엇을 도와드릴까요?</h2>
+    <div class="py-12 px-4" style="background:#F8F9FA;">
+      <div class="max-w-2xl mx-auto">
+        <div class="mb-6">
+          <p class="text-xs font-bold text-gold tracking-widest uppercase mb-1">서비스 메뉴</p>
+          <h2 class="text-2xl font-extrabold text-navy">무엇을 도와드릴까요?</h2>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
 
           <div class="cat-card" onclick="navigate('about')">
             <div class="card-num">01</div>
-            <h3 class="text-base font-bold text-navy mb-2">서비스 소개</h3>
-            <p class="text-gray-400 text-sm leading-relaxed">SEEA Precision이 탄생한 이유와 서비스 미션을 소개합니다.</p>
-            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
-              자세히 보기
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
+            <div><h3 class="text-sm font-bold text-navy mb-0.5">서비스 소개</h3><p class="text-xs text-gray-400">SEEA Precision 탄생 배경과 미션</p></div>
           </div>
 
           <div class="cat-card" onclick="navigate('guide')">
             <div class="card-num">02</div>
-            <h3 class="text-base font-bold text-navy mb-2">사용법</h3>
-            <p class="text-gray-400 text-sm leading-relaxed">챗봇을 효과적으로 사용하는 방법과 종목별 질문 예시를 제공합니다.</p>
-            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
-              사용법 보기
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
+            <div><h3 class="text-sm font-bold text-navy mb-0.5">AI 챗봇 사용법</h3><p class="text-xs text-gray-400">챗봇 사용법 및 질문 예시</p></div>
           </div>
 
           <div class="cat-card" onclick="navigate('rules')">
             <div class="card-num">03</div>
-            <h3 class="text-base font-bold text-navy mb-2">헷갈리는 규칙</h3>
-            <p class="text-gray-400 text-sm leading-relaxed">선수들이 자주 혼동하는 규정들을 모아 알기 쉽게 정리했습니다.</p>
-            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
-              규칙 확인
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
+            <div><h3 class="text-sm font-bold text-navy mb-0.5">헷갈리는 규칙</h3><p class="text-xs text-gray-400">선수들이 자주 혼동하는 규정 정리</p></div>
           </div>
 
-          <div class="cat-card" onclick="navigate('contact')">
+          <div class="cat-card opacity-70" onclick="navigate('contact')">
             <div class="card-num">04</div>
-            <h3 class="text-base font-bold text-navy mb-2">문의하기</h3>
-            <p class="text-gray-400 text-sm leading-relaxed">서비스 이용 중 궁금한 사항이나 건의사항이 있으면 연락해주세요.</p>
-            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
-              문의하기
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <div>
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <h3 class="text-sm font-bold text-navy">문의하기</h3>
+                <span class="text-[9px] font-bold text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded leading-none">예정</span>
+              </div>
+              <p class="text-xs text-gray-400">궁금한 사항이나 건의사항</p>
             </div>
           </div>
 
-          <div class="cat-card" onclick="navigate('report')">
+          <div class="cat-card opacity-70" onclick="navigate('report')">
             <div class="card-num">05</div>
-            <h3 class="text-base font-bold text-navy mb-2">오류 수정 요청</h3>
-            <p class="text-gray-400 text-sm leading-relaxed">AI 답변에서 잘못된 내용을 발견하셨나요? 제보해주시면 빠르게 수정합니다.</p>
-            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
-              오류 신고
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <div>
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <h3 class="text-sm font-bold text-navy">오류 수정 요청</h3>
+                <span class="text-[9px] font-bold text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded leading-none">예정</span>
+              </div>
+              <p class="text-xs text-gray-400">AI 답변 오류 신고</p>
             </div>
           </div>
 
           <div class="cat-card" onclick="navigate('bib')">
             <div class="card-num">06</div>
-            <div class="flex items-center gap-2 mb-2">
-              <h3 class="text-base font-bold text-navy">사대번호 조회</h3>
-              <span class="cs-badge" style="background:rgba(201,162,74,.15);color:#A6842A;border-color:rgba(201,162,74,.4);">BETA</span>
-            </div>
-            <p class="text-gray-400 text-sm leading-relaxed">시합과 이름을 입력하면 본인의 종목별 사대번호와 세부일정을 확인할 수 있습니다.</p>
-            <div class="mt-5 text-gold text-sm font-semibold flex items-center gap-1">
-              내 사대번호 찾기
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <div>
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <h3 class="text-sm font-bold text-navy">사대번호 조회</h3>
+                <span class="cs-badge text-[9px] px-1.5" style="background:rgba(201,162,74,.15);color:#A6842A;border-color:rgba(201,162,74,.4);">BETA</span>
+              </div>
+              <p class="text-xs text-gray-400">종목별 사대번호·세부일정 확인</p>
             </div>
           </div>
 
-          <div class="cat-card opacity-70" onclick="navigate('athletes')">
+          <div class="cat-card opacity-60 sm:col-span-2" onclick="navigate('athletes')">
             <div class="card-num">07</div>
-            <div class="flex items-center gap-2 mb-2">
-              <h3 class="text-base font-bold text-navy">선수 프로필</h3>
-              <span class="cs-badge">Coming Soon</span>
-            </div>
-            <p class="text-gray-400 text-sm leading-relaxed">한국 대표 선수들의 경기 사진과 사용 장비를 인터랙티브하게 제공합니다.</p>
-            <div class="mt-5 text-gray-300 text-sm font-semibold flex items-center gap-1">
-              준비 중
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <div>
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <h3 class="text-sm font-bold text-navy">선수 프로필</h3>
+                <span class="cs-badge text-[9px] px-1.5">예정</span>
+              </div>
+              <p class="text-xs text-gray-400">한국 대표 선수 경기 사진 및 장비</p>
             </div>
           </div>
 
@@ -593,6 +712,7 @@
       </div>
     </div>
     <!-- /CATEGORY CARDS -->
+
 
   </section>
   <!-- /HOME -->
@@ -606,7 +726,7 @@
       <div class="max-w-4xl mx-auto px-6">
         <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">ABOUT</p>
         <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">SEEA Precision 소개</h1>
-        <p class="text-white/55 text-lg">한국 사격 선수들을 위한 ISSF 규정 AI 어시스턴트</p>
+        <p class="text-white/55 text-lg">한국 사격 선수를 위한 필수 플랫폼</p>
       </div>
     </div>
 
@@ -619,57 +739,78 @@
           왜 만들었나요?
         </h2>
         <div class="pl-11 space-y-4 text-gray-700 leading-relaxed">
-          <p>국제사격연맹(ISSF)은 매년 규정을 업데이트합니다. 그러나 이 규정이 한국어로 번역되어 배포되기까지
-            <strong>수개월에서 1년 이상</strong>이 소요됩니다.</p>
-          <p>선수들은 그 사이 전문 용어가 가득한 영문 규정서를 직접 확인해야 합니다. <strong>SEEA Precision</strong>은
-            이 공백을 메우기 위해 만들어졌습니다. ISSF 영문 규정을 AI가 실시간으로 한국어로 해석해 드립니다.</p>
+          <p>한국 사격 선수들이 시합 전후로 겪는 두 가지 불편함에서 시작했습니다.</p>
+          <p><strong>첫째, 규정 확인이 너무 불편합니다.</strong> ISSF는 매년 규정을 업데이트하지만 한국어 번역까지 수개월이 걸립니다.
+            경기 당일 규정이 헷갈려도 두꺼운 영문 PDF를 직접 뒤져야 했습니다.</p>
+          <p><strong>둘째, 사대번호 찾기도 번거롭습니다.</strong> 시합 전 내 사대번호를 확인하려면 연맹 사이트에서 PDF를 열고
+            직접 이름을 검색해야 했습니다.</p>
           <div class="p-5 bg-navy/5 rounded-xl border-l-4 border-navy text-navy font-medium text-sm">
-            💡 경기 당일 장비 규격이 변경됐는지 확인해야 할 때, 재킷 두께 기준이 헷갈릴 때,
-            오발 처리 절차를 정확히 알아야 할 때 — 바로 물어보세요.
+            SEEA Precision은 이 두 불편함을 한 곳에서 빠르게 해결합니다.<br>
+            오직 격발에만 집중할 수 있도록, 나머지는 SEEA가 찾아드립니다.
           </div>
         </div>
       </div>
 
-      <!-- 02 Mission -->
+      <!-- 02 주요 기능 -->
       <div>
         <h2 class="text-2xl font-bold text-navy mb-6 flex items-center gap-3">
           <span class="w-8 h-8 bg-navy text-white text-xs flex items-center justify-center rounded font-bold flex-shrink-0">02</span>
-          서비스 미션
+          주요 기능
         </h2>
         <div class="pl-11 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="p-5 bg-white rounded-xl border border-gray-200">
-            <div class="text-2xl mb-3">⚡</div>
-            <h3 class="font-bold text-navy mb-1.5 text-sm">빠른 접근</h3>
-            <p class="text-gray-400 text-xs leading-relaxed">영문 PDF 없이 한국어로 즉시 확인</p>
+
+          <div class="p-5 bg-white rounded-xl border border-gray-200 hover:border-navy/30 hover:shadow-md transition-all">
+            <div class="w-10 h-10 rounded-xl bg-navy/8 flex items-center justify-center mb-4">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B1E3F" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <div class="flex items-center gap-2 mb-1.5">
+              <h3 class="font-bold text-navy text-sm">ISSF 규정 AI 챗봇</h3>
+            </div>
+            <p class="text-gray-400 text-xs leading-relaxed">한국어로 물어보면 ISSF 2026 규정서에서 관련 조항을 찾아 즉시 답변. 조항 번호와 출처 포함.</p>
           </div>
-          <div class="p-5 bg-white rounded-xl border border-gray-200">
-            <div class="text-2xl mb-3">🎯</div>
-            <h3 class="font-bold text-navy mb-1.5 text-sm">정확한 출처</h3>
-            <p class="text-gray-400 text-xs leading-relaxed">모든 답변에 ISSF 조항 번호 인용</p>
+
+          <div class="p-5 bg-white rounded-xl border border-gray-200 hover:border-navy/30 hover:shadow-md transition-all">
+            <div class="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center mb-4">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </div>
+            <div class="flex items-center gap-2 mb-1.5">
+              <h3 class="font-bold text-navy text-sm">사대번호 조회</h3>
+              <span class="text-[9px] font-bold text-gold bg-gold/10 border border-gold/30 px-1.5 py-0.5 rounded leading-none">BETA</span>
+            </div>
+            <p class="text-gray-400 text-xs leading-relaxed">이름 또는 소속·팀명으로 시합 사대번호와 세부 일정을 즉시 검색. KSF 공식 데이터 자동 수집.</p>
           </div>
-          <div class="p-5 bg-white rounded-xl border border-gray-200">
-            <div class="text-2xl mb-3">🇰🇷</div>
-            <h3 class="font-bold text-navy mb-1.5 text-sm">한국 선수 맞춤</h3>
-            <p class="text-gray-400 text-xs leading-relaxed">한국 선수의 관점에서 설명</p>
+
+          <div class="p-5 bg-white rounded-xl border border-gray-200 hover:border-navy/30 hover:shadow-md transition-all">
+            <div class="w-10 h-10 rounded-xl bg-navy/8 flex items-center justify-center mb-4">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B1E3F" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div class="flex items-center gap-2 mb-1.5">
+              <h3 class="font-bold text-navy text-sm">아이디어 라운지</h3>
+            </div>
+            <p class="text-gray-400 text-xs leading-relaxed">선수들이 원하는 기능을 자유롭게 제안하고 공유하는 공간. 여러분의 목소리로 서비스를 함께 만들어갑니다.</p>
           </div>
+
         </div>
       </div>
 
-      <!-- 03 Disciplines -->
+      <!-- 03 지원 종목 -->
       <div>
         <h2 class="text-2xl font-bold text-navy mb-6 flex items-center gap-3">
           <span class="w-8 h-8 bg-navy text-white text-xs flex items-center justify-center rounded font-bold flex-shrink-0">03</span>
-          지원 종목
+          AI 챗봇 지원 종목
         </h2>
-        <div class="pl-11 flex flex-wrap gap-2.5">
-          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">10m 공기소총</span>
-          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">10m 공기권총</span>
-          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">50m 소총 3자세</span>
-          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">50m 소총 복사</span>
-          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">25m 권총</span>
-          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">25m 스포츠 권총</span>
-          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">트랩</span>
-          <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">스키트</span>
+        <div class="pl-11">
+          <p class="text-sm text-gray-500 mb-4">ISSF 규정이 적용되는 모든 종목을 지원합니다.</p>
+          <div class="flex flex-wrap gap-2.5">
+            <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">10m 공기소총</span>
+            <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">10m 공기권총</span>
+            <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">50m 소총 3자세</span>
+            <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">50m 소총 복사</span>
+            <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">25m 권총</span>
+            <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">25m 스포츠 권총</span>
+            <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">트랩</span>
+            <span class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium">스키트</span>
+          </div>
         </div>
       </div>
 
@@ -680,13 +821,13 @@
           <li>SEEA Precision은 ISSF(국제사격연맹)의 공식 서비스가 아닙니다.</li>
           <li>AI 답변은 <strong>참고용</strong>이며 공식 판정의 근거로 사용할 수 없습니다.</li>
           <li>정확한 규정은 ISSF 공식 웹사이트의 최신 원문을 기준으로 하십시오.</li>
-          <li>오류 발견 시 <button onclick="navigate('report')" class="underline font-semibold">오류 신고</button> 페이지를 이용해 주세요.</li>
+          <li>오류 발견 시 오류 신고 페이지(준비 중)를 이용해 주세요.</li>
         </ul>
       </div>
 
       <div class="p-5 bg-white rounded-xl border border-gray-200 text-sm text-gray-400">
         <strong class="text-gray-600">참조 규정:</strong> ISSF Rule Book 2026 Edition (Effective 1 January 2026)<br>
-        <strong class="text-gray-600">마지막 업데이트:</strong> 2026년 1월 1일
+        <strong class="text-gray-600">사대번호 데이터:</strong> 대한사격연맹(KSF) 공식 사이트 자동 수집 · 최대 1시간 이내 반영
       </div>
 
     </div>
@@ -701,7 +842,7 @@
     <div class="page-header">
       <div class="max-w-4xl mx-auto px-6">
         <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">GUIDE</p>
-        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">사용법</h1>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">AI 챗봇 사용법</h1>
         <p class="text-white/55 text-lg">챗봇을 가장 효과적으로 활용하는 방법을 알아보세요</p>
       </div>
     </div>
@@ -1223,6 +1364,59 @@
 
 
   <!-- ─────────────────────────────────────
+       PAGE: FEED (아이디어 라운지)
+  ───────────────────────────────────── -->
+  <section id="page-feed" class="page-section">
+    <div class="page-header">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">COMMUNITY</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">아이디어 라운지</h1>
+        <p class="text-white/55 text-base">있으면 좋을 기능, 서비스 제안을 자유롭게 남겨보세요.</p>
+      </div>
+    </div>
+
+    <div class="max-w-2xl mx-auto px-4 py-10">
+
+      <!-- 주의 문구 -->
+      <p class="text-[11px] text-gray-400 text-center mb-4 leading-relaxed">욕설·비방·광고 등 부적절한 내용은 예고 없이 삭제될 수 있습니다.</p>
+
+      <!-- 글쓰기 폼 -->
+      <div class="bg-white border border-gray-200 rounded-2xl p-5 mb-6 shadow-sm">
+        <p class="text-xs font-bold text-navy mb-3 tracking-wide">💡 제안하기</p>
+        <input id="feed-name" type="text" maxlength="20" placeholder="이름 (선택 · 생략 시 익명)"
+          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 outline-none focus:border-navy mb-2 transition-colors">
+        <textarea id="feed-msg" maxlength="120" placeholder="있으면 좋을 기능이나 서비스를 자유롭게 제안해보세요 (최대 120자)"
+          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 outline-none focus:border-navy resize-none h-20 mb-3 transition-colors"></textarea>
+        <div class="flex items-center justify-between">
+          <span id="feed-count" class="text-xs text-gray-300">0 / 120</span>
+          <button onclick="feedPost()" class="px-5 py-2 bg-navy text-white text-sm font-semibold rounded-xl hover:bg-navy/80 active:scale-95 transition-all">제안 올리기</button>
+        </div>
+      </div>
+
+      <!-- 관리자 모드 토글 -->
+      <div class="flex justify-end mb-2">
+        <button onclick="feedAdminToggle()" id="feed-admin-btn" class="text-xs text-gray-300 hover:text-gray-500 transition-colors">🔒 관리자</button>
+      </div>
+      <div id="feed-admin-panel" class="hidden mb-4 flex gap-2">
+        <input id="feed-admin-pw" type="password" placeholder="관리자 비밀번호"
+          class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-navy transition-colors"
+          onkeydown="if(event.key==='Enter')feedAdminLogin()">
+        <button onclick="feedAdminLogin()" class="px-4 py-2 bg-navy text-white text-sm font-semibold rounded-xl hover:bg-navy/80 transition-all">확인</button>
+      </div>
+
+      <!-- 피드 목록 -->
+      <div id="feed-list" class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden min-h-[120px]">
+        <div class="text-center text-gray-300 text-sm py-8">불러오는 중...</div>
+      </div>
+      <!-- 페이지네이션 -->
+      <div id="feed-pagination" class="flex items-center justify-center gap-1.5 mt-5"></div>
+
+    </div>
+  </section>
+  <!-- /FEED -->
+
+
+  <!-- ─────────────────────────────────────
        PAGE: ATHLETES (Coming Soon)
   ───────────────────────────────────── -->
   <section id="page-athletes" class="page-section">
@@ -1301,14 +1495,13 @@
 ═══════════════════════════════════════ -->
 <footer class="bg-navy text-white">
   <div class="max-w-7xl mx-auto px-6 py-16">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-10">
 
       <!-- Brand -->
-      <div class="md:col-span-2">
+      <div class="col-span-2">
         <img src="brand_logo/SEEA Precison_ff0000_R.png" alt="SEEA Precision" class="h-14 w-auto mb-4">
         <p class="text-white/55 text-sm leading-relaxed max-w-sm">
-          시합 직전의 긴박한 순간이든, 판정에 이의를 제기해야 하는 결정적인 찰나이든.<br>
-          방대한 ISSF 규정 속 당신에게 필요한 단 하나의 해답을, 가장 정확하고 빠르게.
+          모든 사격 선수의 완벽한 경기를 응원합니다.
         </p>
         <div class="mt-6 p-4 bg-white/5 rounded-xl border border-white/10 text-xs text-white/35 leading-relaxed">
           ⚠️ 본 서비스는 ISSF의 공식 서비스가 아닙니다. 모든 답변은 참고용으로만 사용하시고
@@ -1321,7 +1514,7 @@
         <h4 class="text-white/40 text-[10px] font-bold tracking-widest uppercase mb-4">메뉴</h4>
         <ul class="space-y-3">
           <li><button onclick="navigate('about')"   class="text-white/65 hover:text-white text-sm transition-colors">서비스 소개</button></li>
-          <li><button onclick="navigate('guide')"   class="text-white/65 hover:text-white text-sm transition-colors">사용법</button></li>
+          <li><button onclick="navigate('guide')"   class="text-white/65 hover:text-white text-sm transition-colors">AI 챗봇 사용법</button></li>
           <li><button onclick="navigate('rules')"   class="text-white/65 hover:text-white text-sm transition-colors">헷갈리는 규칙</button></li>
           <li><button onclick="navigate('bib')"     class="text-white/65 hover:text-white text-sm transition-colors flex items-center gap-1.5">
             사대번호 조회 <span class="text-[10px] text-gold">BETA</span>
@@ -1336,8 +1529,8 @@
       <div>
         <h4 class="text-white/40 text-[10px] font-bold tracking-widest uppercase mb-4">지원</h4>
         <ul class="space-y-3">
-          <li><button onclick="navigate('contact')" class="text-white/65 hover:text-white text-sm transition-colors">문의하기</button></li>
-          <li><button onclick="navigate('report')"  class="text-white/65 hover:text-white text-sm transition-colors">오류 신고</button></li>
+          <li><button onclick="navigate('contact')" class="text-white/65 hover:text-white text-sm transition-colors flex items-center gap-1.5">문의하기 <span class="text-[10px] text-white/30 font-bold">예정</span></button></li>
+          <li><button onclick="navigate('report')"  class="text-white/65 hover:text-white text-sm transition-colors flex items-center gap-1.5">오류 신고 <span class="text-[10px] text-white/30 font-bold">예정</span></button></li>
           <li><span class="text-white/30 text-sm cursor-default">개인정보처리방침</span></li>
           <li><span class="text-white/30 text-sm cursor-default">이용약관</span></li>
         </ul>
@@ -1346,7 +1539,7 @@
     </div>
 
     <div class="border-t border-white/10 mt-10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-white/25">
-      <p>© 2026 SEEA Precision. All rights reserved.</p>
+      <p>© 2018 SEEA Precision. All rights reserved.</p>
       <p>참조 규정: ISSF Rule Book 2026.01.01</p>
     </div>
   </div>
@@ -1358,7 +1551,7 @@
 ═══════════════════════════════════════ -->
 <script>
 // ── ROUTER ───────────────────────────────────────
-const PAGES = ['home','about','guide','rules','bib','contact','report','athletes'];
+const PAGES = ['home','about','guide','rules','bib','feed','contact','report','athletes'];
 
 function navigate(page) {
   if (!PAGES.includes(page)) page = 'home';
@@ -1368,7 +1561,13 @@ function navigate(page) {
   document.querySelectorAll('.nav-link').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
+  document.querySelectorAll('.nav-dd-btn').forEach(btn => {
+    const pages = (btn.dataset.pages || '').split(',');
+    btn.classList.toggle('active', pages.includes(page));
+  });
+  closeNavDropdowns();
   window.history.pushState(null, '', '#' + page);
+  if (page === 'feed') feedLoad();
 }
 
 window.addEventListener('popstate', () => {
@@ -1380,6 +1579,8 @@ window.addEventListener('DOMContentLoaded', () => {
   refreshChips();
   bibBannerInit();
   bibPopulateCompetitions();
+  feedTickerInit();
+  homeFeedInit();
 });
 
 // ── NAVBAR SCROLL SHADOW ─────────────────────────
@@ -1393,7 +1594,38 @@ function toggleMenu() {
 }
 function closeMenu() {
   document.getElementById('mobile-menu').classList.remove('open');
+  // 아코디언 모두 닫기
+  ['mob-acc-service','mob-acc-info'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+    const chev = document.getElementById(id + '-chev');
+    if (chev) chev.style.transform = '';
+  });
 }
+function toggleMobileAcc(id) {
+  const el   = document.getElementById(id);
+  const chev = document.getElementById(id + '-chev');
+  const isOpen = !el.classList.contains('hidden');
+  if (isOpen) {
+    el.classList.add('hidden'); el.classList.remove('flex');
+    if (chev) chev.style.transform = '';
+  } else {
+    el.classList.remove('hidden'); el.classList.add('flex');
+    if (chev) chev.style.transform = 'rotate(180deg)';
+  }
+}
+function toggleNavDropdown(id) {
+  const el = document.getElementById(id);
+  const isOpen = el.classList.contains('open');
+  closeNavDropdowns();
+  if (!isOpen) el.classList.add('open');
+}
+function closeNavDropdowns() {
+  document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.nav-dropdown')) closeNavDropdowns();
+});
 
 // ── SCROLL TO CHAT ────────────────────────────────
 function scrollToChat() {
@@ -1640,6 +1872,12 @@ function fmtDate(dateStr) {
   return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
 }
 
+function fmtSchedDate(d) {
+  const m = (d || '').match(/(\d+)월\s*(\d+)일\s*\(([^)]+)\)/);
+  if (!m) return d || '';
+  return `${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')} (${m[3]})`;
+}
+
 // "2026.05.14 ~ 05.21" — 같은 연/월이면 뒤쪽 생략
 function fmtRange(startStr, endStr) {
   const s = new Date(startStr), e = new Date(endStr);
@@ -1762,7 +2000,9 @@ function bibToggleAcc(idx) {
   chevron.style.transform = opening ? 'rotate(180deg)' : '';
 }
 
-let bibTeamSamples = []; // 현재 대회 출전팀 목록 (팀 placeholder 랜덤화용)
+let bibTeamSamples = [];
+let bibNameSamples = [];
+let _bibNameTimer  = null;
 
 function bibTeamPlaceholder() {
   if (!bibTeamSamples.length) return '예) 우리은행, 국군체육부대';
@@ -1770,11 +2010,40 @@ function bibTeamPlaceholder() {
   return '예) ' + shuffled.slice(0, 2).join(', ');
 }
 
+function bibNamePlaceholder() {
+  if (!bibNameSamples.length) return '예) 홍길동';
+  return '예) ' + bibNameSamples[Math.floor(Math.random() * bibNameSamples.length)];
+}
+
+function _startNameRotation() {
+  if (_bibNameTimer) clearInterval(_bibNameTimer);
+  _bibNameTimer = setInterval(() => {
+    const el   = document.getElementById('bib-name');
+    const mode = document.getElementById('bib-mode')?.value;
+    if (!el || el.value) return;
+    el.placeholder = mode === 'team' ? bibTeamPlaceholder() : bibNamePlaceholder();
+  }, 3000);
+}
+
+function pollNameSamples(ksfCode, retries = 8) {
+  fetch(`/api/player-names?comp=${encodeURIComponent(ksfCode)}`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.names?.length) {
+        bibNameSamples = d.names;
+        document.getElementById('bib-name').placeholder = bibNamePlaceholder();
+        _startNameRotation();
+      } else if (d.warming && retries > 0) {
+        setTimeout(() => pollNameSamples(ksfCode, retries - 1), 4000);
+      }
+    }).catch(() => {});
+}
+
 function setBibMode(mode) {
   document.getElementById('bib-mode').value = mode;
   const isTeam = mode === 'team';
   document.getElementById('bib-mode-label').textContent  = isTeam ? '소속 / 팀명' : '선수 이름';
-  document.getElementById('bib-name').placeholder        = isTeam ? bibTeamPlaceholder() : '예) 홍길동';
+  document.getElementById('bib-name').placeholder        = isTeam ? bibTeamPlaceholder() : bibNamePlaceholder();
   document.getElementById('bib-mode-hint').textContent   = isTeam
     ? '팀명 일부만 입력해도 됩니다. 해당 소속 선수 전원이 표시됩니다.'
     : '동명이인이 있을 경우 소속(학교/팀)이 함께 표시됩니다.';
@@ -1813,6 +2082,8 @@ function bibPopulateCompetitions() {
     opt.textContent = `${tag} ${c.name} · ${fmtRange(c.start, c.end)}`;
     sel.appendChild(opt);
   });
+  // 첫 번째 시합 자동 선택 후 선수/팀 데이터 즉시 fetch 시작
+  bibUpdateCompetitionInfo();
 }
 
 function bibUpdateCompetitionInfo() {
@@ -1838,16 +2109,19 @@ function bibUpdateCompetitionInfo() {
   document.getElementById('bib-info-host').textContent = '· ' + c.venue + ' 개최';
   info.classList.remove('hidden');
 
-  // 팀 목록 fetch — 캐시 준비 중이면 완료될 때까지 재시도
+  // 팀·선수 이름 fetch — 캐시 준비 중이면 완료될 때까지 재시도
   if (!c.ksfCode) return;
+  pollNameSamples(c.ksfCode);
   const pollTeams = (retries = 8) => {
     fetch(`/api/teams?comp=${encodeURIComponent(c.ksfCode)}`)
       .then(r => r.json())
       .then(d => {
         if (d.teams?.length) {
           bibTeamSamples = d.teams;
-          if (document.getElementById('bib-mode').value === 'team')
+          if (document.getElementById('bib-mode').value === 'team') {
             document.getElementById('bib-name').placeholder = bibTeamPlaceholder();
+            _startNameRotation(); // 팀 모드에서도 회전 시작
+          }
         } else if (d.warming && retries > 0) {
           setTimeout(() => pollTeams(retries - 1), 4000);
         }
@@ -2014,7 +2288,7 @@ function bibResultFound(c, name, matched, total, searchMode) {
   const colSpan = hasSchedule ? 5 : 4;
   const rows = matched.map((p, ri) => {
     const bib = p.group && p.lane ? `${p.group}-${p.lane}` : p.bib || '—';
-    const dateCell = p.scheduleDate ? `<span class="block text-[11px] font-medium text-gray-700">${esc(p.scheduleDate)}</span>` : '';
+    const dateCell = p.scheduleDate ? `<span class="block text-[11px] font-medium text-gray-700 whitespace-nowrap">${esc(fmtSchedDate(p.scheduleDate))}</span>` : '';
     const timeCell = p.scheduleTime ? `<span class="block text-[11px] text-gray-400 mt-0.5">${esc(p.scheduleTime)}</span>` : '';
     const schedCell = (dateCell || timeCell) ? dateCell + timeCell : '<span class="text-gray-300 text-xs">—</span>';
     const canAdj = !!(p.group && p.lane);
@@ -2173,6 +2447,343 @@ function bibResultError(c, name, msg) {
       </div>
     </div>`;
 }
+
+// ── LIVE FEED ──────────────────────────────────────────────
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60)   return '방금';
+  if (s < 3600)  return `${Math.floor(s/60)}분 전`;
+  if (s < 86400) return `${Math.floor(s/3600)}시간 전`;
+  return `${Math.floor(s/86400)}일 전`;
+}
+
+// ── 피드 상태 ─────────────────────────────────────────────
+let _feedAdminMode = false;
+let _feedAdminPw   = '';
+
+// ── 피드 데이터 fetch + 전체 렌더 ──────────────────────────
+async function feedLoad() {
+  try {
+    const r = await fetch('/api/feed');
+    const msgs = await r.json();
+    _renderFeedPage(msgs);
+    _renderHomeFeed(msgs);
+    _renderTicker(msgs);
+  } catch {}
+}
+
+const FEED_PER_PAGE = 7;
+let   _feedPage     = 0;
+let   _feedAllMsgs  = [];
+
+function _renderFeedPage(msgs) {
+  _feedAllMsgs = msgs;
+  // 새 글 올린 뒤엔 1페이지(최신)로 복귀
+  const totalPages = Math.max(1, Math.ceil(msgs.length / FEED_PER_PAGE));
+  if (_feedPage >= totalPages) _feedPage = 0;
+  _renderFeedPageAt(_feedPage);
+}
+
+function _renderFeedPageAt(page) {
+  _feedPage = page;
+  const msgs  = _feedAllMsgs;
+  const list  = document.getElementById('feed-list');
+  const pgEl  = document.getElementById('feed-pagination');
+  if (!list) return;
+
+  if (!msgs.length) {
+    list.innerHTML = '<div class="text-center text-gray-300 text-sm py-10">아직 제안이 없습니다.<br>첫 번째 아이디어를 올려보세요!</div>';
+    if (pgEl) pgEl.innerHTML = '';
+    return;
+  }
+
+  const start = page * FEED_PER_PAGE;
+  const slice = msgs.slice(start, start + FEED_PER_PAGE);
+
+  list.innerHTML = slice.map((m, i) => {
+    const isNew  = Date.now() - m.ts < 60 * 60 * 1000;
+    const delBtn = _feedAdminMode
+      ? `<button onclick="feedDelete(${m.ts})" class="text-[10px] text-red-300 hover:text-red-500 border border-red-100 rounded px-1.5 py-0.5 transition-colors ml-2">삭제</button>`
+      : '';
+    return `
+    <div class="flex items-start gap-3 px-5 py-4 hover:bg-gray-50/60 transition-colors ${i===0?'':'border-t border-gray-100'}">
+      <div class="w-8 h-8 rounded-full bg-navy/10 flex items-center justify-center shrink-0 text-xs font-bold text-navy">
+        ${esc((m.name||'익명').slice(0,1))}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 mb-1">
+          ${isNew ? '<span class="text-[9px] font-bold text-gold bg-gold/10 border border-gold/30 rounded px-1.5 py-0.5">NEW</span>' : ''}
+          <span class="text-xs font-bold text-navy">${esc(m.name||'익명')}</span>
+          <span class="text-[10px] text-gray-300">${timeAgo(m.ts)}</span>
+          ${delBtn}
+        </div>
+        <p class="text-sm text-gray-700 leading-relaxed">${esc(m.msg)}</p>
+      </div>
+    </div>`;
+  }).join('');
+
+  // 페이지네이션 렌더
+  if (!pgEl) return;
+  const totalPages = Math.ceil(msgs.length / FEED_PER_PAGE);
+  if (totalPages <= 1) { pgEl.innerHTML = ''; return; }
+
+  const btnBase = 'w-8 h-8 rounded-lg text-sm font-semibold transition-all flex items-center justify-center';
+  let html = '';
+  // 이전 버튼
+  html += `<button onclick="_renderFeedPageAt(${page-1})" ${page===0?'disabled':''} class="${btnBase} ${page===0?'text-gray-200 cursor-not-allowed':'text-gray-400 hover:bg-gray-100'}">
+    <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L4 6l4 4"/></svg>
+  </button>`;
+  // 페이지 번호
+  for (let i = 0; i < totalPages; i++) {
+    const isActive = i === page;
+    html += `<button onclick="_renderFeedPageAt(${i})" class="${btnBase} ${isActive ? 'bg-navy text-white' : 'text-gray-400 hover:bg-gray-100'}">${i+1}</button>`;
+  }
+  // 다음 버튼
+  html += `<button onclick="_renderFeedPageAt(${page+1})" ${page===totalPages-1?'disabled':''} class="${btnBase} ${page===totalPages-1?'text-gray-200 cursor-not-allowed':'text-gray-400 hover:bg-gray-100'}">
+    <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2l4 4-4 4"/></svg>
+  </button>`;
+  pgEl.innerHTML = html;
+}
+
+let _chatLastTs     = 0;
+let _chatCycleTimer = null;
+let _cachedFeedMsgs = [];
+let _chatAnimating  = false;
+
+// 현재 화면에 표시 중인 메시지 인덱스 (top→bottom = 오래된→최신)
+let _visibleItems = []; // [topIdx, midIdx, botIdx]
+let _nextItem     = -1; // 아래에서 올라올 다음 인덱스
+let _shuffleQueue = []; // 랜덤 순서 큐
+
+const CHAT_ITEM_H      = 56;
+const CHAT_ITEM_GAP    = 10;
+const CHAT_ITEM_STRIDE = CHAT_ITEM_H + CHAT_ITEM_GAP; // 66px
+
+function _shuffleArr(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function _pickNextIdx() {
+  const total = _cachedFeedMsgs.length;
+  if (total <= 3) return 0;
+  // 큐 소진 시 현재 보이는 인덱스 제외 후 재셔플
+  if (_shuffleQueue.length === 0) {
+    const pool = Array.from({length: total}, (_, i) => i).filter(i => !_visibleItems.includes(i));
+    _shuffleQueue = _shuffleArr(pool.length ? pool : Array.from({length: total}, (_, i) => i));
+  }
+  return _shuffleQueue.pop();
+}
+
+function _initWindow() {
+  const total = _cachedFeedMsgs.length;
+  _shuffleQueue = [];
+  if (total >= 4) {
+    _visibleItems = [2, 1, 0]; // 오래된→최신 top→bottom (msgs[0]=최신)
+    _nextItem = _pickNextIdx();
+  } else {
+    _visibleItems = Array.from({length: total}, (_, i) => total - 1 - i);
+    _nextItem = -1;
+  }
+}
+
+function _chatItemHTML(m) {
+  return `<div class="flex items-start gap-2.5 flex-shrink-0" style="height:${CHAT_ITEM_H}px;overflow:hidden;">
+    <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-white" style="background:rgba(201,162,74,0.55);flex-shrink:0;">
+      ${esc((m.name||'익').slice(0,1))}
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div class="flex items-center gap-1.5 mb-0.5">
+        <span class="text-xs font-bold text-white/80">${esc(m.name||'익명')}</span>
+        <span class="text-[10px] text-white/30">${timeAgo(m.ts)}</span>
+      </div>
+      <p class="text-xs text-white/60" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(m.msg)}</p>
+    </div>
+  </div>`;
+}
+
+function _ensureInner() {
+  const el = document.getElementById('chat-msg-list');
+  if (!el) return null;
+  let inner = document.getElementById('chat-msg-inner');
+  if (!inner) {
+    el.innerHTML = '<div id="chat-msg-inner" style="display:flex;flex-direction:column;gap:10px;will-change:transform;"></div>';
+    inner = document.getElementById('chat-msg-inner');
+  }
+  return inner;
+}
+
+function _renderFromWindow() {
+  const inner = _ensureInner();
+  if (!inner || !_cachedFeedMsgs.length) return;
+  inner.style.transition = 'none';
+  inner.style.transform  = 'translateY(0)';
+
+  const idxs = [..._visibleItems];
+  if (_cachedFeedMsgs.length >= 4 && _nextItem >= 0) idxs.push(_nextItem); // 화면 아래 대기
+  inner.innerHTML = idxs.map(i => _chatItemHTML(_cachedFeedMsgs[i])).join('');
+}
+
+function _renderHomeFeed(msgs) {
+  const el = document.getElementById('chat-msg-list');
+  if (!el) return;
+
+  const latestTs = msgs.length ? msgs[0].ts : 0;
+  const hasNew   = latestTs > _chatLastTs && _chatLastTs !== 0;
+  _cachedFeedMsgs = msgs;
+
+  if (!msgs.length) {
+    el.innerHTML = '<div style="color:rgba(255,255,255,0.25);font-size:12px;text-align:center;padding:12px 0;">아이디어를 첫 번째로 남겨보세요</div>';
+    _stopChatCycle(); _chatLastTs = 0;
+    return;
+  }
+
+  if (hasNew) {
+    const card = document.getElementById('lounge-card');
+    if (card) { card.classList.remove('lounge-pulse'); card.offsetHeight; card.classList.add('lounge-pulse'); }
+    _initWindow();
+  }
+
+  const isFirst = !document.getElementById('chat-msg-inner');
+  if (isFirst || hasNew) { _initWindow(); _renderFromWindow(); }
+  else if (msgs.length < 4) _renderFromWindow();
+
+  if (msgs.length >= 4) _startChatCycle();
+  else _stopChatCycle();
+
+  _chatLastTs = latestTs;
+}
+
+function _startChatCycle() {
+  if (_chatCycleTimer) return;
+  _chatCycleTimer = setInterval(_chatCycleStep, 3000);
+}
+
+function _chatCycleStep() {
+  if (_chatAnimating || !_cachedFeedMsgs.length) return;
+  const inner = document.getElementById('chat-msg-inner');
+  if (!inner) return;
+
+  _chatAnimating = true;
+  inner.style.transition = 'transform 0.75s cubic-bezier(.22,1,.36,1)';
+  inner.style.transform  = `translateY(-${CHAT_ITEM_STRIDE}px)`;
+
+  setTimeout(() => {
+    // top 아이템 내보내고 window 한 칸 이동
+    _visibleItems = [_visibleItems[1], _visibleItems[2], _nextItem];
+    _nextItem = _pickNextIdx(); // 다음 랜덤 인덱스
+    _renderFromWindow();
+    _chatAnimating = false;
+  }, 780);
+}
+
+function _stopChatCycle() {
+  if (_chatCycleTimer) { clearInterval(_chatCycleTimer); _chatCycleTimer = null; }
+  _chatAnimating = false;
+}
+
+async function chatPost() {
+  const nameEl = document.getElementById('chat-name');
+  const msgEl  = document.getElementById('chat-msg');
+  const text   = msgEl.value.trim();
+  if (!text) { msgEl.focus(); return; }
+  await fetch('/api/feed', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: nameEl.value.trim(), msg: text }),
+  }).catch(() => {});
+  msgEl.value = '';
+  feedLoad();
+}
+
+function _renderTicker(msgs) {
+  const el  = document.getElementById('live-ticker-inner');
+  const bar = document.getElementById('live-ticker-bar');
+  if (!el) return;
+  if (!msgs.length) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  const items = msgs.slice(0, 8);
+  el.innerHTML = [...items, ...items].map(m =>
+    `<span class="shrink-0"><strong class="text-gold/80">${esc(m.name||'익명')}</strong> <span class="text-white/55">${esc(m.msg)}</span></span>`
+  ).join('');
+  el.style.animation = 'none';
+  el.offsetHeight; // reflow
+  el.style.animation = 'feedScroll 30s linear infinite';
+}
+
+// ── 피드 글쓰기 ───────────────────────────────────────────
+async function feedPost() {
+  const nameEl = document.getElementById('feed-name');
+  const msgEl  = document.getElementById('feed-msg');
+  const text   = msgEl.value.trim();
+  if (!text) { msgEl.focus(); return; }
+  await fetch('/api/feed', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: nameEl.value.trim(), msg: text }),
+  }).catch(() => {});
+  msgEl.value = '';
+  nameEl.value = '';
+  document.getElementById('feed-count').textContent = '0 / 120';
+  _feedPage = 0; // 새 글 올리면 1페이지로
+  feedLoad();
+}
+
+
+// ── 관리자 ────────────────────────────────────────────────
+function feedAdminToggle() {
+  const panel = document.getElementById('feed-admin-panel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) document.getElementById('feed-admin-pw').focus();
+}
+
+function feedAdminLogin() {
+  const pw = document.getElementById('feed-admin-pw').value.trim();
+  if (!pw) return;
+  _feedAdminPw   = pw;
+  _feedAdminMode = true;
+  document.getElementById('feed-admin-panel').classList.add('hidden');
+  document.getElementById('feed-admin-btn').textContent = '🔓 관리자 모드';
+  document.getElementById('feed-admin-btn').className   = 'text-xs text-red-400 hover:text-red-600 transition-colors';
+  feedLoad();
+}
+
+async function feedDelete(ts) {
+  if (!confirm('이 소식을 삭제하시겠습니까?')) return;
+  const r = await fetch('/api/feed', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ts, pw: _feedAdminPw }),
+  });
+  if (r.ok) {
+    feedLoad();
+  } else {
+    const d = await r.json().catch(() => ({}));
+    alert(d.error || '삭제 실패: 비밀번호를 확인하세요.');
+    _feedAdminMode = false;
+    _feedAdminPw   = '';
+    document.getElementById('feed-admin-btn').textContent = '🔒 관리자';
+    document.getElementById('feed-admin-btn').className   = 'text-xs text-gray-300 hover:text-gray-500 transition-colors';
+    feedLoad();
+  }
+}
+
+// ── 초기화·자동갱신 ──────────────────────────────────────
+function feedTickerInit() { feedLoad(); }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const msgEl = document.getElementById('feed-msg');
+  if (msgEl) msgEl.addEventListener('input', () => {
+    document.getElementById('feed-count').textContent = `${msgEl.value.length} / 120`;
+  });
+});
+
+async function homeFeedInit() { feedLoad(); }
+
+setInterval(feedLoad, 15000);
 </script>
 </body>
 </html>

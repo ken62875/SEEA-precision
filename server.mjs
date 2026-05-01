@@ -543,6 +543,75 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── GET /api/player-names?comp=N01H ─────────────────────
+  if (req.method === 'GET' && req.url.startsWith('/api/player-names')) {
+    const params = new URL(req.url, 'http://localhost').searchParams;
+    const comp   = (params.get('comp') || '').trim();
+    if (!comp) { res.writeHead(400); res.end(JSON.stringify({ names: [] })); return; }
+    const cached = compPlayersCache.get(comp);
+    if (cached && cached.players?.length) {
+      const names = [...new Set(cached.players.map(p => p.name).filter(Boolean))]
+        .sort(() => Math.random() - 0.5).slice(0, 40);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ names }));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ names: [], warming: true }));
+    }
+    return;
+  }
+
+  // ── GET /api/feed  |  POST /api/feed ─────────────────────
+  const FEED_FILE = path.join(__dirname, 'feed.json');
+  function readFeed() {
+    try { return JSON.parse(fs.readFileSync(FEED_FILE, 'utf8')); } catch { return []; }
+  }
+  function writeFeed(msgs) {
+    try { fs.writeFileSync(FEED_FILE, JSON.stringify(msgs)); } catch {}
+  }
+
+  const ADMIN_PW = process.env.ADMIN_PASSWORD || 'kimchi5841*';
+
+  if (req.url.startsWith('/api/feed')) {
+    if (req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(readFeed()));
+      return;
+    }
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', c => { body += c; });
+      req.on('end', () => {
+        try {
+          const { name, msg } = JSON.parse(body);
+          const text = (msg || '').trim().slice(0, 120);
+          if (!text) { res.writeHead(400); res.end(); return; }
+          const msgs = readFeed();
+          msgs.unshift({ id: Date.now(), name: (name || '익명').trim().slice(0, 20) || '익명', msg: text, ts: Date.now() });
+          writeFeed(msgs.slice(0, 60));
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: true }));
+        } catch { res.writeHead(400); res.end(); }
+      });
+      return;
+    }
+    if (req.method === 'DELETE') {
+      let body = '';
+      req.on('data', c => { body += c; });
+      req.on('end', () => {
+        try {
+          const { ts: delTs, pw } = JSON.parse(body);
+          if (pw !== ADMIN_PW) { res.writeHead(403); res.end(JSON.stringify({ error: '비밀번호가 틀렸습니다.' })); return; }
+          const msgs = readFeed().filter(m => m.ts !== delTs);
+          writeFeed(msgs);
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ok: true }));
+        } catch { res.writeHead(400); res.end(); }
+      });
+      return;
+    }
+  }
+
   // ── GET /api/comp-info?comp=N01H ────────────────────────
   if (req.method === 'GET' && req.url.startsWith('/api/comp-info')) {
     const params = new URL(req.url, 'http://localhost').searchParams;
