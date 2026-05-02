@@ -520,52 +520,76 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ── GET /api/feed  |  POST /api/feed ─────────────────────
-  const FEED_FILE = path.join(__dirname, 'feed.json');
-  function readFeed() {
-    try { return JSON.parse(fs.readFileSync(FEED_FILE, 'utf8')); } catch { return []; }
-  }
-  function writeFeed(msgs) {
-    try { fs.writeFileSync(FEED_FILE, JSON.stringify(msgs)); } catch {}
-  }
-
-  const ADMIN_PW = process.env.ADMIN_PASSWORD || 'kimchi5841*';
+  // ── GET /api/feed  |  POST /api/feed  |  DELETE /api/feed ──
+  const ADMIN_PW  = process.env.ADMIN_PASSWORD || 'kimchi5841*';
+  const SB_URL    = process.env.SUPABASE_URL;
+  const SB_KEY    = process.env.SUPABASE_ANON_KEY;
+  const sbHeaders = {
+    'Content-Type':  'application/json',
+    'apikey':        SB_KEY || '',
+    'Authorization': `Bearer ${SB_KEY || ''}`,
+  };
 
   if (req.url.startsWith('/api/feed')) {
-    if (req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(readFeed()));
+    if (!SB_URL || !SB_KEY) {
+      res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'Supabase 미설정' }));
       return;
     }
+
+    if (req.method === 'GET') {
+      try {
+        const sbRes = await fetch(`${SB_URL}/rest/v1/ideas?order=ts.desc&limit=60`, { headers: sbHeaders });
+        const data  = await sbRes.json();
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify(Array.isArray(data) ? data : []));
+      } catch (e) {
+        res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+      return;
+    }
+
     if (req.method === 'POST') {
       let body = '';
       req.on('data', c => { body += c; });
-      req.on('end', () => {
+      req.on('end', async () => {
         try {
           const { name, msg } = JSON.parse(body);
           const text = (msg || '').trim().slice(0, 120);
           if (!text) { res.writeHead(400); res.end(); return; }
-          const msgs = readFeed();
-          msgs.unshift({ id: Date.now(), name: (name || '익명').trim().slice(0, 20) || '익명', msg: text, ts: Date.now() });
-          writeFeed(msgs.slice(0, 60));
+          const sbRes = await fetch(`${SB_URL}/rest/v1/ideas`, {
+            method:  'POST',
+            headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
+            body:    JSON.stringify({
+              name: (name || '익명').trim().slice(0, 20) || '익명',
+              msg:  text,
+              ts:   Date.now(),
+            }),
+          });
+          if (!sbRes.ok) throw new Error(`Supabase ${sbRes.status}`);
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
           res.end(JSON.stringify({ ok: true }));
-        } catch { res.writeHead(400); res.end(); }
+        } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
       });
       return;
     }
+
     if (req.method === 'DELETE') {
       let body = '';
       req.on('data', c => { body += c; });
-      req.on('end', () => {
+      req.on('end', async () => {
         try {
           const { ts: delTs, pw } = JSON.parse(body);
           if (pw !== ADMIN_PW) { res.writeHead(403); res.end(JSON.stringify({ error: '비밀번호가 틀렸습니다.' })); return; }
-          const msgs = readFeed().filter(m => m.ts !== delTs);
-          writeFeed(msgs);
+          const sbRes = await fetch(`${SB_URL}/rest/v1/ideas?ts=eq.${delTs}`, {
+            method:  'DELETE',
+            headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
+          });
+          if (!sbRes.ok) throw new Error(`Supabase ${sbRes.status}`);
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
           res.end(JSON.stringify({ ok: true }));
-        } catch { res.writeHead(400); res.end(); }
+        } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: e.message })); }
       });
       return;
     }
