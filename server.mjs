@@ -223,24 +223,31 @@ const server = http.createServer(async (req, res) => {
         const { messages } = JSON.parse(body);
         if (!Array.isArray(messages) || messages.length === 0) throw new Error('messages 필드가 비어 있습니다.');
 
-        // 규정집이 업로드된 경우 첫 번째 컨텍스트로 삽입
+        // 규정집 파일을 첫 번째 user 메시지에 합쳐서 turn 구조 유지
         const geminiMessages = [];
 
         if (rulesFileUri) {
+          const [first, ...rest] = messages;
           geminiMessages.push({
             role: 'user',
             parts: [
               { fileData: { mimeType: 'text/plain', fileUri: rulesFileUri } },
-              { text: '이 문서는 2026년 1월 1일 기준 ISSF 공식 규정집입니다. 이 문서를 기반으로 정확하게 답변해주세요.' },
+              { text: first.content },
             ],
           });
-        }
-
-        for (const m of messages) {
-          geminiMessages.push({
-            role:  m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.content }],
-          });
+          for (const m of rest) {
+            geminiMessages.push({
+              role:  m.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: m.content }],
+            });
+          }
+        } else {
+          for (const m of messages) {
+            geminiMessages.push({
+              role:  m.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: m.content }],
+            });
+          }
         }
 
         const apiRes = await fetch(
