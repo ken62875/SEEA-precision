@@ -39,7 +39,7 @@ const SYSTEM_PROMPT = `당신은 SEEA Precision AI입니다. 한국 사격 선�
 
 [역할과 답변 규칙]
 1. 항상 한국어로 답변하세요.
-2. 첨부된 ISSF 공식 규정집 PDF를 최우선으로 참조하여 정확하게 답변하세요.
+2. 첨부된 ISSF 공식 규정집을 최우선으로 참조하여 정확하게 답변하세요.
 3. 규정 조항 번호를 반드시 인용하세요 (예: "ISSF TR 6.4.1.2", "ISSF GTR 3.1.5").
 4. 규정집에서 찾을 수 없는 내용은 "규정집에서 확인되지 않습니다. 원문을 직접 확인하세요"라고 명시하세요.
 5. 모든 답변 마지막에 다음 한 줄 면책 문구를 추가하세요:
@@ -92,7 +92,7 @@ const SYSTEM_PROMPT = `당신은 SEEA Precision AI입니다. 한국 사격 선�
 
 [답변 스타일 규칙]
 12. 답변은 핵심을 먼저 전달하되, 단순히 "허용/금지" 한 줄로 끝내지 말고 **왜 그런지, 어떤 상황에서 적용되는지** 등 실용적인 맥락을 포함해 2~4문장 이내로 간결하게 작성하세요. 불필요한 부연 설명과 반복은 생략하세요. "헷갈리기 쉬운 인접 규정"을 별도 항목으로 나누지 말고 답변 본문 안에 자연스럽게 녹여서 설명하세요.
-13. 규정 조항을 인용할 때는 반드시 해당 조항의 실제 내용과 일치하는지 확인하세요. PDF에서 직접 확인되지 않은 내용을 조항 번호와 함께 단정적으로 서술하지 마세요. 불확실한 경우 "규정집에서 직접 확인을 권장합니다"라고 명시하세요.
+13. 규정 조항을 인용할 때는 반드시 해당 조항의 실제 내용과 일치하는지 확인하세요. 규정집에서 직접 확인되지 않은 내용을 조항 번호와 함께 단정적으로 서술하지 마세요. 불확실한 경우 "규정집에서 직접 확인을 권장합니다"라고 명시하세요.
 14. 규정이 명확하지 않거나 심판 재량이 개입되는 회색 지대는 "이 부분은 심판 재량에 따를 수 있습니다" 또는 "상황에 따라 다를 수 있습니다"라고 솔직하게 안내하세요.
 15. 딱딱한 법조문 스타일 대신 선수가 경기장에서 바로 이해할 수 있는 실용적인 언어로 풀어서 설명하세요.
 16. 사용자가 "더 자세히", "구체적으로", "예시를 들어" 등을 요청할 때만 더 상세한 내용을 추가 설명하세요.
@@ -117,9 +117,11 @@ const SYSTEM_PROMPT = `당신은 SEEA Precision AI입니다. 한국 사격 선�
     - 이 종목들은 정수 채점이므로 ISSF GTR 6.15.1 a~e 순서 적용
     - 순서: ① 이너 텐(X-ten) 개수 → ② 마지막 시리즈부터 역순 정수 점수 비교 → ③ 마지막 발부터 이너 텐 비교 → ④ EST 사용 시 소수점 비교 → ⑤ 공동 순위(알파벳순)`;
 
-// ── PDF 규정집 업로드 (Gemini Files API) ──────────────────
+// ── 규정집 업로드 (Gemini Files API) ──────────────────────
 let rulesFileUri   = null;
 let rulesUploading = false;
+
+const RULES_FILENAME = 'Kor_ISSF_rules_2026.01.01.md';
 
 async function uploadRulesPDF() {
   if (!process.env.GEMINI_API_KEY) return;
@@ -127,13 +129,12 @@ async function uploadRulesPDF() {
   const rulesDir = path.join(__dirname, 'rules');
   let pdfPath = null;
   try {
-    const files = fs.readdirSync(rulesDir);
-    const pdf   = files.find(f => f.toLowerCase().endsWith('.pdf'));
-    if (pdf) pdfPath = path.join(rulesDir, pdf);
+    const filePath = path.join(rulesDir, RULES_FILENAME);
+    if (fs.existsSync(filePath)) pdfPath = filePath;
   } catch { /* 폴더 없으면 무시 */ }
 
   if (!pdfPath) {
-    console.log('    📄 규정집 없음 — rules/ 폴더에 PDF를 넣으면 자동 학습됩니다');
+    console.log(`    📄 규정집 없음 — rules/${RULES_FILENAME} 파일을 넣으면 자동 학습됩니다`);
     return;
   }
 
@@ -153,7 +154,7 @@ async function uploadRulesPDF() {
       const body = Buffer.concat([
         Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`),
         Buffer.from(metadata),
-        Buffer.from(`\r\n--${boundary}\r\nContent-Type: application/pdf\r\n\r\n`),
+        Buffer.from(`\r\n--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n`),
         pdfData,
         Buffer.from(`\r\n--${boundary}--`),
       ]);
@@ -188,7 +189,7 @@ async function uploadRulesPDF() {
             'X-Goog-Upload-Protocol':              'resumable',
             'X-Goog-Upload-Command':               'start',
             'X-Goog-Upload-Header-Content-Length': String(fileSize),
-            'X-Goog-Upload-Header-Content-Type':   'application/pdf',
+            'X-Goog-Upload-Header-Content-Type':   'text/plain; charset=utf-8',
           },
           body: JSON.stringify({ file: { display_name: 'ISSF Rules 2026' } }),
         }
@@ -267,15 +268,15 @@ const server = http.createServer(async (req, res) => {
         const { messages } = JSON.parse(body);
         if (!Array.isArray(messages) || messages.length === 0) throw new Error('messages 필드가 비어 있습니다.');
 
-        // PDF 규정집이 업로드된 경우 첫 번째 컨텍스트로 삽입
+        // 규정집이 업로드된 경우 첫 번째 컨텍스트로 삽입
         const geminiMessages = [];
 
         if (rulesFileUri) {
           geminiMessages.push({
             role: 'user',
             parts: [
-              { fileData: { mimeType: 'application/pdf', fileUri: rulesFileUri } },
-              { text: '이 PDF는 2026년 1월 1일 기준 ISSF 공식 규정집입니다. 이 문서를 기반으로 정확하게 답변해주세요.' },
+              { fileData: { mimeType: 'text/plain', fileUri: rulesFileUri } },
+              { text: '이 문서는 2026년 1월 1일 기준 ISSF 공식 규정집입니다. 이 문서를 기반으로 정확하게 답변해주세요.' },
             ],
           });
           geminiMessages.push({
