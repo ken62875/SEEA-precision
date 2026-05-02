@@ -157,6 +157,20 @@ function parseGameLinks(html) {
 
     if (eventLabel.length < 3) eventLabel = '';
 
+    // 행 내 personUrl, groupUrl 추출 (행당 하나씩)
+    const personRaw = rowHtml.match(/["']([^"']*score_2015_person[^"']*\.asp\?[^"']+)["']/);
+    let personUrl = '';
+    if (personRaw) {
+      personUrl = personRaw[1];
+      if (!personUrl.startsWith('http')) personUrl = `${KSF_BASE}${personUrl.startsWith('/') ? '' : '/score/'}${personUrl}`;
+    }
+    const groupRaw = rowHtml.match(/["']([^"']*score_2015_group\.asp\?[^"']+)["']/);
+    let groupUrl = '';
+    if (groupRaw) {
+      groupUrl = groupRaw[1];
+      if (!groupUrl.startsWith('http')) groupUrl = `${KSF_BASE}${groupUrl.startsWith('/') ? '' : '/score/'}${groupUrl}`;
+    }
+
     // 행 내 선수 URL 추출
     for (const urlM of rowHtml.matchAll(/["']([^"']*score_2015_player\.asp\?[^"']+)["']/g)) {
       let href = urlM[1];
@@ -166,12 +180,13 @@ function parseGameLinks(html) {
       if (seen.has(href)) continue;
       seen.add(href);
 
-      // 날짜: 이 행 위치 이전의 마지막 아코디언 날짜 헤더
       const nearDate = dateHits.filter(d => d.pos <= rowM.index).at(-1);
 
       results.push({
         eventLabel:   eventLabel || generateLabel(href),
         playerUrl:    href,
+        personUrl,
+        groupUrl,
         scheduleDate: nearDate?.text || '',
         scheduleTime,
       });
@@ -308,4 +323,120 @@ export async function getGamePageHtml(compCode) {
   const html = await fetchHtml(url);
   const events = parseGameLinks(html);
   return { html, events };
+}
+
+// ── 대회 목록 + 상태 분류 ─────────────────────────────────
+function parseDateRange(dateStr, year) {
+  const s = (dateStr || '').replace(/\s/g, '');
+
+  // "4.30~5.6" 또는 "4.30-5.6" (월 다름)
+  let m = s.match(/^(\d{1,2})\.(\d{1,2})[~\-](\d{1,2})\.(\d{1,2})$/);
+  if (m) {
+    const startDate = new Date(year, +m[1] - 1, +m[2]);
+    const endYear   = +m[3] < +m[1] ? year + 1 : year;
+    return { startDate, endDate: new Date(endYear, +m[3] - 1, +m[4]) };
+  }
+
+  // "3.25~31" (같은 월)
+  m = s.match(/^(\d{1,2})\.(\d{1,2})[~\-](\d{1,2})$/);
+  if (m) {
+    return {
+      startDate: new Date(year, +m[1] - 1, +m[2]),
+      endDate:   new Date(year, +m[1] - 1, +m[3]),
+    };
+  }
+
+  // "5.6" (단일)
+  m = s.match(/^(\d{1,2})\.(\d{1,2})$/);
+  if (m) {
+    const d = new Date(year, +m[1] - 1, +m[2]);
+    return { startDate: d, endDate: d };
+  }
+
+  return { startDate: null, endDate: null };
+}
+
+export async function getCompList() {
+  const html  = await fetchHtml(`${KSF_BASE}/score/score_2015_list.asp`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const year  = today.getFullYear();
+  const comps = [];
+
+  for (const rowM of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const row   = rowM[1];
+    const linkM = row.match(/href=["']([^"']*score_2015_game\.asp\?jname=([^"'&\s]+))[^"']*/i);
+    if (!linkM) continue;
+
+    const jname = linkM[2].trim();
+    if (!jname) continue;
+
+    const nameM   = row.match(/<td[^>]*class="title"[^>]*>([\s\S]*?)<\/td>/i);
+    const name    = nameM ? stripTags(nameM[1]).trim() : jname;
+
+    const dateM   = row.match(/<td[^>]*class="date"[^>]*>([\s\S]*?)<\/td>/i);
+    const dateStr = dateM ? stripTags(dateM[1]).trim() : '';
+
+    const venueM  = row.match(/<td[^>]*class="(?:local|venue|location)"[^>]*>([\s\S]*?)<\/td>/i);
+    let venue     = venueM ? stripTags(venueM[1]).trim() : '';
+    if (!venue) {
+      const allTds = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
+        .map(m2 => stripTags(m2[1]).trim()).filter(Boolean);
+      for (let i = allTds.length - 1; i >= 0; i--) {
+        const t = allTds[i];
+        if (/[가-힣]/.test(t) && !t.includes('~') && !t.match(/^\d/) && t !== name) {
+          venue = t; break;
+        }
+      }
+    }
+
+    const { startDate, endDate } = parseDateRange(dateStr, year);
+
+    let status = 'past';
+    if (startDate && endDate) {
+      const now = today.getTime();
+      if (now >= startDate.getTime() && now <= endDate.getTime()) status = 'ongoing';
+      else if (now < startDate.getTime())                          status = 'upcoming';
+    }
+
+    comps.push({
+      jname, name, dateStr, venue,
+      startDate: startDate ? `${startDate.getMonth()+1}.${startDate.getDate()}` : null,
+      endDate:   endDate   ? `${endDate.getMonth()+1}.${endDate.getDate()}`     : null,
+      status,
+    });
+  }
+
+  return comps;
+}
+
+// ── 순위 페이지 파싱 (개인 / 단체 공통) ──────────────────
+export async function getEventRankings(url) {
+  const html    = await fetchHtml(url);
+  const headers = [];
+  const rows    = [];
+  let   headerFound = false;
+
+  for (const rowM of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const rowHtml = rowM[1];
+
+    if (!headerFound) {
+      const ths = [...rowHtml.matchAll(/<th[^>]*>([\s\S]*?)<\/th>/gi)];
+      if (ths.length > 0) {
+        ths.forEach(t => headers.push(stripTags(t[1]).replace(/\s+/g, ' ').trim()));
+        headerFound = true;
+        continue;
+      }
+    }
+
+    const cells = [...rowHtml.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
+      .map(m2 => stripTags(m2[1]).replace(/\s+/g, ' ').trim());
+
+    if (cells.length < 3) continue;
+    if (cells.filter(c => c && c !== '-' && c !== '–').length < 2) continue;
+
+    rows.push(cells);
+  }
+
+  return { headers, rows };
 }

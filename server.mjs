@@ -8,7 +8,7 @@ import http   from 'http';
 import fs     from 'fs';
 import path   from 'path';
 import { fileURLToPath } from 'url';
-import { searchBib, getCompInfo, getGamePageHtml } from './bib-scraper.mjs';
+import { searchBib, getCompInfo, getGamePageHtml, getCompList, getEventRankings } from './bib-scraper.mjs';
 import { startWatcher } from './watcher.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,6 +16,10 @@ const PORT      = 3000;
 
 // 대회별 전체 선수 캐시 (메모리, 2시간 유지)
 const compPlayersCache = new Map(); // compCode → { players: [], ts: number }
+// 대회 목록 캐시 (30분)
+let compListCache = null; // { data: [], ts: number }
+// 순위 캐시 (5분)
+const rankingsCache = new Map(); // url → { data, ts }
 
 // ── .env 파일 로드 ────────────────────────────────────────
 function loadEnv() {
@@ -593,6 +597,93 @@ const server = http.createServer(async (req, res) => {
       });
       return;
     }
+  }
+
+  // ── GET /api/comp-list ──────────────────────────────────
+  if (req.method === 'GET' && req.url === '/api/comp-list') {
+    try {
+      const now = Date.now();
+      if (!compListCache || now - compListCache.ts > 30 * 60 * 1000) {
+        compListCache = { data: await getCompList(), ts: now };
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(compListCache.data));
+    } catch (err) {
+      console.error('[/api/comp-list]', err.message);
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // ── GET /api/comp-events?comp=N01H ──────────────────────
+  if (req.method === 'GET' && req.url.startsWith('/api/comp-events')) {
+    const params = new URL(req.url, 'http://localhost').searchParams;
+    const comp   = (params.get('comp') || '').trim();
+    if (!comp) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'comp 파라미터가 필요합니다.' }));
+      return;
+    }
+    try {
+      const { html, events } = await getGamePageHtml(comp);
+      const titleM = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      const title  = titleM ? titleM[1].trim() : comp;
+
+      // personUrl로 중복 제거 (같은 종목의 여러 조를 하나로)
+      const seenPerson = new Set();
+      const unique = [];
+      for (const evt of events) {
+        const key = evt.personUrl || `${evt.eventLabel}|${evt.scheduleDate}`;
+        if (!seenPerson.has(key)) {
+          seenPerson.add(key);
+          unique.push({
+            eventLabel:   evt.eventLabel,
+            personUrl:    evt.personUrl,
+            groupUrl:     evt.groupUrl,
+            scheduleDate: evt.scheduleDate,
+            scheduleTime: evt.scheduleTime,
+          });
+        }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ comp, title, events: unique }));
+    } catch (err) {
+      console.error('[/api/comp-events]', err.message);
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // ── GET /api/event-rankings?url=...&type=person|group ───
+  if (req.method === 'GET' && req.url.startsWith('/api/event-rankings')) {
+    const params  = new URL(req.url, 'http://localhost').searchParams;
+    const rankUrl = decodeURIComponent(params.get('url') || '').trim();
+    if (!rankUrl.startsWith('https://www.shooting.or.kr/') &&
+        !rankUrl.startsWith('http://www.shooting.or.kr/')) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: '허용되지 않는 URL입니다.' }));
+      return;
+    }
+    try {
+      const now    = Date.now();
+      const cached = rankingsCache.get(rankUrl);
+      if (cached && now - cached.ts < 5 * 60 * 1000) {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify(cached.data));
+        return;
+      }
+      const data = await getEventRankings(rankUrl);
+      rankingsCache.set(rankUrl, { data, ts: now });
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(data));
+    } catch (err) {
+      console.error('[/api/event-rankings]', err.message);
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
   }
 
   // ── GET /api/comp-info?comp=N01H ────────────────────────
