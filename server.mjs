@@ -238,7 +238,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         const apiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -608,7 +608,7 @@ server.listen(PORT, () => {
   const hasKey = !!process.env.GEMINI_API_KEY;
   console.log('\n🎯  SEEA Precision 서버 시작');
   console.log(`    URL : http://localhost:${PORT}`);
-  console.log(`    API : ${hasKey ? '✅  연결됨 (gemini-1.5-flash-latest)' : '⚠️   GEMINI_API_KEY 없음 → UI 전용 모드'}`);
+  console.log(`    API : ${hasKey ? '✅  연결됨 (gemini-2.0-flash)' : '⚠️   GEMINI_API_KEY 없음 → UI 전용 모드'}`);
   if (!hasKey) console.log('    →  .env 파일에 GEMINI_API_KEY=AIza... 를 추가하세요');
   console.log('\n    브라우저에서 http://localhost:3000 을 열어주세요\n');
 
