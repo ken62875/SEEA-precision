@@ -251,11 +251,7 @@ const server = http.createServer(async (req, res) => {
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
               contents: geminiMessages,
-              generationConfig: {
-                maxOutputTokens: 2048,
-                temperature: 0.3,
-                thinkingConfig: { thinkingBudget: 0 },
-              },
+              generationConfig: { maxOutputTokens: 2048, temperature: 0.3 },
             }),
           }
         );
