@@ -579,11 +579,12 @@
         </div>
 
         <!-- Chat container -->
-        <div id="chat-container" class="rounded-2xl border border-gray-200 overflow-hidden shadow-xl">
+        <div id="chat-container" class="rounded-2xl border border-gray-200 overflow-hidden shadow-xl" style="position:relative">
           <!-- Chat header bar -->
           <div class="bg-navy px-5 py-3.5 flex items-center gap-2.5">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
             <span class="text-white font-semibold text-sm">SEEA AI · ISSF 규정 어시스턴트</span>
+            <span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-amber-900 tracking-wide">점검중</span>
             <span class="ml-auto text-white/35 text-xs hidden sm:block">규정 버전: ISSF 2026.01.01</span>
             <button onclick="toggleChatFullscreen()" id="chat-expand-btn" class="ml-2 text-white/50 hover:text-white transition-colors flex-shrink-0" title="전체화면">
               <svg id="icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -593,6 +594,19 @@
                 <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
               </svg>
             </button>
+          </div>
+
+          <!-- 점검중 오버레이 -->
+          <div id="maintenance-overlay" style="position:absolute;top:48px;left:0;right:0;bottom:0;z-index:30;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(255,255,255,0.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:all;">
+            <div style="width:56px;height:56px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+              </svg>
+            </div>
+            <div style="text-align:center">
+              <p style="font-size:16px;font-weight:800;color:#92400E;margin:0 0 6px">AI 서비스 점검 중</p>
+              <p style="font-size:13px;color:#B45309;margin:0;line-height:1.6">현재 시스템 점검으로 AI 답변 서비스가<br>일시 중단되었습니다.<br><span style="font-size:12px;color:#D97706">빠른 시일 내에 복구하겠습니다.</span></p>
+            </div>
           </div>
 
           <!-- Messages -->
@@ -614,22 +628,16 @@
             </div>
           </div>
 
-          <!-- Input -->
+          <!-- Input — 점검중 -->
           <div id="chat-input-area" class="border-t border-gray-200 p-4 bg-white">
-            <!-- Sample chips -->
-            <div id="chip-container" class="flex gap-2 mb-3 overflow-x-auto"></div>
-            </div>
-            <div class="flex gap-2">
-              <input id="chat-input" type="text"
-                placeholder="규정에 대해 궁금한 것을 입력하세요..."
-                class="form-input flex-1"
-                onkeydown="if(event.key==='Enter')sendMessage()"/>
-              <button onclick="sendMessage()" id="send-btn" class="btn-navy px-4 flex items-center gap-1.5 whitespace-nowrap">
-                <span class="hidden sm:inline">전송</span>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
-                </svg>
-              </button>
+            <div class="flex items-center gap-3 py-3 px-4 rounded-xl bg-amber-50 border border-amber-200">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" class="flex-shrink-0">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <div>
+                <p class="text-sm font-semibold text-amber-800">AI 어시스턴트 점검 중</p>
+                <p class="text-xs text-amber-600 mt-0.5">현재 시스템 점검으로 AI 답변 서비스가 일시 중단되었습니다. 빠른 시일 내에 복구하겠습니다.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -1702,6 +1710,7 @@ function sendMessage() {
 }
 
 async function sendText(text) {
+  return; // 점검중 — AI 일시 중단
   if (!text || isThinking) return;
   isThinking = true;
   document.getElementById('send-btn').disabled = true;
