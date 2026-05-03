@@ -2948,6 +2948,264 @@ document.addEventListener('DOMContentLoaded', () => {
 async function homeFeedInit() { feedLoad(); }
 
 setInterval(feedLoad, 15000);
+
+// ── SCORES (경기 현황) ─────────────────────────────────────
+let _scoresState = {
+  personUrl: null,
+  groupUrl:  null,
+  activeTab: 'person',
+  refreshTimer: null,
+  refreshCountdown: null,
+  listLoaded: false,
+};
+
+async function scoresInit() {
+  document.getElementById('scores-list-view').classList.remove('hidden');
+  document.getElementById('scores-events-view').classList.add('hidden');
+
+  if (_scoresState.listLoaded) return;
+
+  const loading = document.getElementById('scores-loading');
+  const content = document.getElementById('scores-list-content');
+  loading.classList.remove('hidden');
+  content.classList.add('hidden');
+
+  try {
+    const r = await fetch('/api/comp-list');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const comps = await r.json();
+
+    if (!Array.isArray(comps) || comps.length === 0) {
+      loading.innerHTML = '<p class="text-gray-400 text-sm py-8">대회 정보를 불러올 수 없습니다.</p>';
+      return;
+    }
+
+    const order = { ongoing: 0, upcoming: 1, past: 2 };
+    comps.sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3));
+
+    content.innerHTML = comps.map(c => {
+      const badge = _scoresStatusBadge(c.status);
+      const loc   = [c.dateStr, c.venue].filter(Boolean).join(' · ');
+      return `
+        <div class="scores-comp-card mb-3 ${c.status === 'ongoing' ? 'ongoing' : ''}"
+          onclick="scoresSelectComp('${esc(c.jname)}','${esc(c.name)}','${esc(c.dateStr||'')}','${esc(c.venue||'')}','${c.status}')">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-navy text-sm leading-snug mb-1">${esc(c.name)}</p>
+              <p class="text-gray-400 text-xs">${esc(loc)}</p>
+            </div>
+            <div class="flex-shrink-0">${badge}</div>
+          </div>
+          <div class="mt-3 flex items-center gap-1 text-gold text-xs font-semibold">
+            종목별 순위 보기
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
+          </div>
+        </div>`;
+    }).join('');
+
+    loading.classList.add('hidden');
+    content.classList.remove('hidden');
+    _scoresState.listLoaded = true;
+  } catch (e) {
+    loading.innerHTML = `<p class="text-red-400 text-sm py-8 text-center">불러오기 실패: ${esc(e.message)}</p>`;
+  }
+}
+
+async function scoresSelectComp(jname, compName, dateStr, venue, status) {
+  document.getElementById('scores-list-view').classList.add('hidden');
+  document.getElementById('scores-events-view').classList.remove('hidden');
+
+  const loc = [dateStr, venue].filter(Boolean).join(' · ');
+  document.getElementById('scores-events-header').innerHTML = `
+    <div class="flex items-start gap-3">
+      <div class="flex-1 min-w-0">
+        <h2 class="font-extrabold text-navy text-xl leading-snug mb-1">${esc(compName)}</h2>
+        <p class="text-gray-500 text-sm">${esc(loc)}</p>
+      </div>
+      <div class="flex-shrink-0">${_scoresStatusBadge(status)}</div>
+    </div>`;
+
+  const eventsLoading = document.getElementById('scores-events-loading');
+  const eventsContent = document.getElementById('scores-events-content');
+  eventsLoading.classList.remove('hidden');
+  eventsContent.innerHTML = '';
+
+  try {
+    const r = await fetch(`/api/comp-events?comp=${encodeURIComponent(jname)}`);
+    const data = await r.json();
+    eventsLoading.classList.add('hidden');
+
+    if (data.error) {
+      eventsContent.innerHTML = `<p class="text-red-400 text-sm text-center py-8">${esc(data.error)}</p>`;
+      return;
+    }
+    if (!data.events?.length) {
+      eventsContent.innerHTML = `<div class="text-center py-12 text-gray-400 text-sm"><p class="text-2xl mb-2">📋</p><p>등록된 종목이 없습니다</p></div>`;
+      return;
+    }
+
+    eventsContent.innerHTML = data.events.map(evt => {
+      const hasPerson = !!evt.personUrl;
+      const hasGroup  = !!evt.groupUrl;
+      const canOpen   = hasPerson || hasGroup;
+      const sched     = [evt.scheduleDate, evt.scheduleTime].filter(Boolean).join(' ');
+      const pUrl      = esc(evt.personUrl || '');
+      const gUrl      = esc(evt.groupUrl  || '');
+      return `
+        <div class="scores-event-row mb-2 ${canOpen ? 'cursor-pointer' : 'opacity-50 cursor-default'}"
+          ${canOpen ? `onclick="scoresOpenModal('${esc(evt.eventLabel)}','${pUrl}','${gUrl}')"` : ''}>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-navy text-sm">${esc(evt.eventLabel)}</p>
+            ${sched ? `<p class="text-xs text-gray-400 mt-0.5">${esc(sched)}</p>` : ''}
+          </div>
+          ${canOpen
+            ? `<div class="flex items-center gap-1 text-gold text-xs font-semibold flex-shrink-0">순위 <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg></div>`
+            : `<span class="text-xs text-gray-300 flex-shrink-0">결과 없음</span>`}
+        </div>`;
+    }).join('');
+  } catch (e) {
+    eventsLoading.classList.add('hidden');
+    eventsContent.innerHTML = `<p class="text-red-400 text-sm text-center py-8">오류: ${esc(e.message)}</p>`;
+  }
+}
+
+function scoresBack() {
+  document.getElementById('scores-list-view').classList.remove('hidden');
+  document.getElementById('scores-events-view').classList.add('hidden');
+}
+
+async function scoresOpenModal(eventLabel, personUrl, groupUrl) {
+  _scoresState.personUrl = personUrl || null;
+  _scoresState.groupUrl  = groupUrl  || null;
+  _scoresState.activeTab = 'person';
+
+  _scoresClearTimers();
+
+  document.getElementById('scores-modal-title').textContent    = eventLabel;
+  document.getElementById('scores-modal-subtitle').textContent = '';
+  document.getElementById('scores-tab-group').style.display    = groupUrl ? '' : 'none';
+  document.getElementById('scores-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  await _scoresLoadRankings(_scoresState.personUrl, 'person');
+  _scoresUpdateTabs('person');
+  _scoresStartTimer();
+}
+
+function scoresModalClose() {
+  document.getElementById('scores-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+  _scoresClearTimers();
+  document.getElementById('scores-refresh-badge').classList.add('hidden');
+}
+
+async function scoresTabSwitch(type) {
+  _scoresState.activeTab = type;
+  _scoresUpdateTabs(type);
+  const url = type === 'person' ? _scoresState.personUrl : _scoresState.groupUrl;
+  await _scoresLoadRankings(url, type);
+}
+
+async function scoresRefreshNow() {
+  const icon = document.getElementById('scores-refresh-icon');
+  icon.style.animation = 'spinOnce .5s linear';
+  setTimeout(() => { icon.style.animation = ''; }, 500);
+
+  _scoresClearTimers();
+  const url = _scoresState.activeTab === 'person' ? _scoresState.personUrl : _scoresState.groupUrl;
+  await _scoresLoadRankings(url, _scoresState.activeTab, true);
+  _scoresStartTimer();
+}
+
+// ── 내부 헬퍼 ────────────────────────────────────────────
+function _scoresStatusBadge(status) {
+  if (status === 'ongoing')
+    return '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span>진행중</span>';
+  if (status === 'upcoming')
+    return '<span class="text-[10px] font-bold text-blue-500 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">예정</span>';
+  return '<span class="text-[10px] font-bold text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full">종료</span>';
+}
+
+function _scoresUpdateTabs(active) {
+  document.getElementById('scores-tab-person').className =
+    `px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${active === 'person' ? 'scores-tab-active' : 'scores-tab-inactive'}`;
+  document.getElementById('scores-tab-group').className =
+    `px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${active === 'group' ? 'scores-tab-active' : 'scores-tab-inactive'}`;
+}
+
+async function _scoresLoadRankings(url, type, bustCache = false) {
+  const loading = document.getElementById('scores-modal-loading');
+  const errorEl = document.getElementById('scores-modal-error');
+  const tableEl = document.getElementById('scores-modal-table');
+  const emptyEl = document.getElementById('scores-modal-empty');
+
+  loading.classList.remove('hidden');
+  errorEl.classList.add('hidden');
+  tableEl.innerHTML = '';
+  emptyEl.classList.add('hidden');
+  document.getElementById('scores-modal-subtitle').textContent = type === 'person' ? '개인 순위' : '단체 순위';
+
+  if (!url) {
+    loading.classList.add('hidden');
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    const apiUrl = `/api/event-rankings?url=${encodeURIComponent(url)}${bustCache ? `&bust=${Date.now()}` : ''}`;
+    const r    = await fetch(apiUrl);
+    const data = await r.json();
+    loading.classList.add('hidden');
+
+    if (data.error) {
+      errorEl.textContent = '오류: ' + data.error;
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    if (!data.rows?.length) {
+      emptyEl.classList.remove('hidden');
+      return;
+    }
+
+    const headerHtml = data.headers?.length
+      ? `<thead><tr>${data.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>`
+      : '';
+    const bodyHtml = data.rows.map(row =>
+      `<tr>${row.map(cell => `<td>${esc(cell)}</td>`).join('')}</tr>`
+    ).join('');
+    tableEl.innerHTML = `<table class="scores-rank-table">${headerHtml}<tbody>${bodyHtml}</tbody></table>`;
+  } catch (e) {
+    loading.classList.add('hidden');
+    errorEl.textContent = '불러오기 실패: ' + e.message;
+    errorEl.classList.remove('hidden');
+  }
+}
+
+function _scoresStartTimer() {
+  const SECS  = 5 * 60;
+  let remaining = SECS;
+  const badge   = document.getElementById('scores-refresh-badge');
+  const timerEl = document.getElementById('scores-refresh-timer');
+
+  badge.classList.remove('hidden');
+  timerEl.textContent = remaining;
+
+  _scoresState.refreshCountdown = setInterval(() => {
+    remaining = Math.max(0, remaining - 1);
+    timerEl.textContent = remaining;
+  }, 1000);
+
+  _scoresState.refreshTimer = setInterval(async () => {
+    remaining = SECS;
+    const url = _scoresState.activeTab === 'person' ? _scoresState.personUrl : _scoresState.groupUrl;
+    await _scoresLoadRankings(url, _scoresState.activeTab, true);
+  }, SECS * 1000);
+}
+
+function _scoresClearTimers() {
+  if (_scoresState.refreshTimer)     { clearInterval(_scoresState.refreshTimer);     _scoresState.refreshTimer     = null; }
+  if (_scoresState.refreshCountdown) { clearInterval(_scoresState.refreshCountdown); _scoresState.refreshCountdown = null; }
+}
 </script>
 </body>
 </html>
