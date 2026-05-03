@@ -301,8 +301,9 @@ export async function searchBib(compCode, searchName, searchMode = 'name') {
 
   console.log(`[BIB] 총 ${allPlayers.length}명 파싱 완료`);
 
+  const searchLower = searchName.toLowerCase();
   const matched = searchMode === 'team'
-    ? allPlayers.filter(p => p.affiliation && p.affiliation.includes(searchName))
+    ? allPlayers.filter(p => p.affiliation && p.affiliation.toLowerCase().includes(searchLower))
     : allPlayers.filter(p => p.name.includes(searchName));
   console.log(`[BIB] "${searchName}" (${searchMode}) 검색 결과: ${matched.length}건`);
 
