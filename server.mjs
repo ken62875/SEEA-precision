@@ -21,6 +21,49 @@ let compListCache = null; // { data: [], ts: number }
 // 순위 캐시 (5분)
 const rankingsCache = new Map(); // url → { data, ts }
 
+// ── 동명이인 생년 DB 로드 ─────────────────────────────────
+function loadPlayerBirths() {
+  try {
+    const raw = fs.readFileSync(path.join(__dirname, 'player-births.json'), 'utf8');
+    const data = JSON.parse(raw);
+    const map = new Map();
+    for (const [key, val] of Object.entries(data)) {
+      if (key.startsWith('_')) continue;
+      map.set(key, Array.isArray(val) ? val : [val]);
+    }
+    return map;
+  } catch { return new Map(); }
+}
+let playerBirthsDB = loadPlayerBirths();
+// 파일 변경 감지 (서버 재시작 없이 반영)
+fs.watch(path.join(__dirname, 'player-births.json'), () => {
+  playerBirthsDB = loadPlayerBirths();
+  console.log('[births] player-births.json 재로드');
+});
+
+// 선수 데이터에 생년 주입
+function injectBirthYears(players) {
+  // 이름+소속 기준으로 중복 선수 파악
+  const nameAffCount = new Map();
+  for (const p of players) {
+    const k = `${p.name}|${p.affiliation}`;
+    nameAffCount.set(k, (nameAffCount.get(k) || 0) + 1);
+  }
+  // 중복인 선수에게만 생년 추가
+  const nameAffIdx = new Map(); // 같은 이름+소속 내 순서 추적
+  return players.map(p => {
+    const k = `${p.name}|${p.affiliation}`;
+    // 단체 선수는 연생 구분 불필요
+    if (p.teamType === '단체') return p;
+    if ((nameAffCount.get(k) || 0) <= 1) return p;
+    const births = playerBirthsDB.get(k);
+    if (!births) return { ...p, birthYear: '' };
+    const idx = nameAffIdx.get(k) || 0;
+    nameAffIdx.set(k, idx + 1);
+    return { ...p, birthYear: births[idx] || '' };
+  });
+}
+
 // ── .env 파일 로드 ────────────────────────────────────────
 function loadEnv() {
   try {
@@ -409,6 +452,32 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── GET /api/bib-warm?comp=N01H ─────────────────────────
+  // 대회 선택 시 미리 캐시 워밍 (검색 전 백그라운드 로딩)
+  if (req.method === 'GET' && req.url.startsWith('/api/bib-warm')) {
+    const params = new URL(req.url, 'http://localhost').searchParams;
+    const comp   = (params.get('comp') || '').trim();
+    if (!comp) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'comp 파라미터가 필요합니다.' }));
+      return;
+    }
+    const cached = compPlayersCache.get(comp);
+    const isWarm = cached && Date.now() - cached.ts < 2 * 60 * 60 * 1000;
+    if (!isWarm) {
+      // 즉시 응답하고 백그라운드에서 데이터 로딩
+      searchBib(comp, '', 'name').then(result => {
+        if (result.ok && result.allPlayers?.length) {
+          compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
+          console.log(`[WARM] ${comp} 캐시 완료 — ${result.allPlayers.length}명`);
+        }
+      }).catch(e => console.log(`[WARM] ${comp} 캐시 실패: ${e.message}`));
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ cached: isWarm }));
+    return;
+  }
+
   // ── GET /api/bib?comp=N01H&name=홍길동 ──────────────────
   if (req.method === 'GET' && req.url.startsWith('/api/bib') &&
       !req.url.startsWith('/api/bib-debug') && !req.url.startsWith('/api/bib-adjacent')) {
@@ -424,14 +493,37 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      const result = await searchBib(comp, name, searchMode);
-      // allPlayers 캐시 (2시간 유지)
-      if (result.ok && result.allPlayers?.length) {
-        compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
+      const BIB_CACHE_TTL = 2 * 60 * 60 * 1000; // 2시간
+      const cached = compPlayersCache.get(comp);
+      let allPlayers;
+
+      if (cached && Date.now() - cached.ts < BIB_CACHE_TTL) {
+        // 캐시 히트 → 로컬 검색만 (즉시 응답)
+        console.log(`[/api/bib] 캐시 히트 — ${comp}, "${name}" (${cached.players.length}명 중 검색)`);
+        allPlayers = cached.players;
+      } else {
+        // 캐시 미스 → KSF 스크래핑 후 캐시 저장
+        const result = await searchBib(comp, name, searchMode);
+        if (result.ok && result.allPlayers?.length) {
+          compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
+        }
+        if (!result.ok) {
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify(result));
+          return;
+        }
+        allPlayers = result.allPlayers || [];
       }
-      const { allPlayers: _, ...clientResult } = result; // allPlayers 제외하고 클라이언트에 전송
+
+      const searchLower = name.toLowerCase();
+      const rawMatched = searchMode === 'team'
+        ? allPlayers.filter(p => p.affiliation && p.affiliation.toLowerCase().includes(searchLower))
+        : allPlayers.filter(p => p.name.includes(name));
+      // 이름+소속 기준 동명이인에 생년 주입 (전체 대회 선수 기준으로 중복 판단)
+      const matched = injectBirthYears(rawMatched);
+
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(clientResult));
+      res.end(JSON.stringify({ ok: true, total: allPlayers.length, matched, searchMode }));
     } catch (err) {
       console.error('[/api/bib]', err.message);
       res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -468,13 +560,13 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ── GET /api/bib-adjacent?comp=N01H&event=…&group=2&lane=76 ──
+  // ── GET /api/bib-adjacent?comp=N01H&event=…&group=2&lane=C ──
   if (req.method === 'GET' && req.url.startsWith('/api/bib-adjacent')) {
     const params = new URL(req.url, 'http://localhost').searchParams;
     const comp   = (params.get('comp')  || '').trim();
     const event  = (params.get('event') || '').trim();
     const group  = (params.get('group') || '').trim();
-    const lane   = parseInt(params.get('lane') || '0', 10);
+    const lane   = (params.get('lane')  || '').trim();
     if (!comp || !event || !group || !lane) {
       res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ error: '파라미터가 부족합니다.' }));
@@ -491,10 +583,14 @@ const server = http.createServer(async (req, res) => {
         compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
         players = result.allPlayers;
       }
+      // 속사(알파벳 사대)와 일반(숫자 사대) 모두 처리
+      const isAlpha = /^[A-Za-z]+$/.test(lane);
       const groupPlayers = players
         .filter(p => p.event === event && p.group === group)
-        .sort((a, b) => parseInt(a.lane) - parseInt(b.lane));
-      const idx  = groupPlayers.findIndex(p => parseInt(p.lane) === lane);
+        .sort((a, b) => isAlpha
+          ? a.lane.localeCompare(b.lane)
+          : parseInt(a.lane) - parseInt(b.lane));
+      const idx  = groupPlayers.findIndex(p => p.lane === lane);
       const prev = idx > 0 ? groupPlayers[idx - 1] : null;
       const next = idx !== -1 && idx < groupPlayers.length - 1 ? groupPlayers[idx + 1] : null;
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });

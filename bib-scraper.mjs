@@ -235,10 +235,21 @@ function parsePlayerTable(html, eventLabel) {
     }
 
     const nonEmpty = rowCells.filter(v => v !== '');
-    let teamType = '', affiliation = '', name = '';
+    let teamType = '', affiliation = '', name = '', birthYear = '';
+
+    // 생년 셀 패턴: 2자리(95), 4자리(1995), 6자리(950101) 숫자
+    const BIRTH_RE = /^(\d{4}|\d{2}|\d{6})$/;
+    const isBirth = v => BIRTH_RE.test(v) && !BIB_RE.test(v);
 
     if (nonEmpty.length >= 3) {
-      teamType    = nonEmpty[0];
+      teamType = nonEmpty[0];
+      // 중간에 생년 셀이 있으면 추출
+      const mid = nonEmpty.slice(1, -2);
+      const bIdx = mid.findIndex(isBirth);
+      if (bIdx !== -1) {
+        const raw = mid[bIdx];
+        birthYear = raw.length === 2 ? (parseInt(raw) > 30 ? '19' + raw : '20' + raw) : raw.slice(0, 4);
+      }
       affiliation = nonEmpty[nonEmpty.length - 2];
       name        = nonEmpty[nonEmpty.length - 1];
     } else if (nonEmpty.length === 2) {
@@ -252,7 +263,7 @@ function parsePlayerTable(html, eventLabel) {
 
     const bibNorm = bib.replace(/\s+/g, '').replace(/[–—]/g, '-');
     const [group = '', lane = ''] = bibNorm.split('-');
-    players.push({ event: eventLabel, bib: bibNorm, group, lane, name, affiliation, teamType });
+    players.push({ event: eventLabel, bib: bibNorm, group, lane, name, affiliation, teamType, birthYear });
   }
 
   console.log(`    [parse] td수=${allTds.length}, 선수=${players.length}명` +
