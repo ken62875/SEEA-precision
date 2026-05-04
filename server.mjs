@@ -1119,19 +1119,46 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(403); res.end('Forbidden'); return;
   }
 
-  fs.readFile(fullPath, (err, data) => {
-    if (err) {
-      fs.readFile(path.join(__dirname, 'index.html'), (err2, idx) => {
-        if (err2) { res.writeHead(404); res.end('Not found'); return; }
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(idx);
+  const serveFile = (filePath, data, stat) => {
+    const ext         = path.extname(filePath).toLowerCase();
+    const contentType = MIME[ext] || 'application/octet-stream';
+    const isHtml      = ext === '.html' || ext === '';
+    // ETag = mtime 기반 (배포 시 파일 변경 → ETag 변경 → 브라우저 자동 갱신)
+    const etag        = `"${stat.mtimeMs.toString(36)}"`;
+    const cacheCtrl   = isHtml
+      ? 'no-cache'                    // HTML: 항상 서버에 확인 (304 활용)
+      : 'public, max-age=3600';       // 기타: 1시간 캐시
+
+    if (req.headers['if-none-match'] === etag) {
+      res.writeHead(304, { ETag: etag, 'Cache-Control': cacheCtrl });
+      res.end();
+      return;
+    }
+    res.writeHead(200, {
+      'Content-Type':  contentType,
+      'Cache-Control': cacheCtrl,
+      'ETag':          etag,
+    });
+    res.end(data);
+  };
+
+  fs.stat(fullPath, (statErr, stat) => {
+    if (statErr) {
+      // 파일 없으면 index.html 폴백 (SPA 라우팅)
+      const idxPath = path.join(__dirname, 'index.html');
+      fs.stat(idxPath, (s2Err, s2) => {
+        if (s2Err) { res.writeHead(404); res.end('Not found'); return; }
+        fs.readFile(idxPath, (e2, idx) => {
+          if (e2) { res.writeHead(404); res.end('Not found'); return; }
+          serveFile(idxPath, idx, s2);
+        });
       });
       return;
     }
-    const ext         = path.extname(fullPath).toLowerCase();
-    const contentType = MIME[ext] || 'application/octet-stream';
-    res.writeHead(200, { 'Content-Type': contentType });
-    res.end(data);
+    fs.readFile(fullPath, (err, data) => {
+      if (err) { res.writeHead(500); res.end('Read error'); return; }
+      serveFile(fullPath, data, stat);
+    });
   });
 });
 
