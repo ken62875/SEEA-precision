@@ -46,6 +46,7 @@ async function fetchHtml(url) {
 // ── HTML에서 텍스트만 추출 ──────────────────────────────
 function stripTags(html) {
   return (html || '')
+    .replace(/<br\s*\/?>/gi, ' ')  // <br> → 공백 (없애면 "12:153조" 같은 연결 발생)
     .replace(/<[^>]+>/g, '')
     .replace(/&nbsp;/g,  ' ')
     .replace(/&amp;/g,   '&')
@@ -132,15 +133,43 @@ function parseGameLinks(html) {
     // "출전자정보" 앞 부분 = 종목 정보 영역
     const infoText = rowText.split(/출전자\s*정보/)[0].trim();
 
-    // 시작 시간: 전반/후반이 있으면 각 시작 시간, 없으면 첫 번째 시간
+    // 시작 시간: 전반/후반이 있으면 각 시작 시간, 조별 시간이 있으면 조별 맵, 없으면 첫 번째 시간
     let scheduleTime = '';
+    const scheduleTimes = {};  // 조번호 → 시작 시간 (또는 "전반 HH:MM / 후반 HH:MM")
     if (/전반|후반/.test(infoText)) {
-      const jeM = infoText.match(/전반\S*\s*(\d{1,2}:\d{2})/);
-      const huM = infoText.match(/후반\S*\s*(\d{1,2}:\d{2})/);
-      if (jeM && huM)    scheduleTime = `전반 ${jeM[1]} / 후반 ${huM[1]}`;
-      else if (jeM)      scheduleTime = `전반 ${jeM[1]}`;
-      else if (huM)      scheduleTime = `후반 ${huM[1]}`;
+      // "전반 1조 09:00 2조 10:00 후반 1조 11:00 2조 11:30" 형태 처리
+      // 전반/후반 섹션을 분리해서 각각의 N조 시간 추출
+      const jePart = infoText.match(/전반([\s\S]*?)(?=후반|$)/)?.[1] || '';
+      const huPart = infoText.match(/후반([\s\S]*?)$/)?.[1] || '';
+      const jeTimes = {}, huTimes = {};
+      for (const m of jePart.matchAll(/(\d+)\s*조\s*(\d{1,2}:\d{2})/g)) jeTimes[m[1]] = m[2];
+      for (const m of huPart.matchAll(/(\d+)\s*조\s*(\d{1,2}:\d{2})/g)) huTimes[m[1]] = m[2];
+      const joNums = [...new Set([...Object.keys(jeTimes), ...Object.keys(huTimes)])];
+      if (joNums.length > 1) {
+        for (const jo of joNums) {
+          const je = jeTimes[jo], hu = huTimes[jo];
+          if (je && hu) scheduleTimes[jo] = `전반 ${je} / 후반 ${hu}`;
+          else if (je)  scheduleTimes[jo] = `전반 ${je}`;
+          else if (hu)  scheduleTimes[jo] = `후반 ${hu}`;
+        }
+      }
+      // 폴백: 가장 낮은 조번호(또는 전체) 시간
+      const joSorted = joNums.sort((a, b) => +a - +b);
+      const jo1 = joSorted[0];
+      const jeFirst = jeTimes[jo1], huFirst = huTimes[jo1];
+      if (jeFirst && huFirst) scheduleTime = `전반 ${jeFirst} / 후반 ${huFirst}`;
+      else {
+        const jeM = infoText.match(/전반\S*\s*(\d{1,2}:\d{2})/);
+        const huM = infoText.match(/후반\S*\s*(\d{1,2}:\d{2})/);
+        if (jeM && huM)    scheduleTime = `전반 ${jeM[1]} / 후반 ${huM[1]}`;
+        else if (jeM)      scheduleTime = `전반 ${jeM[1]}`;
+        else if (huM)      scheduleTime = `후반 ${huM[1]}`;
+      }
     } else {
+      // N조 HH:MM 패턴 추출 (예: "1조 09:00~10:15 2조 11:00~12:15")
+      for (const m of infoText.matchAll(/(\d+)\s*조\s*(\d{1,2}:\d{2})/g)) {
+        scheduleTimes[m[1]] = m[2];
+      }
       const timeM = infoText.match(/(\d{1,2}:\d{2})/);
       scheduleTime = timeM ? timeM[1] : '';
     }
@@ -189,6 +218,7 @@ function parseGameLinks(html) {
         groupUrl,
         scheduleDate: nearDate?.text || '',
         scheduleTime,
+        scheduleTimes,
       });
     }
   }
@@ -287,7 +317,7 @@ export async function searchBib(compCode, searchName, searchMode = 'name') {
 
   // 병렬 fetch — td 10개 미만이면 빈 페이지(미사용 종목)로 간주하고 스킵
   const fetched = await Promise.allSettled(
-    events.map(async ({ eventLabel, playerUrl, scheduleDate, scheduleTime }) => {
+    events.map(async ({ eventLabel, playerUrl, personUrl, groupUrl, scheduleDate, scheduleTime, scheduleTimes }) => {
       try {
         const html      = await fetchHtml(playerUrl);
         const tdCount   = (html.match(/<td/gi) || []).length;
@@ -298,7 +328,13 @@ export async function searchBib(compCode, searchName, searchMode = 'name') {
         const players   = parsePlayerTable(html, eventLabel);
         console.log(`[BIB]   ${eventLabel} → ${players.length}명` +
           (scheduleDate ? ` (${scheduleDate} ${scheduleTime})` : scheduleTime ? ` (${scheduleTime})` : ''));
-        return players.map(p => ({ ...p, scheduleDate, scheduleTime }));
+        return players.map(p => ({
+          ...p,
+          scheduleDate,
+          scheduleTime: (scheduleTimes && scheduleTimes[p.group]) ? scheduleTimes[p.group] : scheduleTime,
+          personUrl: personUrl || '',
+          groupUrl: groupUrl || '',
+        }));
       } catch (e) {
         console.log(`[BIB]   ${eventLabel} → 오류: ${e.message}`);
         return [];
