@@ -1023,6 +1023,35 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── GET /api/cache-refresh?comp=N01H (bib 캐시 즉시 갱신) ─
+  if (req.method === 'GET' && req.url.startsWith('/api/cache-refresh')) {
+    const params = new URL(req.url, 'http://localhost').searchParams;
+    const comp   = (params.get('comp') || '').trim();
+    if (!comp) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'comp 파라미터가 필요합니다.' }));
+      return;
+    }
+    // bib 캐시 + 메달 캐시 삭제 후 즉시 재fetch
+    compPlayersCache.delete(comp);
+    compEventsCache.delete(comp);
+    for (const k of teamMedalsCache.keys()) {
+      if (k.startsWith(comp + ':')) teamMedalsCache.delete(k);
+    }
+    try {
+      const result = await searchBib(comp, '', 'name');
+      if (result.ok && result.allPlayers?.length) {
+        compPlayersCache.set(comp, { players: injectBirthYears(result.allPlayers), ts: Date.now() });
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true, players: compPlayersCache.get(comp)?.players?.length ?? 0 }));
+    } catch (err) {
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
   // ── GET /api/team-medals?comp=N01H&aff=서산시청 ──────────
   if (req.method === 'GET' && req.url.startsWith('/api/team-medals')) {
     const params   = new URL(req.url, 'http://localhost').searchParams;
@@ -1300,8 +1329,8 @@ server.listen(PORT, () => {
   }).catch(e => console.log(`[PREWARM] 대회 목록 조회 실패: ${e.message}`));
 
   warmOngoing();
-  // 1시간마다 재워밍 (12시간 TTL 내에서도 데이터 최신 유지)
-  setInterval(warmOngoing, 60 * 60 * 1000);
+  // 20분마다 재워밍 (진행중 대회 데이터 최신 유지)
+  setInterval(warmOngoing, 20 * 60 * 1000);
 
   // KSF 대회 목록 감시 시작
   startWatcher();
