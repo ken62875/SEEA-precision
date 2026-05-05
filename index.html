@@ -2429,7 +2429,7 @@ async function bibSelectPersonCard(idx) {
       return true;
     });
     result.innerHTML = bibResultFound(c, name, filtered, total, searchMode, true);
-    bibLoadTeamRankings();
+    bibLoadTeamRankings(c.ksfCode, name);
   } else {
     bibSetBtns(true);
     result.innerHTML = `<div class="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
@@ -2536,7 +2536,7 @@ async function bibSearch() {
       result.innerHTML = bibResultNotFound(c, name, data.total, data.searchMode);
     } else {
       result.innerHTML = bibResultFound(c, name, data.matched, data.total, data.searchMode);
-      bibLoadTeamRankings();
+      bibLoadTeamRankings(c.ksfCode, name);
     }
   } catch (e) {
     console.error('[bibSearch error]', e);
