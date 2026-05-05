@@ -2688,7 +2688,7 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
         ? (_halfTime
           ? `<span class="shrink-0 text-[10px] font-bold text-gold-dark bg-gold/10 border border-gold/20 px-2 py-1 rounded-md leading-tight">
                <span class="block">${esc(_dt)}</span>
-               <span class="block font-normal opacity-80">${esc(_tm)}</span>
+               <span class="block font-normal opacity-80">${_tm.includes('/') ? _tm.split('/').map(s=>`<span class="block">${esc(s.trim())}</span>`).join('') : esc(_tm)}</span>
              </span>`
           : `<span class="shrink-0 text-[10px] font-bold text-gold-dark bg-gold/10 border border-gold/20 px-2 py-1 rounded-md whitespace-nowrap">${esc(_dt)}${_tm ? ' ' + esc(_tm) : ''}</span>`)
         : (_tm ? `<span class="shrink-0 text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">${esc(_tm)}</span>` : '');
@@ -2740,7 +2740,8 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
   const rows = matched.map((p, ri) => {
     const bib = p.group && p.lane ? `${p.group}-${p.lane}` : p.bib || '—';
     const dateCell = p.scheduleDate ? `<span class="block text-[11px] font-medium text-gray-700 whitespace-nowrap">${esc(fmtSchedDate(p.scheduleDate))}</span>` : '';
-    const timeCell = p.scheduleTime ? `<span class="block text-[11px] text-gray-400 mt-0.5">${esc(p.scheduleTime)}</span>` : '';
+    const fmtTime  = t => t.includes('/') ? t.split('/').map(s=>`<span class="block">${esc(s.trim())}</span>`).join('') : esc(t);
+    const timeCell = p.scheduleTime ? `<span class="block text-[11px] text-gray-400 mt-0.5">${fmtTime(p.scheduleTime)}</span>` : '';
     const schedCell = (dateCell || timeCell) ? dateCell + timeCell : '<span class="text-gray-300 text-xs">—</span>';
     const canAdj = !!(p.group && p.lane);
     const adjBtn = canAdj
@@ -3139,7 +3140,11 @@ function bibRenderPlayerResults(c, name, data) {
   const rowsHtml = results.map(r => {
     const m = r.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s*\S+부)?)$/);
     const eventCell = m
-      ? `<span class="block">${esc(fmtEvtName(m[1]))}</span><span class="text-[10px] text-gray-400">${esc(m[2])}</span>`
+      ? (() => {
+          const isF    = m[2].startsWith('여자');
+          const divCls = isF ? 'text-pink-500' : 'text-indigo-400';
+          return `<span class="block">${esc(fmtEvtName(m[1]))}</span><span class="text-[10px] ${divCls}">${esc(m[2])}</span>`;
+        })()
       : `<span>${esc(fmtEvtName(r.event))}</span>`;
     const _decEvt2  = /10m.*공기소총|50m.*복사/.test(r.event || '');
     const _sdz2     = s => s && !_decEvt2 ? s.replace(/\.0(-|$)/, '$1') : s;
