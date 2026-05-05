@@ -2741,18 +2741,21 @@ function bibResultHeader(c, name, searchMode) {
 async function bibLoadTeamRankings(compCode, aff) {
   const affLower = (aff || '').toLowerCase();
 
-  // ── 1. 단체전: 순차 처리 (카드 화면 업데이트) ────────────
+  // comp-events를 즉시 병렬로 시작 (단체전 로딩 대기 없이)
+  const compEventsPromise = fetch(`/api/comp-events?comp=${encodeURIComponent(compCode)}`)
+    .then(r => r.json()).catch(() => ({ events: [] }));
+
+  // ── 1. 단체전: 전체 병렬 처리 (결과 도착 순으로 UI 업데이트) ──
   const teamMedals = [];
-  const els = document.querySelectorAll('[data-gurl]');
-  for (const el of els) {
+  const els = Array.from(document.querySelectorAll('[data-gurl]'));
+  await Promise.all(els.map(el => {
     const gurl  = el.dataset.gurl;
     const event = el.dataset.event || '';
-    if (!gurl) continue;
+    if (!gurl) return Promise.resolve();
     delete el.dataset.gurl;
-    try {
-      const res  = await fetch(`/api/event-rankings?url=${encodeURIComponent(gurl)}`);
-      const data = await res.json();
-      if (el.id.startsWith('team-res-')) {
+    return fetch(`/api/event-rankings?url=${encodeURIComponent(gurl)}`)
+      .then(r => r.json())
+      .then(data => {
         const rankRows = (data.rows||[]).filter(r => /^\d+$/.test((r[0]||'').trim()));
         const myIdx = rankRows.findIndex(r => (r[1]||'').toLowerCase().includes(affLower));
         if (myIdx >= 0) {
@@ -2762,17 +2765,17 @@ async function bibLoadTeamRankings(compCode, aff) {
             teamMedals.push({ rank, event });
           }
         }
-      }
-      el.innerHTML = renderTeamRankCard(data, aff, event);
-    } catch(e) {
-      el.innerHTML = `<p class="text-[10px] text-gray-400 py-2">단체 순위를 불러올 수 없습니다.</p>`;
-    }
-  }
+        el.innerHTML = renderTeamRankCard(data, aff, event);
+      })
+      .catch(() => {
+        el.innerHTML = `<p class="text-[10px] text-gray-400 py-2">단체 순위를 불러올 수 없습니다.</p>`;
+      });
+  }));
 
-  // ── 2. 개인전: /api/comp-events로 전체 종목 URL 수집 후 병렬 집계 ──
+  // ── 2. 개인전: comp-events 결과(이미 병렬 수신 중) 기반 병렬 집계 ──
   const indivMedals = [];
   try {
-    const evtData = await fetch(`/api/comp-events?comp=${encodeURIComponent(compCode)}`).then(r => r.json());
+    const evtData = await compEventsPromise;
     const personEvents = (evtData.events || []).filter(e => e.personUrl);
 
     const tasks = personEvents.map(e =>
@@ -2821,15 +2824,15 @@ function renderTeamMedalSummary(teamItems, indivItems = []) {
   }
   return `
     <div class="text-[9px] font-bold text-gold uppercase tracking-widest mb-2">성과 요약</div>
-    <div class="flex items-center gap-5">
-      <div>
-        <div class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider mb-1">단체전</div>
-        <div class="flex items-center gap-1 text-[12px] leading-none">${medalRow(teamItems)}</div>
-      </div>
-      <div class="w-px self-stretch bg-gray-100"></div>
+    <div class="flex flex-col gap-2">
       <div>
         <div class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider mb-1">개인전</div>
         <div class="flex items-center gap-1 text-[12px] leading-none">${medalRow(indivItems)}</div>
+      </div>
+      <div class="border-t border-gray-100"></div>
+      <div>
+        <div class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider mb-1">단체전</div>
+        <div class="flex items-center gap-1 text-[12px] leading-none">${medalRow(teamItems)}</div>
       </div>
     </div>`;
 }
