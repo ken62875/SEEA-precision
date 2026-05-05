@@ -3141,9 +3141,9 @@ function bibRenderPlayerResults(c, name, data) {
     const m = r.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s*\S+부)?)$/);
     const eventCell = m
       ? (() => {
-          const isF    = m[2].startsWith('여자');
-          const divCls = isF ? 'text-pink-500' : 'text-indigo-400';
-          return `<span class="block">${esc(fmtEvtName(m[1]))}</span><span class="text-[10px] ${divCls}">${esc(m[2])}</span>`;
+          const isF      = m[2].startsWith('여자');
+          const badgeCls = isF ? 'text-pink-500 bg-pink-50 border-pink-100' : 'text-indigo-400 bg-indigo-50 border-indigo-100';
+          return `<span class="block">${esc(fmtEvtName(m[1]))}</span><span class="inline-block text-[9px] font-medium px-1.5 py-0.5 rounded-full border mt-0.5 ${badgeCls}">${esc(m[2])}</span>`;
         })()
       : `<span>${esc(fmtEvtName(r.event))}</span>`;
     const _decEvt2  = /10m.*공기소총|50m.*복사/.test(r.event || '');
