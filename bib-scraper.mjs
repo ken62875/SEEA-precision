@@ -177,7 +177,7 @@ function parseGameLinks(html) {
     // 종목명: infoText에서 불필요한 요소 제거
     let eventLabel = infoText
       .replace(/\d{1,2}:\d{2}(?:[-~]\d{1,2}:\d{2})?/g, '') // 시간 범위 제거
-      .replace(/(?:전반|후반)\d+조?/g, '')                    // 전반N조, 후반N조 제거
+      .replace(/(?:전반|후반)\s*\d*\s*조?/g, '')              // 전반[N조], 후반[N조] — 공백 포함 모두 제거
       .replace(/\d+조/g, '')                                  // 나머지 N조 제거
       .replace(/산탄총\s*/g, '')                               // 산탄총 접두어 제거
       .replace(/(\d+)M\b/g, '$1m')                           // 50M → 50m 정규화
