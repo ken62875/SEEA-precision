@@ -2739,68 +2739,26 @@ function bibResultHeader(c, name, searchMode) {
 }
 
 async function bibLoadTeamRankings(compCode, aff) {
-  const affLower = (aff || '').toLowerCase();
+  // 서버에서 메달 집계 + 단체전 카드 UI를 동시에 시작
+  const medalsPromise = fetch(
+    `/api/team-medals?comp=${encodeURIComponent(compCode)}&aff=${encodeURIComponent(aff)}`
+  ).then(r => r.json()).catch(() => ({ indivMedals: [], teamMedals: [] }));
 
-  // comp-events를 즉시 병렬로 시작 (단체전 로딩 대기 없이)
-  const compEventsPromise = fetch(`/api/comp-events?comp=${encodeURIComponent(compCode)}`)
-    .then(r => r.json()).catch(() => ({ events: [] }));
-
-  // ── 1. 단체전: 전체 병렬 처리 (결과 도착 순으로 UI 업데이트) ──
-  const teamMedals = [];
+  // 단체전 카드: 병렬로 렌더링 (UI 업데이트용)
   const els = Array.from(document.querySelectorAll('[data-gurl]'));
-  await Promise.all(els.map(el => {
+  Promise.all(els.map(el => {
     const gurl  = el.dataset.gurl;
     const event = el.dataset.event || '';
     if (!gurl) return Promise.resolve();
     delete el.dataset.gurl;
     return fetch(`/api/event-rankings?url=${encodeURIComponent(gurl)}`)
       .then(r => r.json())
-      .then(data => {
-        const rankRows = (data.rows||[]).filter(r => /^\d+$/.test((r[0]||'').trim()));
-        const myIdx = rankRows.findIndex(r => (r[1]||'').toLowerCase().includes(affLower));
-        if (myIdx >= 0) {
-          const rank = parseInt(rankRows[myIdx][0]);
-          const bigo = rankRows[myIdx][4] || '';
-          if (rank >= 1 && rank <= 3 && !/기준점수/.test(bigo)) {
-            teamMedals.push({ rank, event });
-          }
-        }
-        el.innerHTML = renderTeamRankCard(data, aff, event);
-      })
-      .catch(() => {
-        el.innerHTML = `<p class="text-[10px] text-gray-400 py-2">단체 순위를 불러올 수 없습니다.</p>`;
-      });
+      .then(data => { el.innerHTML = renderTeamRankCard(data, aff, event); })
+      .catch(() => { el.innerHTML = `<p class="text-[10px] text-gray-400 py-2">단체 순위를 불러올 수 없습니다.</p>`; });
   }));
 
-  // ── 2. 개인전: comp-events 결과(이미 병렬 수신 중) 기반 병렬 집계 ──
-  const indivMedals = [];
-  try {
-    const evtData = await compEventsPromise;
-    const personEvents = (evtData.events || []).filter(e => e.personUrl);
-
-    const tasks = personEvents.map(e =>
-      fetch(`/api/event-rankings?url=${encodeURIComponent(e.personUrl)}`)
-        .then(r => r.json())
-        .then(data => {
-          const rankRows = (data.rows||[]).filter(r => /^\d+$/.test((r[0]||'').trim()));
-          const medals = [];
-          for (const row of rankRows) {
-            if (!(row[1]||'').toLowerCase().includes(affLower)) continue;
-            const rank = parseInt(row[0]);
-            if (isNaN(rank) || rank < 1 || rank > 3) continue;
-            if (!/기준점수/.test(row.slice(3).join(' '))) {
-              medals.push({ rank, event: e.eventLabel });
-            }
-          }
-          return medals;
-        })
-        .catch(() => [])
-    );
-
-    const results = await Promise.all(tasks);
-    for (const medals of results) indivMedals.push(...medals);
-  } catch(e) { /* comp-events 실패 시 개인전 집계 생략 */ }
-
+  // 메달 집계 완료되면 바로 요약 표시 (카드 완료 대기 없음)
+  const { indivMedals = [], teamMedals = [] } = await medalsPromise;
   const summaryEl = document.getElementById('bib-team-medal-summary');
   if (summaryEl) summaryEl.innerHTML = renderTeamMedalSummary(teamMedals, indivMedals);
 }

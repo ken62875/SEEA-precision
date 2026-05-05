@@ -22,6 +22,8 @@ let compListCache = null; // { data: [], ts: number }
 const rankingsCache = new Map(); // url → { data, ts }
 // 대회 종목 이벤트 캐시 (1시간)
 const compEventsCache = new Map(); // compCode → { events: [], ts: number }
+// 팀 메달 집계 캐시 (5분)
+const teamMedalsCache = new Map(); // `${comp}:${affLower}` → { data, ts }
 
 // ── 동명이인 생년 DB 로드 ─────────────────────────────────
 function loadPlayerBirths() {
@@ -1015,6 +1017,95 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify(compListCache.data));
     } catch (err) {
       console.error('[/api/comp-list]', err.message);
+      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // ── GET /api/team-medals?comp=N01H&aff=서산시청 ──────────
+  if (req.method === 'GET' && req.url.startsWith('/api/team-medals')) {
+    const params   = new URL(req.url, 'http://localhost').searchParams;
+    const comp     = (params.get('comp') || '').trim();
+    const aff      = (params.get('aff')  || '').trim();
+    if (!comp || !aff) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'comp, aff 파라미터가 필요합니다.' }));
+      return;
+    }
+    try {
+      const affLower  = aff.toLowerCase();
+      const cacheKey  = `${comp}:${affLower}`;
+      const cached    = teamMedalsCache.get(cacheKey);
+      if (cached && Date.now() - cached.ts < 5 * 60 * 1000) {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify(cached.data));
+        return;
+      }
+
+      // 종목 목록: 기존 compEventsCache 재사용, 없으면 새로 fetch
+      let events;
+      const evtCached = compEventsCache.get(comp);
+      if (evtCached && Date.now() - evtCached.ts < 60 * 60 * 1000) {
+        events = evtCached.data.events;
+      } else {
+        const { events: rawEvts } = await getGamePageHtml(comp);
+        const seenPerson = new Set();
+        events = [];
+        for (const evt of rawEvts) {
+          const key = evt.personUrl || `${evt.eventLabel}|${evt.scheduleDate}`;
+          if (!seenPerson.has(key)) { seenPerson.add(key); events.push(evt); }
+        }
+        compEventsCache.set(comp, { data: { comp, events }, ts: Date.now() });
+      }
+
+      // 순위 캐시 활용 헬퍼
+      const getCachedRankings = async url => {
+        const now = Date.now();
+        const c   = rankingsCache.get(url);
+        if (c && now - c.ts < 5 * 60 * 1000) return c.data;
+        const data = await getEventRankings(url);
+        rankingsCache.set(url, { data, ts: now });
+        return data;
+      };
+
+      const personEvents = events.filter(e => e.personUrl);
+      const groupEvents  = events.filter(e => e.groupUrl);
+
+      const [personResults, groupResults] = await Promise.all([
+        Promise.all(personEvents.map(async e => {
+          try {
+            const { rows = [] } = await getCachedRankings(e.personUrl);
+            const rankRows = rows.filter(r => /^\d+$/.test((r[0]||'').trim()));
+            const medals = [];
+            for (const row of rankRows) {
+              if (!(row[1]||'').toLowerCase().includes(affLower)) continue;
+              const rank = parseInt(row[0]);
+              if (rank < 1 || rank > 3 || /기준점수/.test(row.slice(3).join(' '))) continue;
+              medals.push({ rank, event: e.eventLabel });
+            }
+            return medals;
+          } catch { return []; }
+        })),
+        Promise.all(groupEvents.map(async e => {
+          try {
+            const { rows = [] } = await getCachedRankings(e.groupUrl);
+            const rankRows = rows.filter(r => /^\d+$/.test((r[0]||'').trim()));
+            const idx = rankRows.findIndex(r => (r[1]||'').toLowerCase().includes(affLower));
+            if (idx < 0) return [];
+            const rank = parseInt(rankRows[idx][0]);
+            if (rank < 1 || rank > 3 || /기준점수/.test(rankRows[idx][4]||'')) return [];
+            return [{ rank, event: e.eventLabel }];
+          } catch { return []; }
+        })),
+      ]);
+
+      const data = { indivMedals: personResults.flat(), teamMedals: groupResults.flat() };
+      teamMedalsCache.set(cacheKey, { data, ts: Date.now() });
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(data));
+    } catch (err) {
+      console.error('[/api/team-medals]', err.message);
       res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ error: err.message }));
     }
