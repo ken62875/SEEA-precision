@@ -2392,7 +2392,7 @@ function bibPersonSelect(c, name, groups, total, searchMode, allMatched, mode) {
       ? `<span class="text-[9px] font-semibold text-blue-600 bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 whitespace-nowrap">${esc(fmtBirth(g.birthYear))}</span>`
       : '';
     const divBadge = div
-      ? `<span class="text-[9px] font-semibold border rounded px-1.5 py-0.5 whitespace-nowrap ${divCls}">${esc(div)}</span>`
+      ? `<span class="text-[9px] font-semibold border rounded px-1.5 py-0.5 w-fit whitespace-nowrap ${divCls}">${esc(div)}</span>`
       : '';
     const evtCount = new Set(g.players.map(p => p.event)).size;
     return `
@@ -2429,6 +2429,7 @@ async function bibSelectPersonCard(idx) {
       return true;
     });
     result.innerHTML = bibResultFound(c, name, filtered, total, searchMode, true);
+    bibLoadTeamRankings();
   } else {
     bibSetBtns(true);
     result.innerHTML = `<div class="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
@@ -2535,6 +2536,7 @@ async function bibSearch() {
       result.innerHTML = bibResultNotFound(c, name, data.total, data.searchMode);
     } else {
       result.innerHTML = bibResultFound(c, name, data.matched, data.total, data.searchMode);
+      bibLoadTeamRankings();
     }
   } catch (e) {
     console.error('[bibSearch error]', e);
@@ -2548,9 +2550,109 @@ async function bibSearch() {
   result.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
+function toggleTeamResult(idx) {
+  const body = document.getElementById(`team-res-body-${idx}`);
+  const chev = document.getElementById(`team-res-chev-${idx}`);
+  if (!body) return;
+  const hidden = body.classList.toggle('hidden');
+  chev.style.transform = hidden ? '' : 'rotate(180deg)';
+}
+
+async function bibTeamResultSearch(c, name, result) {
+  bibSetBtns(true);
+  result.innerHTML = `<div class="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
+    <div class="flex justify-center gap-1.5 mb-4"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+    <p class="text-navy font-semibold">단체 순위 조회 중...</p>
+    <p class="text-gray-400 text-sm mt-1">각 종목 결과를 가져오고 있습니다.</p>
+  </div>`;
+
+  if (!bibDataCached) {
+    await fetch(`/api/bib-warm?comp=${encodeURIComponent(c.ksfCode)}`).then(r => r.json()).catch(() => {});
+    let waited = 0;
+    while (!bibDataCached && waited < 60) {
+      await new Promise(r => setTimeout(r, 3000));
+      waited += 3;
+      const d = await fetch(`/api/bib-warm?comp=${encodeURIComponent(c.ksfCode)}`).then(r => r.json()).catch(() => ({}));
+      if (d.cached) bibDataCached = true;
+    }
+  }
+
+  try {
+    const bibData = await fetch(`/api/bib?comp=${encodeURIComponent(c.ksfCode)}&name=${encodeURIComponent(name)}&mode=team`).then(r => r.json());
+    if (!bibData.ok || !bibData.matched?.length) {
+      result.innerHTML = bibResultError(c, name, '해당 소속의 단체 종목 정보를 찾을 수 없습니다.');
+      bibSetBtns(false); return;
+    }
+
+    const seen = new Set();
+    const teamEvents = [];
+    for (const p of bibData.matched) {
+      if (p.teamType !== '단체' || !p.groupUrl || seen.has(p.groupUrl)) continue;
+      seen.add(p.groupUrl);
+      teamEvents.push({ event: p.event, groupUrl: p.groupUrl, date: p.scheduleDate, time: p.scheduleTime });
+    }
+
+    if (!teamEvents.length) {
+      result.innerHTML = bibResultError(c, name, '단체 종목이 없습니다.');
+      bibSetBtns(false); return;
+    }
+
+    const fmtShortEvtL = n => n.replace(/[쎈센][터타]화이어\s*권총/g,'센터화이어').replace(/스탠다드\s*권총/g,'스탠다드');
+    const cardsHtml = teamEvents.map((g, idx) => {
+      const em = g.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s*\S+부)?)$/);
+      const isF = em && em[2].startsWith('여자');
+      const badgeCls = isF ? 'text-pink-500 bg-pink-50 border-pink-100' : 'text-indigo-400 bg-indigo-50 border-indigo-100';
+      const evtName  = em ? fmtShortEvtL(em[1]) : fmtShortEvtL(g.event);
+      const divBadge = em ? `<span class="text-[9px] font-semibold border rounded px-1.5 py-0.5 whitespace-nowrap ${badgeCls}">${esc(em[2])}</span>` : '';
+      const dateTag  = g.date ? `<span class="shrink-0 text-[10px] font-bold text-gold-dark bg-gold/10 border border-gold/20 px-2 py-0.5 rounded-md whitespace-nowrap">${esc(g.date)}</span>` : '';
+      const open = idx === 0;
+      return `
+        <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm mb-3">
+          <button onclick="toggleTeamResult(${idx})"
+                  class="w-full flex items-center gap-2.5 px-4 py-3.5 text-left hover:bg-gray-50 transition-colors">
+            <span class="font-semibold text-[13px] text-navy flex-1 min-w-0 truncate">${esc(evtName)}</span>
+            ${divBadge}${dateTag}
+            <svg id="team-res-chev-${idx}" class="shrink-0 w-4 h-4 text-gray-300 transition-transform duration-200${open ? ' rotate-180' : ''}"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+          <div id="team-res-body-${idx}" class="${open ? '' : 'hidden'}">
+            <div id="team-res-${idx}" data-gurl="${esc(g.groupUrl)}" data-aff="${esc(name)}" data-event="${esc(g.event)}"
+                 class="px-4 py-3 border-t border-gray-100">
+              <div class="flex items-center gap-1.5 text-[10px] text-gray-400">
+                <svg class="w-3 h-3 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                단체 순위 불러오는 중...
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    result.innerHTML = `
+      <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        ${bibResultHeader(c, name, 'team')}
+        <div id="bib-team-medal-summary" class="px-5 py-3 border-b border-gray-100">
+          <div class="text-[9px] font-bold text-gold uppercase tracking-widest mb-2">단체전 성과</div>
+          <div class="flex items-center gap-1.5 text-[10px] text-gray-400">
+            <svg class="w-3 h-3 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            메달 집계 중...
+          </div>
+        </div>
+        <div class="p-4">${cardsHtml}</div>
+        <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">출처: 대한사격연맹 공식 사이트 · 실시간 수집</div>
+      </div>`;
+    bibLoadTeamRankings(c.ksfCode, name);
+  } catch(e) {
+    result.innerHTML = bibResultError(c, name, '단체 순위 조회 실패: ' + e.message);
+  }
+  bibSetBtns(false);
+}
+
 async function bibResultSearch() {
   const sel    = document.getElementById('bib-competition');
   const name   = document.getElementById('bib-name').value.trim();
+  const mode   = document.getElementById('bib-mode').value || 'name';
   const empty  = document.getElementById('bib-empty');
   const result = document.getElementById('bib-result');
 
@@ -2560,6 +2662,12 @@ async function bibResultSearch() {
   const c = COMPETITIONS.find(x => x.id === sel.value);
   empty.classList.add('hidden');
   result.classList.remove('hidden');
+
+  if (mode === 'team') {
+    await bibTeamResultSearch(c, name, result);
+    result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
 
   if (!c.ksfCode) {
     result.innerHTML = bibResultNotYet(c, name);
@@ -2630,6 +2738,190 @@ function bibResultHeader(c, name, searchMode) {
     </div>`;
 }
 
+async function bibLoadTeamRankings(compCode, aff) {
+  const affLower = (aff || '').toLowerCase();
+
+  // ── 1. 단체전: 순차 처리 (카드 화면 업데이트) ────────────
+  const teamMedals = [];
+  const els = document.querySelectorAll('[data-gurl]');
+  for (const el of els) {
+    const gurl  = el.dataset.gurl;
+    const event = el.dataset.event || '';
+    if (!gurl) continue;
+    delete el.dataset.gurl;
+    try {
+      const res  = await fetch(`/api/event-rankings?url=${encodeURIComponent(gurl)}`);
+      const data = await res.json();
+      if (el.id.startsWith('team-res-')) {
+        const rankRows = (data.rows||[]).filter(r => /^\d+$/.test((r[0]||'').trim()));
+        const myIdx = rankRows.findIndex(r => (r[1]||'').toLowerCase().includes(affLower));
+        if (myIdx >= 0) {
+          const rank = parseInt(rankRows[myIdx][0]);
+          const bigo = rankRows[myIdx][4] || '';
+          if (rank >= 1 && rank <= 3 && !/기준점수/.test(bigo)) {
+            teamMedals.push({ rank, event });
+          }
+        }
+      }
+      el.innerHTML = renderTeamRankCard(data, aff, event);
+    } catch(e) {
+      el.innerHTML = `<p class="text-[10px] text-gray-400 py-2">단체 순위를 불러올 수 없습니다.</p>`;
+    }
+  }
+
+  // ── 2. 개인전: /api/comp-events로 전체 종목 URL 수집 후 병렬 집계 ──
+  const indivMedals = [];
+  try {
+    const evtData = await fetch(`/api/comp-events?comp=${encodeURIComponent(compCode)}`).then(r => r.json());
+    const personEvents = (evtData.events || []).filter(e => e.personUrl);
+
+    const tasks = personEvents.map(e =>
+      fetch(`/api/event-rankings?url=${encodeURIComponent(e.personUrl)}`)
+        .then(r => r.json())
+        .then(data => {
+          const rankRows = (data.rows||[]).filter(r => /^\d+$/.test((r[0]||'').trim()));
+          const medals = [];
+          for (const row of rankRows) {
+            if (!(row[1]||'').toLowerCase().includes(affLower)) continue;
+            const rank = parseInt(row[0]);
+            if (isNaN(rank) || rank < 1 || rank > 3) continue;
+            if (!/기준점수/.test(row.slice(3).join(' '))) {
+              medals.push({ rank, event: e.eventLabel });
+            }
+          }
+          return medals;
+        })
+        .catch(() => [])
+    );
+
+    const results = await Promise.all(tasks);
+    for (const medals of results) indivMedals.push(...medals);
+  } catch(e) { /* comp-events 실패 시 개인전 집계 생략 */ }
+
+  const summaryEl = document.getElementById('bib-team-medal-summary');
+  if (summaryEl) summaryEl.innerHTML = renderTeamMedalSummary(teamMedals, indivMedals);
+}
+
+function renderTeamMedalSummary(teamItems, indivItems = []) {
+  const medalRow = items => {
+    const g = items.filter(m => m.rank === 1).length;
+    const s = items.filter(m => m.rank === 2).length;
+    const b = items.filter(m => m.rank === 3).length;
+    if (!g && !s && !b) return '<span class="text-[10px] text-gray-400">없음</span>';
+    const parts = [];
+    if (g) parts.push(`🥇 <span class="font-bold text-yellow-700">${g}개</span>`);
+    if (s) parts.push(`🥈 <span class="font-bold text-slate-600">${s}개</span>`);
+    if (b) parts.push(`🥉 <span class="font-bold text-amber-700">${b}개</span>`);
+    return parts.join('<span class="text-gray-300 mx-1.5">·</span>');
+  };
+  const hasAny = [...teamItems, ...indivItems].some(m => m.rank <= 3);
+  if (!hasAny) {
+    return `<div class="text-[9px] font-bold text-gold uppercase tracking-widest mb-1.5">성과 요약</div>
+            <p class="text-[11px] text-gray-400">이번 시합 입상 없음</p>`;
+  }
+  return `
+    <div class="text-[9px] font-bold text-gold uppercase tracking-widest mb-2">성과 요약</div>
+    <div class="flex items-center gap-5">
+      <div>
+        <div class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider mb-1">단체전</div>
+        <div class="flex items-center gap-1 text-[12px] leading-none">${medalRow(teamItems)}</div>
+      </div>
+      <div class="w-px self-stretch bg-gray-100"></div>
+      <div>
+        <div class="text-[9px] text-gray-400 font-semibold uppercase tracking-wider mb-1">개인전</div>
+        <div class="flex items-center gap-1 text-[12px] leading-none">${medalRow(indivItems)}</div>
+      </div>
+    </div>`;
+}
+
+function renderTeamRankCard(data, aff, eventName = '') {
+  const { rows = [] } = data;
+  if (!rows.length) return `<p class="text-[10px] text-gray-400 py-2">단체 결과가 아직 게시되지 않았습니다.</p>`;
+
+  const rankRows = rows.filter(r => /^\d+$/.test((r[0]||'').trim()));
+  const affLower = aff.toLowerCase();
+  const myIdx    = rankRows.findIndex(r => (r[1]||'').toLowerCase().includes(affLower));
+  if (myIdx < 0) return `<p class="text-[10px] text-gray-400 py-2">${esc(aff)} 결과를 찾을 수 없습니다.</p>`;
+
+  const parseScoreRow = r => {
+    const m = (r[3]||'').match(/^([\d.]+)(?:-(\d+)x?)?/);
+    return { total: m ? parseFloat(m[1]) : 0, xs: m && m[2] ? parseInt(m[2]) : null };
+  };
+
+  const myRow    = rankRows[myIdx];
+  const rank     = parseInt(myRow[0]);
+  const total    = rankRows.length;
+  const bigoStr  = myRow[4] || '';
+  const myData   = parseScoreRow(myRow);
+  const totalScore = myData.total;
+  const xs         = myData.xs;
+
+  // 소수점 자동감지: 실제 값이 정수면 정수로, 소수면 소수 1자리로
+  const fmtScore = n => {
+    if (Number.isInteger(n)) return n.toLocaleString();
+    return n.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  };
+
+  const members = [...(myRow[2]||'').matchAll(/([^\s()]+)\(([\d.]+)\)/g)]
+    .map(m => ({ name: m[1], score: parseFloat(m[2]) }));
+
+  const rankCls  = rank === 1 ? 'text-yellow-600' : rank === 2 ? 'text-slate-500' : rank === 3 ? 'text-amber-600' : 'text-navy';
+  const rankMark = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+
+  const above = myIdx > 0 ? rankRows[myIdx - 1] : null;
+  const below  = myIdx < rankRows.length - 1 ? rankRows[myIdx + 1] : null;
+
+  const recBadge = bigoStr
+    ? `<span class="ml-1 text-[8px] font-bold border rounded px-1 py-0.5 text-red-600 bg-red-50 border-red-200">${esc(bigoStr)}</span>`
+    : '';
+
+  const membersHtml = members.map(m =>
+    `<div class="flex justify-between items-center py-[3px]">
+       <span class="text-[11px] text-gray-600">${esc(m.name)}</span>
+       <span class="font-mono text-[11px] font-semibold text-gray-700">${fmtScore(m.score)}점</span>
+     </div>`
+  ).join('');
+
+  const makeDiffText = (other, isAbove) => {
+    const od = parseScoreRow(other);
+    const diff = isAbove ? od.total - totalScore : totalScore - od.total;
+    if (diff === 0 && xs !== null && od.xs !== null) {
+      const xd = od.xs - xs; // 항상 other - ours: 양수=앞팀이 앞섬, 음수=뒷팀이 뒤처짐
+      return `동점 · X${od.xs} (X${xd >= 0 ? '+' : ''}${xd})`;
+    }
+    return `${fmtScore(diff)}점 차`;
+  };
+
+  const aboveHtml = above
+    ? `<div class="flex justify-between items-center text-[10px] gap-2">
+         <span class="text-gray-500 shrink-0">▲ ${esc(above[0])}위&nbsp;${esc(above[1])}</span>
+         <span class="flex items-center gap-1.5 shrink-0">
+           <span class="font-mono font-semibold text-gray-600">${fmtScore(parseScoreRow(above).total)}점</span>
+           <span class="text-red-400 font-semibold">(${makeDiffText(above, true)})</span>
+         </span>
+       </div>` : '';
+  const belowHtml = below
+    ? `<div class="flex justify-between items-center text-[10px] gap-2">
+         <span class="text-gray-500 shrink-0">▼ ${esc(below[0])}위&nbsp;${esc(below[1])}</span>
+         <span class="flex items-center gap-1.5 shrink-0">
+           <span class="font-mono font-semibold text-gray-600">${fmtScore(parseScoreRow(below).total)}점</span>
+           <span class="text-emerald-500 font-semibold">(${makeDiffText(below, false)})</span>
+         </span>
+       </div>` : '';
+
+  return `
+    <div class="pt-1 pb-2">
+      <div class="text-[9px] font-bold text-indigo-400 tracking-widest uppercase mb-2">단체 순위</div>
+      <div class="flex items-baseline gap-2 mb-2.5">
+        <span class="text-base font-bold ${rankCls}">${rankMark}${rank}위</span>
+        <span class="text-[10px] text-gray-400">/ ${total}팀</span>
+        <span class="ml-auto font-mono text-sm font-bold text-gray-800">${fmtScore(totalScore)}점${xs !== null ? ` x${xs}` : ''}${recBadge}</span>
+      </div>
+      <div class="mb-3 border-l-2 border-indigo-100 pl-2">${membersHtml}</div>
+      ${(aboveHtml||belowHtml) ? `<div class="border-t border-indigo-100 pt-2 space-y-1">${aboveHtml}${belowHtml}</div>` : ''}
+    </div>`;
+}
+
 function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = false) {
   const isTeam      = searchMode === 'team';
   const hasSchedule = matched.some(p => p.scheduleDate || p.scheduleTime);
@@ -2670,6 +2962,7 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
     });
 
     const accordionHtml = groups.map((g, idx) => {
+      const teamPlayer = g.players.find(p => p.teamType === '단체' && p.groupUrl);
       const playerRows = g.players.map(p => {
         const bib   = p.group && p.lane ? `${p.group}-${p.lane}` : p.bib || '—';
         const badge = p.teamType === '단체'
@@ -2681,6 +2974,15 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
           <td class="px-4 py-2.5 text-center font-mono font-bold text-navy">${esc(bib)}</td>
         </tr>`;
       }).join('');
+      const teamRankHtml = teamPlayer
+        ? `<div id="bib-team-rank-${idx}" data-gurl="${esc(teamPlayer.groupUrl)}" data-aff="${esc(name)}" data-event="${esc(g.event)}"
+               class="border-b border-indigo-100 bg-indigo-50/40 px-4 py-3">
+             <div class="flex items-center gap-1.5 text-[10px] text-gray-400">
+               <svg class="w-3 h-3 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+               단체 순위 불러오는 중...
+             </div>
+           </div>`
+        : '';
 
       const _dt = g.scheduleDate, _tm = g.scheduleTime || '';
       const _halfTime = _tm.includes('전반');
@@ -2706,6 +3008,7 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
             </svg>
           </button>
           <div id="bib-acc-body-${idx}" class="hidden">
+            ${teamRankHtml}
             <table class="w-full">
               <thead class="bg-gray-50/80 text-gray-400 text-[10px]">
                 <tr>
@@ -3143,7 +3446,7 @@ function bibRenderPlayerResults(c, name, data) {
       ? (() => {
           const isF      = m[2].startsWith('여자');
           const badgeCls = isF ? 'text-pink-500 bg-pink-50 border-pink-100' : 'text-indigo-400 bg-indigo-50 border-indigo-100';
-          return `<span class="block">${esc(fmtEvtName(m[1]))}</span><span class="inline-block text-[9px] font-medium px-1.5 py-0.5 rounded-full border mt-0.5 ${badgeCls}">${esc(m[2])}</span>`;
+          return `<span class="block whitespace-nowrap">${esc(fmtEvtName(m[1]))}</span><span class="block mt-0.5 text-[9px] font-semibold border rounded px-1.5 py-0.5 w-fit whitespace-nowrap ${badgeCls}">${esc(m[2])}</span>`;
         })()
       : `<span>${esc(fmtEvtName(r.event))}</span>`;
     const _decEvt2  = /10m.*공기소총|50m.*복사/.test(r.event || '');
@@ -3164,7 +3467,7 @@ function bibRenderPlayerResults(c, name, data) {
       : '';
 
     return `<tr class="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-      <td class="px-4 py-3 text-xs text-navy w-28">${eventCell}</td>
+      <td class="px-4 py-3 text-[11px] text-navy w-28">${eventCell}</td>
       <td class="px-4 py-3 text-center text-sm align-top pt-3.5 w-14 whitespace-nowrap">${fmtRank(r.rank)}</td>
       <td class="px-4 py-3 text-sm align-top pt-3">${scoreCell}${posCell}${(posCell && (finalCell || qualRankLine)) ? '<div class="mt-1.5 border-t border-gray-100"></div>' : ''}${finalCell}${qualRankLine}</td>
       <td class="px-4 py-3 text-center text-xs text-gray-400 align-top pt-3.5 w-14 whitespace-nowrap">

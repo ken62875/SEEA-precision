@@ -20,6 +20,8 @@ const compPlayersCache = new Map(); // compCode → { players: [], ts: number }
 let compListCache = null; // { data: [], ts: number }
 // 순위 캐시 (5분)
 const rankingsCache = new Map(); // url → { data, ts }
+// 대회 종목 이벤트 캐시 (1시간)
+const compEventsCache = new Map(); // compCode → { events: [], ts: number }
 
 // ── 동명이인 생년 DB 로드 ─────────────────────────────────
 function loadPlayerBirths() {
@@ -1029,6 +1031,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     try {
+      const COMP_EVENTS_TTL = 60 * 60 * 1000; // 1시간 캐시
+      const cached = compEventsCache.get(comp);
+      if (cached && Date.now() - cached.ts < COMP_EVENTS_TTL) {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify(cached.data));
+        return;
+      }
+
       const { html, events } = await getGamePageHtml(comp);
       const titleM = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
       const title  = titleM ? titleM[1].trim() : comp;
@@ -1049,8 +1059,10 @@ const server = http.createServer(async (req, res) => {
           });
         }
       }
+      const payload = { comp, title, events: unique };
+      compEventsCache.set(comp, { data: payload, ts: Date.now() });
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ comp, title, events: unique }));
+      res.end(JSON.stringify(payload));
     } catch (err) {
       console.error('[/api/comp-events]', err.message);
       res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
