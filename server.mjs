@@ -843,7 +843,28 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const rankUrl = player.personUrl;
+    let rankUrl = player.personUrl;
+    if (!rankUrl) {
+      // bib 캐시가 낡아 personUrl이 없을 때: comp-events에서 폴백 조회
+      try {
+        let events;
+        const evtCached = compEventsCache.get(comp);
+        if (evtCached && Date.now() - evtCached.ts < 60 * 60 * 1000) {
+          events = evtCached.data.events;
+        } else {
+          const { events: rawEvts } = await getGamePageHtml(comp);
+          const seen = new Set();
+          events = [];
+          for (const e of rawEvts) {
+            const key = e.personUrl || `${e.eventLabel}|${e.scheduleDate}`;
+            if (!seen.has(key)) { seen.add(key); events.push(e); }
+          }
+          compEventsCache.set(comp, { data: { comp, events }, ts: Date.now() });
+        }
+        const match = events.find(e => e.personUrl && e.eventLabel === event);
+        if (match) rankUrl = match.personUrl;
+      } catch { /* 폴백 실패 시 아래에서 에러 처리 */ }
+    }
     if (!rankUrl) {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ error: '이 종목의 결과가 아직 게시되지 않았습니다.' }));

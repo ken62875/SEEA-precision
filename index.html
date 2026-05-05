@@ -2061,7 +2061,7 @@ function bibIsEventPast(schedDate) {
   const m = schedDate.match(/(\d{1,2})월\s*(\d{1,2})일/);
   if (!m) return false;
   const today = new Date(); today.setHours(0,0,0,0);
-  return new Date(today.getFullYear(), +m[1]-1, +m[2]) < today;
+  return new Date(today.getFullYear(), +m[1]-1, +m[2]) <= today;
 }
 
 // "2026.05.14 ~ 05.21" — 같은 연/월이면 뒤쪽 생략
@@ -3016,7 +3016,7 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
          </button>`
       : '';
     const isPast   = bibIsEventPast(p.scheduleDate);
-    const hasResult= isPast && !!p.personUrl;
+    const hasResult= isPast;
     const resBtn   = hasResult
       ? `<button onclick="bibShowResult('${esc(c.ksfCode)}','${esc(p.event)}','${esc(p.name)}','${esc(p.affiliation||'')}',0,${ri})"
                  id="bib-res-btn-${ri}"
