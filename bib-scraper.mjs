@@ -375,7 +375,10 @@ export async function getGamePageHtml(compCode) {
 
 // ── 대회 목록 + 상태 분류 ─────────────────────────────────
 function parseDateRange(dateStr, year) {
-  const s = (dateStr || '').replace(/\s/g, '');
+  // "5.14.~21." → "5.14~21", "4.30.~5.6." → "4.30~5.6"
+  const s = (dateStr || '').replace(/\s/g, '')
+    .replace(/\.([~\-])/g, '$1')
+    .replace(/\.+$/, '');
 
   // "4.30~5.6" 또는 "4.30-5.6" (월 다름)
   let m = s.match(/^(\d{1,2})\.(\d{1,2})[~\-](\d{1,2})\.(\d{1,2})$/);
@@ -460,31 +463,42 @@ export async function getCompList() {
 
 // ── 순위 페이지 파싱 (개인 / 단체 공통) ──────────────────
 export async function getEventRankings(url) {
-  const html    = await fetchHtml(url);
-  const headers = [];
-  const rows    = [];
-  let   headerFound = false;
+  const html          = await fetchHtml(url);
+  const groups        = [];  // 1행: [{label, span}]
+  const detailHeaders = [];  // 2행: 개별 컬럼명
+  const rows          = [];
+  let   thRowCount    = 0;
 
   for (const rowM of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
     const rowHtml = rowM[1];
 
-    if (!headerFound) {
-      const ths = [...rowHtml.matchAll(/<th[^>]*>([\s\S]*?)<\/th>/gi)];
+    if (thRowCount < 2) {
+      const ths = [...rowHtml.matchAll(/<th([^>]*?)>([\s\S]*?)<\/th>/gi)];
       if (ths.length > 0) {
-        ths.forEach(t => headers.push(stripTags(t[1]).replace(/\s+/g, ' ').trim()));
-        headerFound = true;
+        if (thRowCount === 0) {
+          for (const [, attrs, inner] of ths) {
+            const label = stripTags(inner).replace(/\s+/g, ' ').trim();
+            const spanM = attrs.match(/colspan=["']?(\d+)["']?/i);
+            groups.push({ label, span: spanM ? +spanM[1] : 1 });
+          }
+        } else {
+          for (const [, , inner] of ths) {
+            detailHeaders.push(stripTags(inner).replace(/\s+/g, ' ').trim());
+          }
+        }
+        thRowCount++;
         continue;
       }
     }
 
     const cells = [...rowHtml.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
       .map(m2 => stripTags(m2[1]).replace(/\s+/g, ' ').trim());
-
     if (cells.length < 3) continue;
     if (cells.filter(c => c && c !== '-' && c !== '–').length < 2) continue;
-
     rows.push(cells);
   }
 
-  return { headers, rows };
+  const hasTwoHeaders = detailHeaders.length > 0;
+  const headers = hasTwoHeaders ? detailHeaders : groups.map(g => g.label);
+  return { groups, headers, rows, hasTwoHeaders };
 }

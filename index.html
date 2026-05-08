@@ -86,6 +86,47 @@
     .qa-card-title { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
     .qa-card-desc  { font-size: 11px; color: rgba(255,255,255,.45); margin-top: 1px; }
 
+    /* ── Scores list sections ── */
+    .scores-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: #9CA3AF; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .scores-active-card {
+      border-radius: 14px; border: 1.5px solid #BBF7D0;
+      background: linear-gradient(135deg,#F0FDF4 0%,#fff 100%);
+      padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
+      transition: border-color .2s, transform .15s;
+    }
+    .scores-active-card:hover  { border-color: #34D399; transform: translateY(-1px); }
+    .scores-active-card:active { transform: scale(.99); }
+    .scores-upcoming-card {
+      border-radius: 14px; border: 1.5px solid #BFDBFE;
+      background: linear-gradient(135deg,#EFF6FF 0%,#fff 100%);
+      padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
+      transition: border-color .2s, transform .15s;
+    }
+    .scores-upcoming-card:hover  { border-color: #60A5FA; transform: translateY(-1px); }
+    .scores-upcoming-card:active { transform: scale(.99); }
+    .scores-past-more summary  { list-style: none; }
+    .scores-past-more summary::-webkit-details-marker { display: none; }
+    .scores-past-more[open] .scores-more-chev { transform: rotate(180deg); }
+
+    /* ── Scores filter chips ── */
+    .sfc {
+      display: inline-flex; align-items: center;
+      padding: 5px 11px; border-radius: 20px;
+      border: 1.5px solid #E5E7EB; font-size: 11px; font-weight: 600;
+      color: #6B7280; cursor: pointer; background: #fff;
+      transition: background .15s, border-color .15s, color .15s;
+      white-space: nowrap; user-select: none;
+    }
+    .sfc:hover { border-color: #0B1E3F; color: #0B1E3F; }
+    .sfc.on { background: #0B1E3F; color: #fff; border-color: #0B1E3F; }
+    .sfc.cat-rifle.on  { background: #2563EB; border-color: #2563EB; }
+    .sfc.cat-pistol.on { background: #7C3AED; border-color: #7C3AED; }
+    .sfc.cat-clay.on   { background: #059669; border-color: #059669; }
+
     /* ── Past competitions section ── */
     .past-comp-row {
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -351,8 +392,31 @@
     .scores-rank-table tr:last-child td { border-bottom: none; }
     .scores-rank-table tr:hover td { background: #F9FAFB; }
     .scores-rank-table td:first-child { font-weight: 700; color: #9CA3AF; width: 38px; }
-    .scores-rank-table tr:nth-child(1) td:first-child { color: #F59E0B; }
-    .scores-rank-table tr:nth-child(2) td:first-child { color: #9CA3AF; }
+    /* 메달 행 배경 — 금(노랑), 은(회색), 동(구리/주황) */
+    .scores-rank-table tr.rank-gold td   { background: linear-gradient(90deg,#FEFCE8,#fff); }
+    .scores-rank-table tr.rank-silver td { background: linear-gradient(90deg,#F1F5F9,#fff); }
+    .scores-rank-table tr.rank-bronze td { background: linear-gradient(90deg,#FFF0E6,#fff); }
+    .scores-rank-table tr.rank-gold:hover td   { background: linear-gradient(90deg,#FEF08A,#FFFDE7); }
+    .scores-rank-table tr.rank-silver:hover td { background: linear-gradient(90deg,#CBD5E1,#F1F5F9); }
+    .scores-rank-table tr.rank-bronze:hover td { background: linear-gradient(90deg,#FDBA74,#FFF0E6); }
+    /* 그룹 헤더 (본선/결선) */
+    .scores-group-th { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; padding: 5px 8px !important; text-align: center !important; }
+    .scores-group-th-bonson  { background: #1B3A6B !important; color: #fff !important; }
+    .scores-group-th-gyeolson { background: #92711E !important; color: #fff !important; }
+    /* 상세 뷰 compact */
+    .scores-rank-table.scores-detail { font-size: 11px; }
+    .scores-rank-table.scores-detail th,
+    .scores-rank-table.scores-detail td { padding: 6px 7px; }
+    /* 뷰 토글 버튼 */
+    .scores-view-btn { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 600; transition: all .15s; white-space: nowrap; }
+    .scores-view-btn.active  { background: #0B1E3F; color: white; }
+    .scores-view-btn.inactive { color: #9CA3AF; background: transparent; }
+    .scores-view-btn.inactive:hover { color: #0B1E3F; }
+    /* 소속 셀 말줄임 (요약) */
+    .scores-rank-table td.scores-affil { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* 세부 하위 행 (급사/복사/입사/20s/후반 등) */
+    .scores-rank-table tr.scores-sub-row td { background: #F9FAFB !important; color: #9CA3AF; font-size: 11px; border-bottom-color: #F3F4F6; }
+    .scores-rank-table tr.scores-sub-row:hover td { background: #F3F4F6 !important; }
     .scores-rank-table tr:nth-child(3) td:first-child { color: #92400E; }
     .scores-tab-active {
       background: #0B1E3F; color: #fff;
@@ -575,7 +639,7 @@
         <div class="grid grid-cols-2 gap-2.5">
 
           <!-- 사대번호 조회 -->
-          <button class="qa-card" onclick="navigate('bib')">
+          <button class="qa-card" onclick="bibOpenWithAutoSelect('name')">
             <div class="qa-card-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
@@ -602,7 +666,7 @@
           </button>
 
           <!-- 소속팀 조회 -->
-          <button class="qa-card" onclick="navigate('bib'); setTimeout(()=>{ const t = document.querySelector('#bib-tab-team'); if(t) t.click(); }, 300)">
+          <button class="qa-card" onclick="bibOpenWithAutoSelect('team')">
             <div class="qa-card-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -610,8 +674,8 @@
               </svg>
             </div>
             <div>
-              <div class="qa-card-title">소속팀 조회</div>
-              <div class="qa-card-desc">팀 전체 배정표 한눈에</div>
+              <div class="qa-card-title">소속별 배정 조회</div>
+              <div class="qa-card-desc">팀 전체 사대 세부일정을 한눈에</div>
             </div>
           </button>
 
@@ -1640,7 +1704,39 @@
           <svg class="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
           대회 목록으로
         </button>
-        <div id="scores-events-header" class="mb-6"></div>
+        <div id="scores-events-header" class="mb-4"></div>
+
+        <!-- ── 선수/팀 검색 ── -->
+        <div id="scores-search-bar" class="hidden mb-3">
+          <div class="flex gap-2">
+            <input id="scores-person-input" type="text" placeholder="선수명 또는 소속팀 입력 후 검색"
+              class="flex-1 border border-gray-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/20"
+              onkeydown="if(event.key==='Enter')scoresSearchByPerson()">
+            <button onclick="scoresSearchByPerson()"
+              class="bg-navy text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-navy-light transition-colors active:scale-95">검색</button>
+          </div>
+          <div id="scores-person-banner" class="hidden mt-2 flex items-center justify-between px-3 py-2 bg-navy/5 rounded-xl">
+            <span id="scores-person-banner-text" class="text-sm font-semibold text-navy"></span>
+            <button onclick="scoresClearPersonSearch()" class="text-xs text-gray-400 hover:text-navy ml-3">✕ 초기화</button>
+          </div>
+        </div>
+
+        <!-- ── 간편 필터 ── -->
+        <div id="scores-filter-bar" class="hidden mb-4">
+          <details id="scores-filter-details">
+            <summary class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-gray-400 hover:text-navy mb-2 select-none list-none">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+              </svg>
+              간편 필터
+              <svg id="scores-filter-chev" class="w-3 h-3 transition-transform" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l4 4 4-4"/></svg>
+              <span id="scores-filter-count" class="hidden ml-1 bg-navy text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full"></span>
+              <span class="ml-auto text-gray-300 font-normal" id="scores-event-count"></span>
+            </summary>
+            <div id="scores-filter-inner" class="pt-3 space-y-3"></div>
+          </details>
+        </div>
+
         <div id="scores-events-loading" class="text-center py-12 text-gray-400 text-sm hidden">
           <div class="inline-block w-6 h-6 border-2 border-gray-200 border-t-navy rounded-full animate-spin mb-3"></div>
           <p>종목 정보를 불러오는 중...</p>
@@ -1664,17 +1760,20 @@
             <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
           </button>
         </div>
-        <!-- 탭 + 새로고침 -->
+        <!-- 탭 + 뷰 전환 + 새로고침 -->
         <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 flex-shrink-0">
-          <div class="flex gap-1">
+          <div class="flex items-center gap-1">
             <button id="scores-tab-person" onclick="scoresTabSwitch('person')"
               class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors">개인순위</button>
             <button id="scores-tab-group" onclick="scoresTabSwitch('group')"
               class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors">단체순위</button>
+            <span class="w-px h-4 bg-gray-200 mx-1"></span>
+            <button id="scores-view-btn-summary" onclick="scoresToggleView('summary')" class="scores-view-btn active">요약</button>
+            <button id="scores-view-btn-detail"  onclick="scoresToggleView('detail')"  class="scores-view-btn inactive">상세</button>
           </div>
           <div class="flex items-center gap-3">
-            <span id="scores-refresh-badge" class="text-xs text-gray-400 hidden">
-              <span id="scores-refresh-timer"></span>초 후 갱신
+            <span id="scores-refresh-badge" class="hidden flex items-center gap-0.5 text-xs text-gray-400" style="min-width:72px;justify-content:flex-end">
+              <span id="scores-refresh-timer" style="font-variant-numeric:tabular-nums;min-width:2.8ch;text-align:right;display:inline-block"></span>초 후 갱신
             </span>
             <button onclick="scoresRefreshNow()" class="text-gray-400 hover:text-navy transition-colors" title="지금 갱신">
               <svg id="scores-refresh-icon" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
@@ -2218,6 +2317,19 @@ function dDay(dateStr) {
   return Math.round((t - today) / 86400000);
 }
 
+// comp-list API의 startDate("5.14" 형식)로 D-n 계산
+function _scoresDDay(c) {
+  if (!c.startDate) return null;
+  const parts = c.startDate.split('.').map(Number);
+  if (parts.length < 2 || !parts[0] || !parts[1]) return null;
+  const [m, d] = parts;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const year = today.getFullYear();
+  let target = new Date(year, m - 1, d);
+  if (target < today) target = new Date(year + 1, m - 1, d);
+  return Math.round((target - today) / 86400000);
+}
+
 function fmtDate(dateStr) {
   const d = new Date(dateStr);
   return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
@@ -2263,7 +2375,9 @@ function bibBannerInit() {
   const pastSection = document.getElementById('past-comps-section');
   const pastList    = document.getElementById('past-comps-list');
   if (pastComps.length && pastSection && pastList) {
-    pastList.innerHTML = pastComps.map(c => {
+    const showPast = pastComps.slice(0, 2);
+    const morePast = pastComps.length > 2;
+    pastList.innerHTML = showPast.map(c => {
       const hasScores = !!c.ksfCode;
       const actionBtn = hasScores
         ? `<button onclick="navigate('scores')" class="flex-shrink-0 text-xs font-semibold text-gold border border-gold/40 rounded-lg px-3 py-1.5 hover:bg-gold hover:text-navy-dark transition-colors whitespace-nowrap">결과 보기</button>`
@@ -2279,7 +2393,12 @@ function bibBannerInit() {
           </div>
           ${actionBtn}
         </div>`;
-    }).join('');
+    }).join('') + (morePast
+      ? `<button onclick="navigate('scores')" class="w-full mt-1 flex items-center justify-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors py-2 rounded-lg hover:bg-white/5">
+          종료된 시합 더보기
+          <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
+        </button>`
+      : '');
     pastSection.classList.remove('hidden');
   }
 
@@ -2449,6 +2568,23 @@ function bibGoFromBanner(id) {
     if (sel) { sel.value = id; bibUpdateCompetitionInfo(); }
     document.getElementById('bib-name')?.focus();
   }, 150);
+}
+
+function bibGoFromScoresComp(jname) {
+  const comp = COMPETITIONS.find(c => c.ksfCode === jname);
+  if (comp) { bibGoFromBanner(comp.id); } else { navigate('bib'); }
+}
+
+function bibOpenWithAutoSelect(mode) {
+  navigate('bib');
+  const sel = document.getElementById('bib-competition');
+  if (sel && !sel.value) {
+    const sorted = COMPETITIONS.slice().sort((a,b) => new Date(a.start) - new Date(b.start));
+    const best = sorted.find(c => compStatus(c) === 'ongoing') || sorted.find(c => compStatus(c) === 'upcoming');
+    if (best) { sel.value = best.id; bibUpdateCompetitionInfo(); }
+  }
+  setBibMode(mode);
+  document.getElementById('bib-name')?.focus();
 }
 
 // ── BIB SEARCH PAGE ─────────────────────────────────
@@ -4108,6 +4244,13 @@ let _scoresState = {
   refreshTimer: null,
   refreshCountdown: null,
   listLoaded: false,
+  // 필터 상태
+  currentJname: null,
+  allEvents: [],
+  activeFilters: { cats: new Set(), genders: new Set(), divs: new Set() },
+  personFilter: null,  // Set<eventLabel> or null (= 전체)
+  viewMode: 'summary', // 'summary' | 'detail'
+  rankData: null,
 };
 
 async function scoresInit() {
@@ -4124,36 +4267,70 @@ async function scoresInit() {
   try {
     const r = await fetch('/api/comp-list');
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const comps = await r.json();
+    let comps = await r.json();
 
     if (!Array.isArray(comps) || comps.length === 0) {
       loading.innerHTML = '<p class="text-gray-400 text-sm py-8">대회 정보를 불러올 수 없습니다.</p>';
       return;
     }
 
-    const order = { ongoing: 0, upcoming: 1, past: 2 };
-    comps.sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3));
+    const ongoing    = comps.filter(c => c.status === 'ongoing');
+    const ksfUpcoming = comps.filter(c => c.status === 'upcoming');
+    const toDateNum  = s => { const p = (s||'').split('.').map(Number); return (p[0]||0)*100+(p[1]||0); };
+    const past       = comps.filter(c => c.status === 'past').sort((a,b) => toDateNum(b.endDate) - toDateNum(a.endDate));
 
-    content.innerHTML = comps.map(c => {
-      const badge = _scoresStatusBadge(c.status);
-      const loc   = [c.dateStr, c.venue].filter(Boolean).join(' · ');
-      return `
-        <div class="scores-comp-card mb-3 ${c.status === 'ongoing' ? 'ongoing' : ''}"
-          onclick="scoresSelectComp('${esc(c.jname)}','${esc(c.name)}','${esc(c.dateStr||'')}','${esc(c.venue||'')}','${c.status}')">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex-1 min-w-0">
-              <p class="font-bold text-navy text-sm leading-snug mb-1">${esc(c.name)}</p>
-              <p class="text-gray-400 text-xs">${esc(loc)}</p>
-            </div>
-            <div class="flex-shrink-0">${badge}</div>
-          </div>
-          <div class="mt-3 flex items-center gap-1 text-gold text-xs font-semibold">
-            종목별 순위 보기
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
-          </div>
-        </div>`;
-    }).join('');
+    // COMPETITIONS 배열에서 KSF 미등록 upcoming 보완
+    const ksfJnames = new Set(comps.map(c => c.jname).filter(Boolean));
+    const localUpcoming = COMPETITIONS
+      .filter(c => compStatus(c) === 'upcoming' && (!c.ksfCode || !ksfJnames.has(c.ksfCode)))
+      .sort((a, b) => new Date(a.start) - new Date(b.start))
+      .map(c => {
+        const s = new Date(c.start), e = new Date(c.end);
+        const sm = s.getMonth()+1, sd = s.getDate(), em = e.getMonth()+1, ed = e.getDate();
+        const dateStr = sm === em ? `${sm}.${sd}.~${ed}.` : `${sm}.${sd}.~${em}.${ed}.`;
+        return { jname: null, name: c.name, dateStr, venue: c.venue,
+                 startDate: `${sm}.${sd}`, status: 'upcoming', _localId: c.id };
+      });
+    const upcoming = [...ksfUpcoming, ...localUpcoming];
 
+    const moreBtn = (label, count, items, type) =>
+      `<details class="scores-past-more mb-1">
+        <summary class="flex items-center gap-1 text-xs text-gray-400 font-semibold cursor-pointer select-none py-2 px-3 rounded-xl bg-gray-50 border border-gray-100 mb-2">
+          <span>${label} (${count}개)</span>
+          <svg class="scores-more-chev w-3.5 h-3.5 ml-auto transition-transform" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+        </summary>
+        <div>${items.map(c => _scoresCompCard(c, type)).join('')}</div>
+      </details>`;
+
+    let html = '';
+
+    if (ongoing.length) {
+      html += `<div class="flex items-center gap-2 mb-2 mt-1">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+        </span>
+        <span class="text-xs font-bold text-green-600 uppercase tracking-wide">진행중</span>
+      </div>`;
+      html += ongoing.map(c => _scoresCompCard(c, 'ongoing')).join('');
+    }
+
+    if (upcoming.length) {
+      const showN = ongoing.length > 0 ? 1 : 2;
+      html += `<p class="text-xs font-bold text-navy uppercase tracking-wide mb-2 ${ongoing.length ? 'mt-4' : 'mt-1'}">다가오는 시합</p>`;
+      html += upcoming.slice(0, showN).map(c => _scoresCompCard(c, 'upcoming')).join('');
+      if (upcoming.length > showN)
+        html += moreBtn('다가오는 시합 더보기', upcoming.length - showN, upcoming.slice(showN), 'upcoming');
+    }
+
+    if (past.length) {
+      html += `<p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 ${(ongoing.length || upcoming.length) ? 'mt-4' : 'mt-1'}">최근 종료된 시합</p>`;
+      html += past.slice(0, 2).map(c => _scoresCompCard(c, 'past')).join('');
+      if (past.length > 2)
+        html += moreBtn('종료된 시합 더보기', past.length - 2, past.slice(2), 'past');
+    }
+
+    content.innerHTML = html;
     loading.classList.add('hidden');
     content.classList.remove('hidden');
     _scoresState.listLoaded = true;
@@ -4162,9 +4339,67 @@ async function scoresInit() {
   }
 }
 
+function _scoresCompCard(c, type) {
+  const badge = _scoresStatusBadge(c.status);
+  const loc   = [c.dateStr, c.venue].filter(Boolean).join(' · ');
+  const extraClass = type === 'ongoing' ? 'scores-active-card' : type === 'upcoming' ? 'scores-upcoming-card' : '';
+  const hasKsf = !!c.jname;
+
+  let topMeta = '';
+  if (type === 'upcoming') {
+    const dd = _scoresDDay(c);
+    if (dd !== null && dd >= 0) topMeta = `<span class="inline-block text-xs font-extrabold text-blue-500 mb-1">D-${dd}</span><br>`;
+  }
+
+  const bibBtn = (type === 'ongoing' || type === 'upcoming') && hasKsf
+    ? `<button onclick="event.stopPropagation();bibGoFromScoresComp('${esc(c.jname)}')"
+        class="text-xs font-semibold text-navy/70 hover:text-navy border border-navy/20 hover:border-navy rounded-lg px-2.5 py-1 transition-colors bg-white/60">
+        사대번호 확인
+      </button>
+      <span class="text-gray-200 text-xs">|</span>`
+    : '';
+
+  const rankAction = hasKsf
+    ? `<span class="flex items-center gap-1 text-gold text-xs font-semibold">
+        종목별 순위 보기
+        <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg>
+      </span>`
+    : `<span class="text-xs text-gray-300 font-semibold">KSF 등록 예정</span>`;
+
+  const cardAttrs = hasKsf
+    ? `onclick="scoresSelectComp('${esc(c.jname)}','${esc(c.name)}','${esc(c.dateStr||'')}','${esc(c.venue||'')}','${c.status}')"`
+    : 'style="cursor:default"';
+
+  return `
+    <div class="${extraClass || 'scores-comp-card'} mb-3" ${cardAttrs}>
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          ${topMeta}<p class="font-bold text-navy text-sm leading-snug mb-1">${esc(c.name)}</p>
+          <p class="text-gray-400 text-xs">${esc(loc)}</p>
+        </div>
+        <div class="flex-shrink-0">${badge}</div>
+      </div>
+      <div class="mt-3 flex items-center gap-2">
+        ${bibBtn}${rankAction}
+      </div>
+    </div>`;
+}
+
 async function scoresSelectComp(jname, compName, dateStr, venue, status) {
   document.getElementById('scores-list-view').classList.add('hidden');
   document.getElementById('scores-events-view').classList.remove('hidden');
+
+  // 필터 상태 초기화
+  _scoresState.currentJname  = jname;
+  _scoresState.allEvents     = [];
+  _scoresState.activeFilters = { cats: new Set(), genders: new Set(), divs: new Set() };
+  _scoresState.personFilter  = null;
+  document.getElementById('scores-search-bar')?.classList.add('hidden');
+  document.getElementById('scores-filter-bar')?.classList.add('hidden');
+  const personBanner = document.getElementById('scores-person-banner');
+  if (personBanner) personBanner.classList.add('hidden');
+  const personInput = document.getElementById('scores-person-input');
+  if (personInput) personInput.value = '';
 
   const loc = [dateStr, venue].filter(Boolean).join(' · ');
   document.getElementById('scores-events-header').innerHTML = `
@@ -4195,29 +4430,188 @@ async function scoresSelectComp(jname, compName, dateStr, venue, status) {
       return;
     }
 
-    eventsContent.innerHTML = data.events.map(evt => {
-      const hasPerson = !!evt.personUrl;
-      const hasGroup  = !!evt.groupUrl;
-      const canOpen   = hasPerson || hasGroup;
-      const sched     = [evt.scheduleDate, evt.scheduleTime].filter(Boolean).join(' ');
-      const pUrl      = esc(evt.personUrl || '');
-      const gUrl      = esc(evt.groupUrl  || '');
-      return `
-        <div class="scores-event-row mb-2 ${canOpen ? 'cursor-pointer' : 'opacity-50 cursor-default'}"
-          ${canOpen ? `onclick="scoresOpenModal('${esc(evt.eventLabel)}','${pUrl}','${gUrl}')"` : ''}>
-          <div class="flex-1 min-w-0">
-            <p class="font-semibold text-navy text-sm">${esc(evt.eventLabel)}</p>
-            ${sched ? `<p class="text-xs text-gray-400 mt-0.5">${esc(sched)}</p>` : ''}
-          </div>
-          ${canOpen
-            ? `<div class="flex items-center gap-1 text-gold text-xs font-semibold flex-shrink-0">순위 <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg></div>`
-            : `<span class="text-xs text-gray-300 flex-shrink-0">결과 없음</span>`}
-        </div>`;
-    }).join('');
+    _scoresState.allEvents = data.events;
+    _scoresBuildFilters(data.events);
+    _scoresRenderEvents(data.events);
+    document.getElementById('scores-search-bar')?.classList.remove('hidden');
+    document.getElementById('scores-filter-bar')?.classList.remove('hidden');
   } catch (e) {
     eventsLoading.classList.add('hidden');
     eventsContent.innerHTML = `<p class="text-red-400 text-sm text-center py-8">오류: ${esc(e.message)}</p>`;
   }
+}
+
+// ── 이벤트 렌더링 ─────────────────────────────────────
+function _scoresRenderEvents(events) {
+  const eventsContent = document.getElementById('scores-events-content');
+  const countEl = document.getElementById('scores-event-count');
+  if (countEl) countEl.textContent = events.length + '종목';
+
+  if (!events.length) {
+    eventsContent.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">
+      <p class="text-2xl mb-2">🔍</p><p>조건에 맞는 종목이 없습니다</p>
+      <button onclick="scoresClearFilters();scoresClearPersonSearch()" class="mt-2 text-xs text-navy font-semibold">전체 초기화</button>
+    </div>`;
+    return;
+  }
+
+  eventsContent.innerHTML = events.map(evt => {
+    const hasPerson = !!evt.personUrl;
+    const hasGroup  = !!evt.groupUrl;
+    const canOpen   = hasPerson || hasGroup;
+    const sched     = [evt.scheduleDate, evt.scheduleTime].filter(Boolean).join(' ');
+    const pUrl      = esc(evt.personUrl || '');
+    const gUrl      = esc(evt.groupUrl  || '');
+    const p         = _scoresParseEvent(evt.eventLabel);
+    const catCls    = p.cat === '소총' ? 'text-blue-500 bg-blue-50 border-blue-100'
+                    : p.cat === '권총' ? 'text-purple-500 bg-purple-50 border-purple-100'
+                    : p.cat === '클레이' ? 'text-green-600 bg-green-50 border-green-100'
+                    : 'text-gray-400 bg-gray-50 border-gray-100';
+    return `
+      <div class="scores-event-row mb-2 ${canOpen ? 'cursor-pointer' : 'opacity-50 cursor-default'}"
+        ${canOpen ? `onclick="scoresOpenModal('${esc(evt.eventLabel)}','${pUrl}','${gUrl}')"` : ''}>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-navy text-sm">${esc(evt.eventLabel)}</p>
+          ${sched ? `<p class="text-xs text-gray-400 mt-0.5">${esc(sched)}</p>` : ''}
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          ${p.cat ? `<span class="text-[10px] font-bold border rounded px-1.5 py-0.5 ${catCls}">${esc(p.cat)}</span>` : ''}
+          ${canOpen
+            ? `<div class="flex items-center gap-1 text-gold text-xs font-semibold">순위 <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3l5 5-5 5"/></svg></div>`
+            : `<span class="text-xs text-gray-300">결과 없음</span>`}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── 이벤트 레이블 파싱 ────────────────────────────────
+function _scoresParseEvent(label) {
+  // 소총: 공기소총·3자세·복사·비임동·자유형소총 포함
+  const cat =
+    /소총|3자세|복사|비임동/.test(label) ? '소총'    :
+    /권총/.test(label)                   ? '권총'    :
+    /트랩|스키트|더블트랩/.test(label)   ? '클레이'  :
+    /러닝/.test(label)                   ? '러닝타겟' : '기타';
+  const gender =
+    /여자/.test(label) ? '여자' :
+    /혼성/.test(label) ? '혼성' :
+    /남자/.test(label) ? '남자' : '';
+  const div =
+    /초등/.test(label) ? '초등부' :
+    /중등/.test(label) ? '중등부' :
+    /고등/.test(label) ? '고등부' :
+    /대학/.test(label) ? '대학부' :
+    /일반/.test(label) ? '일반부' : '';
+  return { cat, gender, div };
+}
+
+// ── 필터 칩 생성 ──────────────────────────────────────
+function _scoresBuildFilters(events) {
+  const cats = new Set(), genders = new Set(), divs = new Set();
+  events.forEach(e => {
+    const p = _scoresParseEvent(e.eventLabel);
+    if (p.cat    && p.cat    !== '기타') cats.add(p.cat);
+    if (p.gender) genders.add(p.gender);
+    if (p.div)    divs.add(p.div);
+  });
+
+  const catOrder    = ['소총','권총','클레이','러닝타겟'];
+  const genderOrder = ['남자','여자','혼성'];
+  const divOrder    = ['초등부','중등부','고등부','대학부','일반부'];
+  const catCls      = { '소총':'cat-rifle', '권총':'cat-pistol', '클레이':'cat-clay', '러닝타겟':'' };
+
+  const makeChips = (type, items, order, extraCls = {}) =>
+    order.filter(v => items.has(v)).map(v =>
+      `<button class="sfc ${extraCls[v]||''}" data-ft="${type}" data-fv="${v}"
+        onclick="scoresToggleFilter('${type}','${v}',this)">${v}</button>`
+    ).join('');
+
+  const inner = document.getElementById('scores-filter-inner');
+  if (!inner) return;
+  let html = '';
+  if (cats.size)    html += `<div><p class="text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">종목</p><div class="flex flex-wrap gap-1.5">${makeChips('cat',cats,catOrder,catCls)}</div></div>`;
+  if (genders.size) html += `<div><p class="text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">성별</p><div class="flex flex-wrap gap-1.5">${makeChips('gender',genders,genderOrder)}</div></div>`;
+  if (divs.size)    html += `<div><p class="text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">종별</p><div class="flex flex-wrap gap-1.5">${makeChips('div',divs,divOrder)}</div></div>`;
+  html += `<div class="pt-1"><button onclick="scoresClearFilters()" class="text-[11px] text-gray-400 hover:text-navy transition-colors">전체 초기화</button></div>`;
+  inner.innerHTML = html;
+}
+
+// ── 필터 토글 ─────────────────────────────────────────
+function scoresToggleFilter(type, val, el) {
+  const f = _scoresState.activeFilters;
+  const set = type === 'cat' ? f.cats : type === 'gender' ? f.genders : f.divs;
+  if (set.has(val)) { set.delete(val); el?.classList.remove('on'); }
+  else              { set.add(val);    el?.classList.add('on'); }
+  const total = f.cats.size + f.genders.size + f.divs.size;
+  const badge = document.getElementById('scores-filter-count');
+  if (badge) { badge.textContent = total || ''; badge.classList.toggle('hidden', !total); }
+  scoresApplyFilters();
+}
+
+function scoresClearFilters() {
+  _scoresState.activeFilters = { cats: new Set(), genders: new Set(), divs: new Set() };
+  document.querySelectorAll('.sfc.on').forEach(el => el.classList.remove('on'));
+  const badge = document.getElementById('scores-filter-count');
+  if (badge) badge.classList.add('hidden');
+  scoresApplyFilters();
+}
+
+// ── 필터 적용 + 렌더링 ────────────────────────────────
+function scoresApplyFilters() {
+  const { allEvents, activeFilters, personFilter } = _scoresState;
+  const { cats, genders, divs } = activeFilters;
+  const filtered = allEvents.filter(evt => {
+    if (personFilter !== null && !personFilter.has(evt.eventLabel)) return false;
+    const p = _scoresParseEvent(evt.eventLabel);
+    if (cats.size    && !cats.has(p.cat))       return false;
+    if (genders.size && !genders.has(p.gender)) return false;
+    if (divs.size    && !divs.has(p.div))       return false;
+    return true;
+  });
+  _scoresRenderEvents(filtered);
+}
+
+// ── 선수/팀 검색 ──────────────────────────────────────
+async function scoresSearchByPerson() {
+  const name = (document.getElementById('scores-person-input')?.value || '').trim();
+  const banner = document.getElementById('scores-person-banner');
+  const bannerText = document.getElementById('scores-person-banner-text');
+  if (!name) { scoresClearPersonSearch(); return; }
+  if (!_scoresState.currentJname) return;
+
+  if (bannerText) bannerText.textContent = '검색 중...';
+  if (banner) banner.classList.remove('hidden');
+
+  try {
+    const jname = _scoresState.currentJname;
+    const [nameRes, teamRes] = await Promise.all([
+      fetch(`/api/bib?comp=${encodeURIComponent(jname)}&name=${encodeURIComponent(name)}&mode=name`).then(r=>r.json()).catch(()=>null),
+      fetch(`/api/bib?comp=${encodeURIComponent(jname)}&name=${encodeURIComponent(name)}&mode=team`).then(r=>r.json()).catch(()=>null),
+    ]);
+    const eventSet = new Set();
+    nameRes?.matched?.forEach(p => p.event && eventSet.add(p.event));
+    teamRes?.matched?.forEach(p => p.event && eventSet.add(p.event));
+
+    _scoresState.personFilter = eventSet;
+    const isTeam  = !nameRes?.matched?.length && teamRes?.matched?.length;
+    if (eventSet.size === 0) {
+      if (bannerText) bannerText.textContent = `"${name}" — 이 대회 참가 기록 없음`;
+    } else {
+      if (bannerText) bannerText.textContent = `"${name}" ${isTeam ? '팀' : '선수'} · ${eventSet.size}종목 참가`;
+    }
+    scoresApplyFilters();
+  } catch(e) {
+    if (bannerText) bannerText.textContent = '검색 오류';
+  }
+}
+
+function scoresClearPersonSearch() {
+  _scoresState.personFilter = null;
+  const input = document.getElementById('scores-person-input');
+  if (input) input.value = '';
+  const banner = document.getElementById('scores-person-banner');
+  if (banner) banner.classList.add('hidden');
+  scoresApplyFilters();
 }
 
 function scoresBack() {
@@ -4229,8 +4623,11 @@ async function scoresOpenModal(eventLabel, personUrl, groupUrl) {
   _scoresState.personUrl = personUrl || null;
   _scoresState.groupUrl  = groupUrl  || null;
   _scoresState.activeTab = 'person';
+  _scoresState.viewMode  = 'summary';
+  _scoresState.rankData  = null;
 
   _scoresClearTimers();
+  _scoresUpdateViewBtns('summary');
 
   document.getElementById('scores-modal-title').textContent    = eventLabel;
   document.getElementById('scores-modal-subtitle').textContent = '';
@@ -4279,9 +4676,9 @@ function _scoresStatusBadge(status) {
 
 function _scoresUpdateTabs(active) {
   document.getElementById('scores-tab-person').className =
-    `px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${active === 'person' ? 'scores-tab-active' : 'scores-tab-inactive'}`;
+    `px-3 py-1 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${active === 'person' ? 'scores-tab-active' : 'scores-tab-inactive'}`;
   document.getElementById('scores-tab-group').className =
-    `px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${active === 'group' ? 'scores-tab-active' : 'scores-tab-inactive'}`;
+    `px-3 py-1 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${active === 'group' ? 'scores-tab-active' : 'scores-tab-inactive'}`;
 }
 
 async function _scoresLoadRankings(url, type, bustCache = false) {
@@ -4318,17 +4715,213 @@ async function _scoresLoadRankings(url, type, bustCache = false) {
       return;
     }
 
-    const headerHtml = data.headers?.length
-      ? `<thead><tr>${data.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>`
-      : '';
-    const bodyHtml = data.rows.map(row =>
-      `<tr>${row.map(cell => `<td>${esc(cell)}</td>`).join('')}</tr>`
-    ).join('');
-    tableEl.innerHTML = `<table class="scores-rank-table">${headerHtml}<tbody>${bodyHtml}</tbody></table>`;
+    _scoresState.rankData = data;
+    _scoresRenderTable(data);
   } catch (e) {
     loading.classList.add('hidden');
     errorEl.textContent = '불러오기 실패: ' + e.message;
     errorEl.classList.remove('hidden');
+  }
+}
+
+// ── 뷰 토글 ───────────────────────────────────────────────
+function scoresToggleView(mode) {
+  _scoresState.viewMode = mode;
+  _scoresUpdateViewBtns(mode);
+  if (_scoresState.rankData) _scoresRenderTable(_scoresState.rankData);
+}
+
+function _scoresUpdateViewBtns(mode) {
+  const s = document.getElementById('scores-view-btn-summary');
+  const d = document.getElementById('scores-view-btn-detail');
+  if (s) s.className = `scores-view-btn ${mode === 'summary' ? 'active' : 'inactive'}`;
+  if (d) d.className = `scores-view-btn ${mode === 'detail'  ? 'active' : 'inactive'}`;
+}
+
+// ── 요약/상세 렌더 ─────────────────────────────────────────
+function _scoresSummaryIndices(groups, headers, hasTwoHeaders) {
+  let offset = 0, fixedEnd = 0, bonsonRange = null, gyeolsonRange = null;
+  for (const g of groups) {
+    if (g.label === '본선') bonsonRange = { start: offset, end: offset + g.span - 1 };
+    else if (g.label === '결선') gyeolsonRange = { start: offset, end: offset + g.span - 1 };
+    else if (!bonsonRange && !gyeolsonRange) fixedEnd = offset + g.span;
+    offset += g.span;
+  }
+  const fixedCount = Math.min(fixedEnd, 3);
+
+  // row_index → header label
+  function hAt(idx) {
+    if (hasTwoHeaders) {
+      if (idx < fixedCount) return groups.slice(0, fixedCount).reduce((acc, g, gi) => {
+        let s = 0; for (let j = 0; j < gi; j++) s += groups[j].span;
+        return s === idx ? g.label : acc;
+      }, '');
+      return headers[idx - fixedCount] || '';
+    }
+    return headers[idx] || '';
+  }
+
+  const isTotalLabel = h => /합계|총합|총점|점수/.test(h.replace(/\s/g, ''));
+  const isRemarkLabel = h => /비교|비고/.test(h.replace(/\s/g, ''));
+
+  let bonsonTotalIdx = -1;
+  if (bonsonRange) {
+    for (let i = bonsonRange.end; i >= bonsonRange.start; i--) {
+      if (isTotalLabel(hAt(i))) { bonsonTotalIdx = i; break; }
+    }
+    if (bonsonTotalIdx === -1) {
+      // 마지막이 비고/비교면 그 앞 컬럼이 합계
+      bonsonTotalIdx = isRemarkLabel(hAt(bonsonRange.end)) ? bonsonRange.end - 1 : bonsonRange.end;
+    }
+  }
+
+  let gyeolsonTotalIdx = -1;
+  if (gyeolsonRange) {
+    for (let i = gyeolsonRange.start; i <= gyeolsonRange.end; i++) {
+      if (isTotalLabel(hAt(i))) { gyeolsonTotalIdx = i; break; }
+    }
+    if (gyeolsonTotalIdx === -1) gyeolsonTotalIdx = gyeolsonRange.start;
+  }
+
+  return { fixedCount, bonsonTotalIdx, gyeolsonTotalIdx, hAt, bonsonRange, gyeolsonRange };
+}
+
+// 첫 셀이 숫자인 행 = 선수 본행, 아닌 행 = 세부 하위 행 (급사/복사/입사/20s/후반 등)
+function _scoresIsSubRow(row) { return !/^\d+$/.test((row[0] || '').trim()); }
+function _scoresRankOf(row)   { return parseInt(row[0]) || 0; }
+function _scoresMedalOf(n)    { return n === 1 ? '🥇' : n === 2 ? '🥈' : n === 3 ? '🥉' : null; }
+function _scoresRankCls(n)    { return n === 1 ? 'rank-gold' : n === 2 ? 'rank-silver' : n === 3 ? 'rank-bronze' : ''; }
+
+function _scoresRenderTable(data) {
+  const tableEl = document.getElementById('scores-modal-table');
+  if (!tableEl || !data?.rows?.length) return;
+  const { groups = [], headers = [], rows, hasTwoHeaders = false } = data;
+  const viewMode = _scoresState.viewMode || 'summary';
+
+  if (viewMode === 'summary') {
+    const { fixedCount, bonsonTotalIdx, gyeolsonTotalIdx } = _scoresSummaryIndices(groups, headers, hasTwoHeaders);
+
+    // 하위 행 제거 → 실제 선수 행만
+    const mainRows = rows.filter(row => !_scoresIsSubRow(row));
+
+    // 단체순위(본선/결선 없음): 등위·소속 + 기록·비고만 요약
+    let cols, summaryFixedCount;
+    if (bonsonTotalIdx === -1 && gyeolsonTotalIdx === -1 && _scoresState.activeTab === 'group') {
+      summaryFixedCount = 2;
+      cols = [{ idx: 0, label: groups[0]?.label || '등위' }, { idx: 1, label: groups[1]?.label || '소속' }];
+      let off = 0;
+      for (const g of groups) {
+        if (/기록|비고/.test(g.label)) cols.push({ idx: off, label: g.label });
+        off += g.span;
+      }
+      if (cols.length <= 2) {
+        const total = groups.reduce((s, g) => s + g.span, 0);
+        if (total > 2) cols.push({ idx: total - 1, label: groups[groups.length - 1]?.label || '기록' });
+      }
+    } else {
+      summaryFixedCount = fixedCount;
+      cols = Array.from({ length: fixedCount }, (_, i) => ({ idx: i, label: groups[i]?.label || '' }));
+      if (bonsonTotalIdx !== -1)   cols.push({ idx: bonsonTotalIdx,   label: '본선합계' });
+      if (gyeolsonTotalIdx !== -1) cols.push({ idx: gyeolsonTotalIdx, label: '결선합계' });
+    }
+
+    const thead = `<thead><tr>${cols.map((c, li) => {
+      const isScore = li >= summaryFixedCount;
+      const style = isScore ? `background:#F0F4FF;color:#1B3A6B;text-align:center` : `text-align:${li === 0 ? 'center' : 'left'}`;
+      return `<th style="${style}">${esc(c.label)}</th>`;
+    }).join('')}</tr></thead>`;
+
+    const tbody = mainRows.map(row => {
+      const rankN = _scoresRankOf(row);
+      const medal = _scoresMedalOf(rankN);
+      const cls   = _scoresRankCls(rankN);
+      const cells = cols.map((c, li) => {
+        const val = c.idx < row.length ? (row[c.idx] || '-') : '-';
+        if (li === 0) return `<td style="text-align:center;font-size:17px;width:40px">${medal || esc(val)}</td>`;
+        if (li >= summaryFixedCount) return `<td style="text-align:center;font-weight:700;color:#0B1E3F;font-size:13px">${esc(val)}</td>`;
+        return `<td class="${li === 1 ? 'scores-affil' : ''}">${esc(val)}</td>`;
+      }).join('');
+      return `<tr class="${cls}">${cells}</tr>`;
+    }).join('');
+
+    tableEl.innerHTML = `<table class="scores-rank-table">${thead}<tbody>${tbody}</tbody></table>`;
+
+  } else {
+    // 상세 뷰: 그룹 헤더 + 개별 컬럼 + 가로 스크롤 + 하위 행 시각 구분
+    let groupRow = '';
+    if (groups.length > 0) {
+      groupRow = '<tr>' + groups.map(g => {
+        const isBon = g.label === '본선', isGye = g.label === '결선';
+        const cls = isBon ? 'scores-group-th scores-group-th-bonson' : isGye ? 'scores-group-th scores-group-th-gyeolson' : '';
+        const align = (isBon || isGye) ? 'center' : g.label === '등위' ? 'center' : 'left';
+        return `<th colspan="${g.span}" class="${cls}" style="text-align:${align}">${esc(g.label)}</th>`;
+      }).join('') + '</tr>';
+    }
+
+    const detailRowHeaders = hasTwoHeaders
+      ? [...groups.filter(g => g.label !== '본선' && g.label !== '결선').map(g => g.label), ...headers]
+      : [];
+    let detailRow = detailRowHeaders.length
+      ? `<tr>${detailRowHeaders.map(h => `<th style="text-align:center">${esc(h)}</th>`).join('')}</tr>`
+      : '';
+
+    const { fixedCount: fc, bonsonTotalIdx: bTotalIdx } = _scoresSummaryIndices(groups, headers, hasTwoHeaders);
+    const isJasaeEvent = hasTwoHeaders && (headers[0] === '자세' || groups.some(g => g.label === '자세'));
+    let detailRows;
+    if (isJasaeEvent) {
+      detailRows = [];
+      let shotEndIdx;
+      if (bTotalIdx !== -1) {
+        shotEndIdx = bTotalIdx;
+      } else {
+        const ti = headers.findIndex(h => /합계|총합|총점|점수/.test(h.replace(/\s/g, '')));
+        shotEndIdx = ti !== -1 ? fc + ti : Infinity;
+      }
+      for (const row of rows) {
+        if (_scoresIsSubRow(row)) {
+          // KSF sub-row (슬사/복사/입사 등): fc 빈 셀 패딩으로 컬럼 정렬
+          detailRows.push([...new Array(fc).fill(''), ...row]);
+        } else {
+          const stanceName = row[fc] || '';
+          const end = Math.min(shotEndIdx, row.length);
+          // Main row: 사격 구간 비우고 합계 이후 유지
+          detailRows.push([...row.slice(0, fc), ...new Array(end - fc).fill(''), ...row.slice(end)]);
+          if (stanceName) {
+            // 자세 sub-row: fc 빈 셀 + fc 이후 전체(자세명+점수) 포함
+            detailRows.push([...new Array(fc).fill(''), ...row.slice(fc)]);
+          }
+        }
+      }
+    } else if (hasTwoHeaders) {
+      // 25m 권총 등 hasTwoHeaders 이벤트: 하위 행 fc 빈 셀 패딩으로 컬럼 정렬
+      detailRows = rows.map(row =>
+        _scoresIsSubRow(row) ? [...new Array(fc).fill(''), ...row] : row
+      );
+    } else {
+      detailRows = rows;
+    }
+
+    const tbody = detailRows.map(row => {
+      const isSub  = _scoresIsSubRow(row);
+      const rankN  = isSub ? 0 : _scoresRankOf(row);
+      const medal  = _scoresMedalOf(rankN);
+      const cls    = isSub ? 'scores-sub-row' : _scoresRankCls(rankN);
+      const cells  = row.map((cell, ci) => {
+        if (ci === 0) {
+          if (isSub)  return `<td style="text-align:center;font-size:11px;color:#9CA3AF">${esc(cell)}</td>`;
+          return `<td style="text-align:center;font-size:${medal ? 16 : 13}px">${medal || esc(cell)}</td>`;
+        }
+        return `<td style="text-align:center">${esc(cell)}</td>`;
+      }).join('');
+      return `<tr class="${cls}">${cells}</tr>`;
+    }).join('');
+
+    tableEl.innerHTML = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table class="scores-rank-table scores-detail">
+        <thead>${groupRow}${detailRow}</thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>`;
   }
 }
 
