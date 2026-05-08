@@ -53,6 +53,46 @@
       opacity: .055; pointer-events: none;
     }
 
+    /* ── Bottom tab bar ── */
+    @media (max-width: 767px) {
+      body { padding-bottom: 64px; }
+    }
+    #bottom-tab-bar { padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .btab-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; font-size: 10px; font-weight: 600; color: #9CA3AF;
+      background: none; border: none; cursor: pointer; padding: 6px 4px;
+      transition: color .15s;
+    }
+    .btab-btn.active { color: #0B1E3F; }
+    .btab-btn svg { transition: transform .15s; }
+    .btab-btn.active svg { transform: scale(1.12); }
+
+    /* ── Quick Action Cards ── */
+    .qa-card {
+      display: flex; flex-direction: column; align-items: flex-start;
+      gap: 10px; padding: 16px; border-radius: 14px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer; text-align: left; width: 100%;
+      transition: background .2s, border-color .2s, transform .15s;
+    }
+    .qa-card:hover  { background: rgba(255,255,255,0.11); border-color: rgba(201,162,74,.45); transform: translateY(-1px); }
+    .qa-card:active { transform: scale(.98); }
+    .qa-card-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(201,162,74,0.15); display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .qa-card-title { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
+    .qa-card-desc  { font-size: 11px; color: rgba(255,255,255,.45); margin-top: 1px; }
+
+    /* ── Past competitions section ── */
+    .past-comp-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 12px 16px;
+    }
+
     /* ── Chat fullscreen ── */
     #chat-container.is-fullscreen {
       position: fixed;
@@ -505,14 +545,14 @@
 
           <!-- CTA -->
           <div class="flex flex-wrap gap-4">
-            <button onclick="scrollToChat()" class="btn-primary flex items-center gap-2 text-base">
-              지금 질문하기
+            <button onclick="navigate('bib')" class="btn-primary flex items-center gap-2 text-base">
+              사대번호 조회
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </button>
-            <button onclick="navigate('about')" class="btn-outline-white text-base">
-              서비스 소개
+            <button onclick="navigate('scores')" class="btn-outline-white text-base">
+              경기 결과 보기
             </button>
           </div>
         </div>
@@ -527,6 +567,72 @@
       </div>
     </div>
     <!-- /HERO -->
+
+    <!-- ── QUICK ACTION GRID ── -->
+    <div class="bg-[#071426] px-4 pt-5 pb-6">
+      <div class="max-w-lg mx-auto">
+        <p class="text-white/35 text-[10px] font-bold tracking-widest uppercase mb-3">바로가기</p>
+        <div class="grid grid-cols-2 gap-2.5">
+
+          <!-- 사대번호 조회 -->
+          <button class="qa-card" onclick="navigate('bib')">
+            <div class="qa-card-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+              </svg>
+            </div>
+            <div>
+              <div class="qa-card-title">사대번호 조회</div>
+              <div class="qa-card-desc">내 사대·세부일정 바로 확인</div>
+            </div>
+          </button>
+
+          <!-- 경기 결과 -->
+          <button class="qa-card" onclick="navigate('scores')">
+            <div class="qa-card-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2">
+                <path d="M8 21H16M12 21V13M17 4H7L5 9C5 11.2 8.1 13 12 13C15.9 13 19 11.2 19 9L17 4Z"/>
+                <path d="M5 9C3.3 9 2 10.3 2 12C2 13.7 3.3 15 5 15H7"/><path d="M19 9C20.7 9 22 10.3 22 12C22 13.7 20.7 15 19 15H17"/>
+              </svg>
+            </div>
+            <div>
+              <div class="qa-card-title">경기 결과</div>
+              <div class="qa-card-desc">실시간 순위 및 결과 조회</div>
+            </div>
+          </button>
+
+          <!-- 소속팀 조회 -->
+          <button class="qa-card" onclick="navigate('bib'); setTimeout(()=>{ const t = document.querySelector('#bib-tab-team'); if(t) t.click(); }, 300)">
+            <div class="qa-card-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <div>
+              <div class="qa-card-title">소속팀 조회</div>
+              <div class="qa-card-desc">팀 전체 배정표 한눈에</div>
+            </div>
+          </button>
+
+          <!-- 규정 확인 -->
+          <button class="qa-card" onclick="navigate('rules')">
+            <div class="qa-card-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </div>
+            <div>
+              <div class="qa-card-title">규정 확인</div>
+              <div class="qa-card-desc">자주 혼동하는 규정 정리</div>
+            </div>
+          </button>
+
+        </div>
+      </div>
+    </div>
+    <!-- /QUICK ACTION GRID -->
 
     <!-- LIVE 소식 티커 -->
     <div id="live-ticker-bar" class="bg-navy-dark border-t border-white/10 py-2 overflow-hidden cursor-pointer" onclick="navigate('feed')" title="소식 더 보기">
@@ -627,6 +733,20 @@
       </div>
     </div>
     <!-- /COMPETITION BANNER -->
+
+    <!-- ── 최근 종료 대회 ── -->
+    <div id="past-comps-section" class="hidden bg-navy-dark border-t border-white/10">
+      <div class="max-w-6xl mx-auto px-6 py-5">
+        <div class="flex items-center gap-2 mb-3">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <p class="text-white/40 text-[11px] font-bold tracking-widest uppercase">최근 종료 대회</p>
+        </div>
+        <div id="past-comps-list" class="flex flex-col gap-2"></div>
+      </div>
+    </div>
+    <!-- /최근 종료 대회 -->
 
 
     <!-- CHATBOT -->
@@ -1715,6 +1835,53 @@
 </footer>
 
 
+<!-- ── 모바일 하단 탭바 ── -->
+<nav id="bottom-tab-bar" class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,.08)]">
+  <div class="grid grid-cols-5" style="padding-bottom: env(safe-area-inset-bottom, 0px)">
+
+    <button class="btab-btn active" data-tab="home" onclick="navigate('home')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+        <path d="M9 21V12h6v9"/>
+      </svg>
+      홈
+    </button>
+
+    <button class="btab-btn" data-tab="bib" onclick="navigate('bib')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+      </svg>
+      사대
+    </button>
+
+    <button class="btab-btn" data-tab="scores" onclick="navigate('scores')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M8 21H16M12 21V13M17 4H7L5 9C5 11.2 8.1 13 12 13C15.9 13 19 11.2 19 9L17 4Z"/>
+        <path d="M5 9C3.3 9 2 10.3 2 12C2 13.7 3.3 15 5 15H7"/>
+        <path d="M19 9C20.7 9 22 10.3 22 12C22 13.7 20.7 15 19 15H17"/>
+      </svg>
+      결과
+    </button>
+
+    <button class="btab-btn" data-tab="feed" onclick="navigate('feed')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      커뮤니티
+    </button>
+
+    <button class="btab-btn" onclick="toggleMenu()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+      더보기
+    </button>
+
+  </div>
+</nav>
+<!-- /모바일 하단 탭바 -->
+
+
 <!-- ═══════════════════════════════════════
      JAVASCRIPT
 ═══════════════════════════════════════ -->
@@ -1733,6 +1900,11 @@ function navigate(page) {
   document.querySelectorAll('.nav-dd-btn').forEach(btn => {
     const pages = (btn.dataset.pages || '').split(',');
     btn.classList.toggle('active', pages.includes(page));
+  });
+  // 하단 탭바 활성 상태 동기화
+  document.querySelectorAll('.btab-btn[data-tab]').forEach(btn => {
+    const tab = btn.dataset.tab;
+    btn.classList.toggle('active', tab === page || (tab === 'bib' && page === 'bib') || (tab === 'scores' && page === 'scores'));
   });
   closeNavDropdowns();
   window.history.pushState(null, '', '#' + page);
@@ -2011,12 +2183,13 @@ function submitReport(e) {
 // 출처: https://www.shooting.or.kr/score/score_2015_list.asp?fg=1
 // 실제 운영 시 /api/competitions 엔드포인트에서 가져옴 (자동 수집 예정)
 const COMPETITIONS = [
-  { id:'2026-01', name:'제9회 대구광역시장배 전국사격대회',                          start:'2026-03-16', end:'2026-03-22', venue:'대구',  ksfCode:null },
-  { id:'2026-02', name:'제27회 미추홀기 전국사격대회',                                start:'2026-03-25', end:'2026-03-31', venue:'인천',  ksfCode:null },
-  { id:'2026-03', name:'제40회 문화체육관광부장관기 전국체육고등학교 체육대회',         start:'2026-04-02', end:'2026-04-03', venue:'춘천',  ksfCode:null },
-  { id:'2026-04', name:'아이치·나고야 아시안게임 별도 선발전',                          start:'2026-04-04', end:'2026-04-26', venue:'창원',  ksfCode:null },
+  { id:'2026-01', name:'제9회 대구광역시장배 전국사격대회',                          start:'2026-03-16', end:'2026-03-22', venue:'대구',  ksfCode:'I09D' },
+  { id:'2026-02', name:'제27회 미추홀기 전국사격대회',                                start:'2026-03-25', end:'2026-03-31', venue:'인천',  ksfCode:'I27M' },
+  { id:'2026-03', name:'제40회 문화체육관광부장관기 전국체육고등학교 체육대회',         start:'2026-04-02', end:'2026-04-03', venue:'춘천',  ksfCode:'C40D' },
+  { id:'2026-04', name:'아이치·나고야 아시안게임 별도 선발전',                          start:'2026-04-04', end:'2026-04-26', venue:'창원',  ksfCode:'P260' },
+  { id:'2026-04b',name:'제48회 충무기 전국중고등학생 사격대회',                         start:'2026-04-14', end:'2026-04-17', venue:'창원',  ksfCode:'J48M' },
   { id:'2026-05', name:'제1회 NH농협은행배 전국사격대회',                              start:'2026-04-30', end:'2026-05-06', venue:'창원',  ksfCode:'N01H' },
-  { id:'2026-06', name:'제2회 IBK기업은행장배 전국사격대회',                           start:'2026-05-14', end:'2026-05-21', venue:'청주',  ksfCode:null },
+  { id:'2026-06', name:'제2회 IBK기업은행장배 전국사격대회',                           start:'2026-05-14', end:'2026-05-21', venue:'청주',  ksfCode:'I02B' },
   { id:'2026-07', name:'제55회 전국소년체육대회',                                      start:'2026-05-23', end:'2026-05-24', venue:'창원',  ksfCode:null },
   { id:'2026-08', name:'제6회 홍범도장군배 전국사격대회',                              start:'2026-06-05', end:'2026-06-12', venue:'청주',  ksfCode:null },
   { id:'2026-09', name:'제55회 문화체육관광부장관기 전국학생사격대회',                   start:'2026-07-13', end:'2026-07-17', venue:'임실',  ksfCode:null },
@@ -2081,7 +2254,36 @@ let bibBannerIdx = 0;
 let bibBannerTimer = null;
 
 function bibBannerInit() {
-  // 다가오는 시합 + 진행 중인 시합 (시작일 기준 가까운 순)
+  // ── 최근 종료 대회 (60일 이내) 렌더링 ──────────────────
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 60);
+  const pastComps = COMPETITIONS
+    .filter(c => compStatus(c) === 'past' && new Date(c.end) >= cutoff)
+    .sort((a,b) => new Date(b.end) - new Date(a.end));
+
+  const pastSection = document.getElementById('past-comps-section');
+  const pastList    = document.getElementById('past-comps-list');
+  if (pastComps.length && pastSection && pastList) {
+    pastList.innerHTML = pastComps.map(c => {
+      const hasScores = !!c.ksfCode;
+      const actionBtn = hasScores
+        ? `<button onclick="navigate('scores')" class="flex-shrink-0 text-xs font-semibold text-gold border border-gold/40 rounded-lg px-3 py-1.5 hover:bg-gold hover:text-navy-dark transition-colors whitespace-nowrap">결과 보기</button>`
+        : `<button onclick="bibGoFromBanner('${c.id}')" class="flex-shrink-0 text-xs font-semibold text-white/55 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/10 transition-colors whitespace-nowrap">배정표 보기</button>`;
+      return `
+        <div class="past-comp-row">
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 mb-0.5 flex-wrap">
+              <span class="text-[10px] font-bold text-white/30 border border-white/15 rounded px-1.5 py-px">종료</span>
+              <span class="text-white/30 text-[10px]">${fmtRange(c.start, c.end)} · ${esc(c.venue)}</span>
+            </div>
+            <p class="text-white/75 text-sm font-semibold leading-tight truncate">${esc(c.name)}</p>
+          </div>
+          ${actionBtn}
+        </div>`;
+    }).join('');
+    pastSection.classList.remove('hidden');
+  }
+
+  // ── 다가오는 시합 + 진행 중인 시합 (시작일 기준 가까운 순) ──
   const upcoming = COMPETITIONS
     .filter(c => { const s = compStatus(c); return s === 'upcoming' || s === 'ongoing'; })
     .sort((a,b) => new Date(a.start) - new Date(b.start))
@@ -2296,8 +2498,25 @@ function bibUpdateCompetitionInfo() {
   document.getElementById('bib-info-host').textContent = '· ' + c.venue + ' 개최';
   info.classList.remove('hidden');
 
-  // 팀·선수 이름 fetch — 캐시 준비 중이면 완료될 때까지 재시도
-  if (!c.ksfCode) return;
+  // 팀·선수 이름 fetch — ksfCode 없는 경우 comp-list에서 자동 조회
+  if (!c.ksfCode) {
+    if (compStatus(c) === 'past') {
+      fetch('/api/comp-list').then(r => r.json()).then(list => {
+        const cStart = new Date(c.start);
+        const matched = list.find(k => {
+          const src = k.startDate || k.dateStr || '';
+          const m = src.match(/^(\d+)\.(\d+)/);
+          if (!m) return false;
+          return +m[1] === cStart.getMonth() + 1 && +m[2] === cStart.getDate();
+        });
+        if (matched) {
+          c.ksfCode = matched.jname;
+          bibUpdateCompetitionInfo(); // 재호출
+        }
+      }).catch(() => {});
+    }
+    return;
+  }
   bibDataCached = false;
 
   // 캐시 워밍 시작 + 상태 파악
@@ -2466,11 +2685,37 @@ async function bibSearch() {
   empty.classList.add('hidden');
   result.classList.remove('hidden');
 
-  // ── KSF 코드가 없는 시합 → 안내 ──────────────────────
+  // ── KSF 코드가 없는 시합 → comp-list에서 자동 매칭 시도 ──
   if (!c.ksfCode) {
-    result.innerHTML = bibResultNotYet(c, name);
-    result.scrollIntoView({ behavior:'smooth', block:'start' });
-    return;
+    result.innerHTML = `<div class="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
+      <div class="flex justify-center gap-1.5 mb-4">
+        <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+      </div>
+      <p class="text-navy font-semibold">대회 코드 조회 중...</p>
+      <p class="text-gray-400 text-sm mt-1">KSF 사이트에서 대회 정보를 확인하고 있습니다.</p>
+    </div>`;
+    try {
+      const ksfList = await fetch('/api/comp-list').then(r => r.json());
+      const cStart  = new Date(c.start);
+      const matched = ksfList.find(k => {
+        // startDate 우선, 없으면 dateStr 파싱 ("3.16.~22." 형식)
+        const src = k.startDate || k.dateStr || '';
+        const m = src.match(/^(\d+)\.(\d+)/);
+        if (!m) return false;
+        return +m[1] === cStart.getMonth() + 1 && +m[2] === cStart.getDate();
+      });
+      if (matched) {
+        c.ksfCode = matched.jname; // 캐시: 이후 같은 선택 시 즉시 사용
+      } else {
+        result.innerHTML = bibResultNotYet(c, name);
+        result.scrollIntoView({ behavior:'smooth', block:'start' });
+        return;
+      }
+    } catch(e) {
+      result.innerHTML = bibResultNotYet(c, name);
+      result.scrollIntoView({ behavior:'smooth', block:'start' });
+      return;
+    }
   }
 
   // ── 로딩 상태 ────────────────────────────────────────
@@ -2532,6 +2777,15 @@ async function bibSearch() {
       result.innerHTML = bibResultError(c, name, data.error || '서버 오류');
     } else if (!data.ok) {
       result.innerHTML = bibResultNotYet(c, name, data.error);
+    } else if (data.matched.length === 0 && data.total === 0 && compStatus(c) === 'past') {
+      result.innerHTML = `<div class="bg-white border border-gray-100 rounded-2xl p-8 text-center shadow-sm">
+        <div class="text-3xl mb-3">📂</div>
+        <p class="font-bold text-navy text-base mb-1">데이터 보존 기간 만료</p>
+        <p class="text-gray-500 text-sm leading-relaxed">
+          <strong>${esc(c.name)}</strong>의<br>사대배정 데이터가 KSF에서 더 이상 제공되지 않습니다.<br>
+          <span class="text-xs text-gray-400 mt-2 block">KSF는 대회 종료 후 일정 기간만 데이터를 유지합니다.</span>
+        </p>
+      </div>`;
     } else if (data.matched.length === 0) {
       result.innerHTML = bibResultNotFound(c, name, data.total, data.searchMode);
     } else {
