@@ -14,6 +14,25 @@ import { startWatcher } from './watcher.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT      = 3000;
 
+// ── 커뮤니티 메시지 저장 ─────────────────────────────────
+const COMMUNITY_FILE = path.join(__dirname, 'community.json');
+const communitySSE   = new Map(); // compId → Set<res>
+
+function loadCommunity() {
+  try { if (fs.existsSync(COMMUNITY_FILE)) return JSON.parse(fs.readFileSync(COMMUNITY_FILE, 'utf8')); }
+  catch {}
+  return { messages: [] };
+}
+function saveCommunity(data) {
+  fs.writeFileSync(COMMUNITY_FILE, JSON.stringify(data), 'utf8');
+}
+function broadcastCommunity(compId, event, payload) {
+  const clients = communitySSE.get(compId);
+  if (!clients) return;
+  const chunk = `event:${event}\ndata:${JSON.stringify(payload)}\n\n`;
+  for (const res of clients) { try { res.write(chunk); } catch {} }
+}
+
 // 대회별 전체 선수 캐시 (메모리, 2시간 유지)
 const compPlayersCache = new Map(); // compCode → { players: [], ts: number }
 // 대회 목록 캐시 (30분)
@@ -1259,6 +1278,94 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ error: err.message }));
     }
+    return;
+  }
+
+  // ── GET /api/community/:compId/stream (SSE) ────────────
+  const sseMatch = req.url.match(/^\/api\/community\/([^\/]+)\/stream$/);
+  if (req.method === 'GET' && sseMatch) {
+    const compId = sseMatch[1];
+    res.writeHead(200, {
+      'Content-Type':  'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection:      'keep-alive',
+    });
+    res.write(':\n\n'); // keep-alive comment
+    if (!communitySSE.has(compId)) communitySSE.set(compId, new Set());
+    communitySSE.get(compId).add(res);
+    req.on('close', () => {
+      communitySSE.get(compId)?.delete(res);
+    });
+    return;
+  }
+
+  // ── GET /api/community/:compId ──────────────────────────
+  const getMsgMatch = req.url.match(/^\/api\/community\/([^\/]+)$/);
+  if (req.method === 'GET' && getMsgMatch) {
+    const compId = getMsgMatch[1];
+    const { messages } = loadCommunity();
+    const filtered = messages.filter(m => m.compId === compId);
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify(filtered));
+    return;
+  }
+
+  // ── POST /api/community/:compId ─────────────────────────
+  const postMsgMatch = req.url.match(/^\/api\/community\/([^\/]+)$/);
+  if (req.method === 'POST' && postMsgMatch) {
+    const compId = postMsgMatch[1];
+    let body = '';
+    req.on('data', c => { body += c; });
+    req.on('end', () => {
+      try {
+        const { nickname, tag, text, event } = JSON.parse(body);
+        if (!nickname?.trim() || !text?.trim()) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: '닉네임과 내용을 입력하세요.' }));
+          return;
+        }
+        const VALID_TAGS = ['공식훈련', '장비검사', '결선시간', '기타'];
+        const safeTag = VALID_TAGS.includes(tag) ? tag : '기타';
+        const msg = {
+          id:       Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          compId,
+          nickname: nickname.trim().slice(0, 20),
+          tag:      safeTag,
+          text:     text.trim().slice(0, 300),
+          event:    safeTag === '결선시간' ? (event || '').toString().trim().slice(0, 50) : '',
+          ts:       Date.now(),
+          likes:    0,
+        };
+        const data = loadCommunity();
+        data.messages.push(msg);
+        // 대회당 최대 500개
+        data.messages = data.messages.filter(m => m.compId !== compId).concat(
+          data.messages.filter(m => m.compId === compId).slice(-500)
+        );
+        saveCommunity(data);
+        broadcastCommunity(compId, 'message', msg);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(msg));
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: '요청 파싱 오류' }));
+      }
+    });
+    return;
+  }
+
+  // ── POST /api/community/msg/:msgId/like ─────────────────
+  const likeMatch = req.url.match(/^\/api\/community\/msg\/([^\/]+)\/like$/);
+  if (req.method === 'POST' && likeMatch) {
+    const msgId = likeMatch[1];
+    const data  = loadCommunity();
+    const msg   = data.messages.find(m => m.id === msgId);
+    if (!msg) { res.writeHead(404); res.end('{}'); return; }
+    msg.likes = (msg.likes || 0) + 1;
+    saveCommunity(data);
+    broadcastCommunity(msg.compId, 'like', { id: msgId, likes: msg.likes });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ likes: msg.likes }));
     return;
   }
 

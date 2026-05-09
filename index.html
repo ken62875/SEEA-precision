@@ -432,6 +432,19 @@
       background: #F3F4F6; color: #6B7280;
     }
     .scores-tab-active:hover, .scores-tab-inactive:hover { opacity: .85; }
+    /* ── Community ── */
+    .comm-filter-btn { padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; border:1px solid #E5E7EB; background:#fff; color:#6B7280; cursor:pointer; transition:all .15s; white-space:nowrap; }
+    .comm-filter-btn:hover { border-color:#0B1E3F; color:#0B1E3F; }
+    .comm-filter-active { background:#0B1E3F !important; color:#fff !important; border-color:#0B1E3F !important; }
+    .comm-msg { background:#fff; border-radius:16px; padding:14px 16px; border:1px solid #F3F4F6; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+    .comm-tag { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; margin-bottom:4px; }
+    .comm-tag-결선시간 { background:#FEF9C3; color:#92400E; }
+    .comm-tag-공식훈련 { background:#DBEAFE; color:#1E40AF; }
+    .comm-tag-장비검사 { background:#D1FAE5; color:#065F46; }
+    .comm-tag-기타     { background:#F3F4F6; color:#6B7280; }
+    .comm-like-btn { display:flex; align-items:center; gap:4px; font-size:11px; color:#9CA3AF; background:none; border:1px solid #E5E7EB; border-radius:20px; padding:3px 10px; cursor:pointer; transition:all .15s; }
+    .comm-like-btn:hover { border-color:#C9A24A; color:#C9A24A; }
+    .comm-like-btn.liked { background:#FEF3C7; border-color:#C9A24A; color:#92400E; }
     @keyframes spinOnce {
       from { transform: rotate(0deg); }
       to   { transform: rotate(360deg); }
@@ -686,17 +699,16 @@
             </div>
           </button>
 
-          <!-- 규정 확인 -->
-          <button class="qa-card" onclick="navigate('rules')">
+          <!-- 커뮤니티 -->
+          <button class="qa-card" onclick="navigate('community')">
             <div class="qa-card-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
             </div>
             <div>
-              <div class="qa-card-title">규정 확인</div>
-              <div class="qa-card-desc">자주 혼동하는 규정 정리</div>
+              <div class="qa-card-title">커뮤니티</div>
+              <div class="qa-card-desc">결선시간·훈련일정 실시간 제보</div>
             </div>
           </button>
 
@@ -1504,6 +1516,89 @@
 
 
   <!-- ─────────────────────────────────────
+       PAGE: COMMUNITY (커뮤니티)
+  ───────────────────────────────────── -->
+  <section id="page-community" class="page-section">
+    <div class="page-header">
+      <div class="max-w-2xl mx-auto px-6">
+        <p class="text-gold text-xs font-bold tracking-widest uppercase mb-3">COMMUNITY</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">커뮤니티</h1>
+        <p class="text-white/55 text-base">결선 시간·공식 훈련·장비검사 일정을 실시간으로 공유하세요</p>
+      </div>
+    </div>
+
+    <div class="max-w-2xl mx-auto px-4 py-6 space-y-4">
+
+      <!-- 대회 + 종목 선택 -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
+        <div>
+          <label class="text-xs font-bold text-gray-500 tracking-widest uppercase mb-2 block">대회 선택</label>
+          <select id="comm-comp" onchange="commLoad()"
+            class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-navy focus:outline-none focus:ring-2 focus:ring-navy/30">
+            <option value="">— 대회를 선택하세요 —</option>
+          </select>
+        </div>
+        <!-- 종목 검색 (결선시간 필터 시 활성화) -->
+        <div id="comm-event-search-wrap" class="hidden">
+          <label class="text-xs font-bold text-gray-500 tracking-widest uppercase mb-2 block">종목 검색 <span class="text-gray-300 font-normal normal-case tracking-normal">(결선시간 필터 시)</span></label>
+          <div class="relative">
+            <input id="comm-event-search" type="text" placeholder="예) 10m 공기소총, 50m 3자세, 권총…"
+              oninput="commRender()"
+              class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 pr-8">
+            <button onclick="document.getElementById('comm-event-search').value='';commRender()"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-xs">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 태그 필터 -->
+      <div id="comm-filter-wrap" class="flex gap-2 flex-wrap hidden">
+        <button onclick="commFilter('all')"       id="comm-f-all"      class="comm-filter-btn comm-filter-active">전체</button>
+        <button onclick="commFilter('결선시간')"  id="comm-f-결선시간" class="comm-filter-btn">🏆 결선시간</button>
+        <button onclick="commFilter('공식훈련')"  id="comm-f-공식훈련" class="comm-filter-btn">🏃 공식훈련</button>
+        <button onclick="commFilter('장비검사')"  id="comm-f-장비검사" class="comm-filter-btn">🔧 장비검사</button>
+        <button onclick="commFilter('기타')"      id="comm-f-기타"     class="comm-filter-btn">💬 기타</button>
+      </div>
+
+      <!-- 메시지 목록 -->
+      <div id="comm-messages" class="space-y-2 min-h-[120px]">
+        <div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 제보가 표시됩니다</div>
+      </div>
+
+      <!-- 작성 폼 -->
+      <div id="comm-form-wrap" class="hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
+          <div class="flex gap-2">
+            <input id="comm-nickname" type="text" placeholder="닉네임" maxlength="20"
+              class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30">
+            <select id="comm-tag" onchange="commTagChange()"
+              class="border border-gray-200 rounded-xl px-3 py-2 text-sm font-semibold text-navy focus:outline-none focus:ring-2 focus:ring-navy/30">
+              <option value="결선시간">🏆 결선시간</option>
+              <option value="공식훈련">🏃 공식훈련</option>
+              <option value="장비검사">🔧 장비검사</option>
+              <option value="기타">💬 기타</option>
+            </select>
+          </div>
+          <!-- 결선시간 선택 시: 종목 입력 -->
+          <div id="comm-event-row" class="flex items-center gap-2 hidden">
+            <input id="comm-event" type="text" placeholder="종목 (예: 10m 공기소총 남자 일반부)" maxlength="50"
+              class="w-full border border-amber-200 bg-amber-50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300 placeholder-amber-300">
+          </div>
+          <div class="flex gap-2">
+            <textarea id="comm-text" placeholder="예) 결선 14:00 시작, A관 1번 사대부터" maxlength="300" rows="2"
+              class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-navy/30"></textarea>
+            <button onclick="commPost()"
+              class="px-4 bg-navy text-white rounded-xl text-sm font-bold hover:bg-navy/80 active:scale-95 transition-all self-end py-2">전송</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+  <!-- /COMMUNITY -->
+
+
+  <!-- ─────────────────────────────────────
        PAGE: BIB (사대번호 조회)
   ───────────────────────────────────── -->
   <section id="page-bib" class="page-section">
@@ -1993,7 +2088,7 @@
 ═══════════════════════════════════════ -->
 <script>
 // ── ROUTER ───────────────────────────────────────
-const PAGES = ['home','about','guide','rules','bib','feed','contact','report','athletes','scores'];
+const PAGES = ['home','about','guide','rules','bib','feed','contact','report','athletes','scores','community'];
 
 function navigate(page) {
   if (!PAGES.includes(page)) page = 'home';
@@ -2014,8 +2109,9 @@ function navigate(page) {
   });
   closeNavDropdowns();
   window.history.pushState(null, '', '#' + page);
-  if (page === 'feed')   feedLoad();
-  if (page === 'scores') scoresInit();
+  if (page === 'feed')      feedLoad();
+  if (page === 'scores')    scoresInit();
+  if (page === 'community') commInit();
 }
 
 window.addEventListener('popstate', () => {
@@ -2029,6 +2125,9 @@ window.addEventListener('DOMContentLoaded', () => {
   bibPopulateCompetitions();
   feedTickerInit();
   homeFeedInit();
+  // 닉네임 복원
+  const savedNick = localStorage.getItem('comm-nickname');
+  if (savedNick) { const el = document.getElementById('comm-nickname'); if (el) el.value = savedNick; }
 });
 
 // ── NAVBAR SCROLL SHADOW ─────────────────────────
@@ -2934,6 +3033,7 @@ async function bibSearch() {
     } else {
       result.innerHTML = bibResultFound(c, name, data.matched, data.total, data.searchMode);
       bibLoadTeamRankings(c.ksfCode, name);
+      bibCommLoad(c.id);
     }
   } catch (e) {
     console.error('[bibSearch error]', e);
@@ -3484,7 +3584,162 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
       <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">
         출처: 대한사격연맹 공식 사이트 · 실시간 수집
       </div>
+      ${bibCommPanel(c.id)}
     </div>`;
+}
+
+// ── BIB 결과 내 커뮤니티 패널 ────────────────────────────
+function bibCommPanel(compId) {
+  const tagColors = { '결선시간':'bg-amber-50 text-amber-800', '공식훈련':'bg-blue-50 text-blue-800', '장비검사':'bg-green-50 text-green-800', '기타':'bg-gray-100 text-gray-600' };
+  return `
+  <div id="bib-comm-${compId}" class="border-t border-gray-100">
+    <div class="px-5 py-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="text-sm font-bold text-navy">훈련·장비 일정</span>
+          <span id="bib-comm-live-${compId}" class="text-[10px] text-emerald-500 font-semibold hidden">● LIVE</span>
+        </div>
+        <button onclick="bibCommToggleForm('${compId}')"
+          class="text-[11px] font-semibold text-navy border border-navy/25 rounded-lg px-2.5 py-1 hover:bg-navy hover:text-white transition-colors">
+          + 제보하기
+        </button>
+      </div>
+
+      <!-- 제보 목록 -->
+      <div id="bib-comm-list-${compId}" class="space-y-2 min-h-[36px]">
+        <div class="text-xs text-gray-400 text-center py-2">불러오는 중...</div>
+      </div>
+
+      <!-- 작성 폼 (숨김) -->
+      <div id="bib-comm-form-${compId}" class="hidden mt-3 bg-gray-50 rounded-xl p-3 space-y-2 border border-gray-100">
+        <div class="flex gap-2">
+          <input id="bib-comm-nick-${compId}" type="text" placeholder="닉네임" maxlength="20"
+            class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy/20">
+          <select id="bib-comm-tag-${compId}"
+            class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-semibold text-navy focus:outline-none focus:ring-2 focus:ring-navy/20">
+            <option value="공식훈련">🏃 공식훈련</option>
+            <option value="장비검사">🔧 장비검사</option>
+            <option value="기타">💬 기타</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <textarea id="bib-comm-text-${compId}" placeholder="예) 10m 공기소총 남자 결선 14:00 시작 (A관)" maxlength="300" rows="2"
+            class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-navy/20"></textarea>
+          <button onclick="bibCommPost('${compId}')"
+            class="px-3 bg-navy text-white rounded-lg text-xs font-bold hover:bg-navy/80 active:scale-95 transition-all self-end py-1.5">전송</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function bibCommToggleForm(compId) {
+  const form = document.getElementById(`bib-comm-form-${compId}`);
+  if (!form) return;
+  const hidden = form.classList.toggle('hidden');
+  if (!hidden) {
+    const nickEl = document.getElementById(`bib-comm-nick-${compId}`);
+    const saved  = localStorage.getItem('comm-nickname');
+    if (nickEl && saved && !nickEl.value) nickEl.value = saved;
+    nickEl?.focus();
+  }
+}
+
+const _bibCommESMap = {};
+const _bibCommTrainTags = new Set(['공식훈련', '장비검사']);
+function bibCommLoad(compId) {
+  if (_bibCommESMap[compId]) return; // 이미 연결됨
+  // SSE
+  const es = new EventSource(`/api/community/${compId}/stream`);
+  _bibCommESMap[compId] = es;
+  es.addEventListener('message', e => {
+    const msg = JSON.parse(e.data);
+    if (!_bibCommTrainTags.has(msg.tag)) return; // 결선시간/기타 제외
+    if (!commState.liked) commState.liked = new Set();
+    const listEl = document.getElementById(`bib-comm-list-${compId}`);
+    if (listEl) {
+      const card = bibCommCard(msg);
+      // 빈 메시지 placeholder 제거
+      const placeholder = listEl.querySelector('.bib-comm-empty');
+      if (placeholder) placeholder.remove();
+      listEl.insertAdjacentHTML('afterbegin', card);
+      document.getElementById(`bib-comm-live-${compId}`)?.classList.remove('hidden');
+    }
+  });
+  es.addEventListener('like', e => {
+    const { id, likes } = JSON.parse(e.data);
+    const el = document.getElementById(`bib-cl-${id}`);
+    if (el) el.textContent = likes;
+  });
+  // 초기 로드
+  fetch(`/api/community/${compId}`)
+    .then(r => r.json())
+    .then(msgs => {
+      const listEl = document.getElementById(`bib-comm-list-${compId}`);
+      if (!listEl) return;
+      const trainMsgs = [...msgs].reverse().filter(m => _bibCommTrainTags.has(m.tag));
+      if (trainMsgs.length === 0) {
+        listEl.innerHTML = '<div class="bib-comm-empty text-xs text-gray-400 text-center py-3">훈련·장비 일정 제보가 없습니다</div>';
+        return;
+      }
+      const shown = trainMsgs.slice(0, 8);
+      listEl.innerHTML = shown.map(bibCommCard).join('');
+      if (trainMsgs.length > 8) {
+        listEl.insertAdjacentHTML('beforeend',
+          `<button onclick="bibCommShowAll('${compId}')" class="w-full text-xs text-navy/60 hover:text-navy py-2 font-medium">이전 제보 더보기 (${trainMsgs.length - 8}개)</button>`);
+      }
+    });
+}
+
+function bibCommShowAll(compId) {
+  fetch(`/api/community/${compId}`)
+    .then(r => r.json())
+    .then(msgs => {
+      const listEl = document.getElementById(`bib-comm-list-${compId}`);
+      if (listEl) listEl.innerHTML = [...msgs].reverse().filter(m => _bibCommTrainTags.has(m.tag)).map(bibCommCard).join('');
+    });
+}
+
+function bibCommCard(m) {
+  if (!commState.liked) commState.liked = new Set();
+  const tagIcon = { '결선시간':'🏆', '공식훈련':'🏃', '장비검사':'🔧', '기타':'💬' };
+  const tagCls  = { '결선시간':'bg-amber-50 text-amber-800 border-amber-100', '공식훈련':'bg-blue-50 text-blue-800 border-blue-100', '장비검사':'bg-green-50 text-green-800 border-green-100', '기타':'bg-gray-100 text-gray-600 border-gray-200' };
+  const s = Math.floor((Date.now() - m.ts) / 1000);
+  const ago = s < 60 ? '방금 전' : s < 3600 ? Math.floor(s/60)+'분 전' : s < 86400 ? Math.floor(s/3600)+'시간 전' : Math.floor(s/86400)+'일 전';
+  const isLiked = commState.liked.has(m.id);
+  const eventLine = m.event ? `<p class="text-[10px] font-semibold text-amber-600 mt-0.5 break-words">${escHtml(m.event)}</p>` : '';
+  return `
+  <div class="flex items-start gap-2.5 py-2.5 border-b border-gray-50 last:border-0">
+    <span class="shrink-0 text-[10px] font-bold border rounded px-1.5 py-0.5 mt-0.5 ${tagCls[m.tag]||tagCls['기타']}">${tagIcon[m.tag]||'💬'} ${escHtml(m.tag)}</span>
+    <div class="flex-1 min-w-0">
+      ${eventLine}
+      <p class="text-xs text-gray-800 leading-relaxed break-words">${escHtml(m.text)}</p>
+      <div class="flex items-center gap-2 mt-1">
+        <span class="text-[10px] font-semibold text-navy/60">${escHtml(m.nickname)}</span>
+        <span class="text-[10px] text-gray-400">${ago}</span>
+      </div>
+    </div>
+    <button onclick="commLike('${m.id}')" class="shrink-0 flex items-center gap-1 text-[10px] border rounded-full px-2 py-0.5 transition-colors ${isLiked?'bg-amber-50 border-amber-200 text-amber-800':'border-gray-200 text-gray-400 hover:border-amber-200 hover:text-amber-700'}">
+      👍 <span id="bib-cl-${m.id}">${m.likes||0}</span>
+    </button>
+  </div>`;
+}
+
+function bibCommPost(compId) {
+  const nick = document.getElementById(`bib-comm-nick-${compId}`)?.value.trim();
+  const tag  = document.getElementById(`bib-comm-tag-${compId}`)?.value;
+  const text = document.getElementById(`bib-comm-text-${compId}`)?.value.trim();
+  if (!nick) { alert('닉네임을 입력하세요'); return; }
+  if (!text) { alert('내용을 입력하세요'); return; }
+  fetch(`/api/community/${compId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nickname: nick, tag, text }),
+  }).then(() => {
+    document.getElementById(`bib-comm-text-${compId}`).value = '';
+    localStorage.setItem('comm-nickname', nick);
+  });
 }
 
 async function bibShowAdjacent(comp, event, group, lane, ri) {
@@ -4932,6 +5187,141 @@ function _scoresStartTimer() {
 function _scoresClearTimers() {
   if (_scoresState.refreshTimer)     { clearInterval(_scoresState.refreshTimer);     _scoresState.refreshTimer     = null; }
   if (_scoresState.refreshCountdown) { clearInterval(_scoresState.refreshCountdown); _scoresState.refreshCountdown = null; }
+}
+
+// ── COMMUNITY ─────────────────────────────────────────
+const commState = { compId: '', filter: 'all', msgs: [], es: null, liked: new Set() };
+
+function commInit() {
+  const sel = document.getElementById('comm-comp');
+  if (!sel) return;
+  // 현재/예정/최근 대회 순으로 정렬
+  const sorted = [...COMPETITIONS].sort((a, b) => {
+    const order = s => s === 'ongoing' ? 0 : s === 'upcoming' ? 1 : 2;
+    return order(compStatus(a)) - order(compStatus(b));
+  });
+  sel.innerHTML = '<option value="">— 대회를 선택하세요 —</option>' +
+    sorted.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  // 진행중/예정 자동 선택
+  const best = sorted.find(c => compStatus(c) === 'ongoing') || sorted.find(c => compStatus(c) === 'upcoming');
+  if (best) { sel.value = best.id; commLoad(); }
+}
+
+function commLoad() {
+  const sel = document.getElementById('comm-comp');
+  const compId = sel?.value;
+  if (!commState.liked) commState.liked = new Set();
+  commState.compId = compId || '';
+  const wrap = document.getElementById('comm-form-wrap');
+  const filterWrap = document.getElementById('comm-filter-wrap');
+  if (!compId) {
+    document.getElementById('comm-messages').innerHTML = '<div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 제보가 표시됩니다</div>';
+    wrap?.classList.add('hidden'); filterWrap?.classList.add('hidden'); return;
+  }
+  wrap?.classList.remove('hidden'); filterWrap?.classList.remove('hidden');
+  commTagChange();
+  // SSE 재연결
+  if (commState.es) commState.es.close();
+  const es = new EventSource(`/api/community/${compId}/stream`);
+  commState.es = es;
+  es.addEventListener('message', e => {
+    const msg = JSON.parse(e.data);
+    commState.msgs.unshift(msg);
+    commRender();
+  });
+  es.addEventListener('like', e => {
+    const { id, likes } = JSON.parse(e.data);
+    const m = commState.msgs.find(x => x.id === id);
+    if (m) { m.likes = likes; commRender(); }
+  });
+  // 초기 데이터 로드
+  fetch(`/api/community/${compId}`)
+    .then(r => r.json())
+    .then(msgs => {
+      commState.msgs = [...msgs].reverse(); // 서버는 오래된 순, 표시는 최신 먼저
+      commRender();
+    });
+}
+
+function commFilter(tag) {
+  commState.filter = tag;
+  document.querySelectorAll('.comm-filter-btn').forEach(b => b.classList.remove('comm-filter-active'));
+  document.getElementById('comm-f-' + tag)?.classList.add('comm-filter-active');
+  const esWrap = document.getElementById('comm-event-search-wrap');
+  if (esWrap) {
+    if (tag === '결선시간') {
+      esWrap.classList.remove('hidden');
+    } else {
+      esWrap.classList.add('hidden');
+      const esInput = document.getElementById('comm-event-search');
+      if (esInput) esInput.value = '';
+    }
+  }
+  commRender();
+}
+
+function commRender() {
+  const el = document.getElementById('comm-messages');
+  if (!el) return;
+  let filtered = commState.filter === 'all'
+    ? commState.msgs
+    : commState.msgs.filter(m => m.tag === commState.filter);
+  if (commState.filter === '결선시간') {
+    const q = (document.getElementById('comm-event-search')?.value || '').trim().toLowerCase();
+    if (q) filtered = filtered.filter(m => (m.event || '').toLowerCase().includes(q) || m.text.toLowerCase().includes(q));
+  }
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">아직 제보가 없습니다<br><span class="text-xs">첫 번째로 정보를 공유해보세요!</span></div>';
+    return;
+  }
+  el.innerHTML = filtered.map(m => {
+    const c = bibCommCard(m).replace(/id="bib-cl-/g, 'id="comm-likes-');
+    return `<div class="comm-msg">${c}</div>`;
+  }).join('');
+}
+
+function commTagChange() {
+  const tag = document.getElementById('comm-tag')?.value;
+  const eventRow = document.getElementById('comm-event-row');
+  if (eventRow) {
+    if (tag === '결선시간') eventRow.classList.remove('hidden');
+    else eventRow.classList.add('hidden');
+  }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function commLike(id) {
+  if (commState.liked.has(id)) return;
+  commState.liked.add(id);
+  fetch(`/api/community/msg/${id}/like`, { method: 'POST' })
+    .then(r => r.json())
+    .then(({ likes }) => {
+      const el = document.getElementById('comm-likes-' + id);
+      if (el) el.textContent = likes;
+      const btn = el?.closest('.comm-like-btn');
+      if (btn) btn.classList.add('liked');
+    });
+}
+
+function commPost() {
+  const nickname = document.getElementById('comm-nickname')?.value.trim();
+  const tag      = document.getElementById('comm-tag')?.value;
+  const text     = document.getElementById('comm-text')?.value.trim();
+  const event    = tag === '결선시간' ? (document.getElementById('comm-event')?.value.trim() || '') : '';
+  if (!nickname) { alert('닉네임을 입력하세요'); return; }
+  if (!text)     { alert('내용을 입력하세요'); return; }
+  if (!commState.compId) { alert('대회를 선택하세요'); return; }
+  fetch(`/api/community/${commState.compId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nickname, tag, text, event }),
+  }).then(r => r.json()).then(msg => {
+    document.getElementById('comm-text').value = '';
+    localStorage.setItem('comm-nickname', nickname);
+  });
 }
 </script>
 </body>
