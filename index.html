@@ -415,8 +415,15 @@
     /* 소속 셀 말줄임 (요약) */
     .scores-rank-table td.scores-affil { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     /* 세부 하위 행 (급사/복사/입사/20s/후반 등) */
-    .scores-rank-table tr.scores-sub-row td { background: #F9FAFB !important; color: #9CA3AF; font-size: 11px; border-bottom-color: #F3F4F6; }
-    .scores-rank-table tr.scores-sub-row:hover td { background: #F3F4F6 !important; }
+    .scores-rank-table tr.scores-sub-row td { background: #F9FAFB; color: #9CA3AF; font-size: 11px; border-bottom-color: #F3F4F6; }
+    .scores-rank-table tr.scores-sub-row:hover td { background: #F3F4F6; }
+    /* 메달 선수 하위 행 — 순위 배경색 유지 */
+    .scores-rank-table tr.scores-sub-row.rank-gold td   { background: #FEFCE8; }
+    .scores-rank-table tr.scores-sub-row.rank-silver td { background: #F1F5F9; }
+    .scores-rank-table tr.scores-sub-row.rank-bronze td { background: #FFF0E6; }
+    .scores-rank-table tr.scores-sub-row.rank-gold:hover td   { background: #FEF9C3; }
+    .scores-rank-table tr.scores-sub-row.rank-silver:hover td { background: #E2E8F0; }
+    .scores-rank-table tr.scores-sub-row.rank-bronze:hover td { background: #FED7AA; }
     .scores-rank-table tr:nth-child(3) td:first-child { color: #92400E; }
     .scores-tab-active {
       background: #0B1E3F; color: #fff;
@@ -4869,29 +4876,25 @@ function _scoresRenderTable(data) {
     const isJasaeEvent = hasTwoHeaders && (headers[0] === '자세' || groups.some(g => g.label === '자세'));
     let detailRows;
     if (isJasaeEvent) {
+      // 첫 번째 하위행(슬사/전반 등)을 메인 행과 합쳐서 빈 행 제거
       detailRows = [];
-      let shotEndIdx;
-      if (bTotalIdx !== -1) {
-        shotEndIdx = bTotalIdx;
-      } else {
-        const ti = headers.findIndex(h => /합계|총합|총점|점수/.test(h.replace(/\s/g, '')));
-        shotEndIdx = ti !== -1 ? fc + ti : Infinity;
-      }
+      let pendingMain = null;
       for (const row of rows) {
         if (_scoresIsSubRow(row)) {
-          // KSF sub-row (슬사/복사/입사 등): fc 빈 셀 패딩으로 컬럼 정렬
-          detailRows.push([...new Array(fc).fill(''), ...row]);
-        } else {
-          const stanceName = row[fc] || '';
-          const end = Math.min(shotEndIdx, row.length);
-          // Main row: 사격 구간 비우고 합계 이후 유지
-          detailRows.push([...row.slice(0, fc), ...new Array(end - fc).fill(''), ...row.slice(end)]);
-          if (stanceName) {
-            // 자세 sub-row: fc 빈 셀 + fc 이후 전체(자세명+점수) 포함
-            detailRows.push([...new Array(fc).fill(''), ...row.slice(fc)]);
+          if (pendingMain !== null) {
+            // 첫 하위행: 메인 행의 고정 컬럼(등위/소속/성명) + 이 하위행 전체
+            detailRows.push([...pendingMain.slice(0, fc), ...row]);
+            pendingMain = null;
+          } else {
+            // 이후 하위행(복사/입사/후반 등): fc 빈 셀 패딩
+            detailRows.push([...new Array(fc).fill(''), ...row]);
           }
+        } else {
+          if (pendingMain !== null) detailRows.push(pendingMain);
+          pendingMain = row;
         }
       }
+      if (pendingMain !== null) detailRows.push(pendingMain);
     } else if (hasTwoHeaders) {
       // 25m 권총 등 hasTwoHeaders 이벤트: 하위 행 fc 빈 셀 패딩으로 컬럼 정렬
       detailRows = rows.map(row =>
@@ -4901,15 +4904,16 @@ function _scoresRenderTable(data) {
       detailRows = rows;
     }
 
+    let _curRank = 0, _curMedal = null;
     const tbody = detailRows.map(row => {
-      const isSub  = _scoresIsSubRow(row);
-      const rankN  = isSub ? 0 : _scoresRankOf(row);
-      const medal  = _scoresMedalOf(rankN);
-      const cls    = isSub ? 'scores-sub-row' : _scoresRankCls(rankN);
-      const cells  = row.map((cell, ci) => {
+      const isSub = _scoresIsSubRow(row);
+      if (!isSub) { _curRank = _scoresRankOf(row); _curMedal = _scoresMedalOf(_curRank); }
+      const rankCls = _scoresRankCls(_curRank);
+      const cls = isSub ? `scores-sub-row ${rankCls}`.trim() : rankCls;
+      const cells = row.map((cell, ci) => {
         if (ci === 0) {
-          if (isSub)  return `<td style="text-align:center;font-size:11px;color:#9CA3AF">${esc(cell)}</td>`;
-          return `<td style="text-align:center;font-size:${medal ? 16 : 13}px">${medal || esc(cell)}</td>`;
+          if (isSub) return `<td style="text-align:center;font-size:11px;color:#9CA3AF">${esc(cell)}</td>`;
+          return `<td style="text-align:center;font-size:${_curMedal ? 16 : 13}px">${_curMedal || esc(cell)}</td>`;
         }
         return `<td style="text-align:center">${esc(cell)}</td>`;
       }).join('');
