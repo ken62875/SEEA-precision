@@ -4872,31 +4872,10 @@ function _scoresRenderTable(data) {
       ? `<tr>${detailRowHeaders.map(h => `<th style="text-align:center">${esc(h)}</th>`).join('')}</tr>`
       : '';
 
-    const { fixedCount: fc, bonsonTotalIdx: bTotalIdx } = _scoresSummaryIndices(groups, headers, hasTwoHeaders);
-    const isJasaeEvent = hasTwoHeaders && (headers[0] === '자세' || groups.some(g => g.label === '자세'));
+    const { fixedCount: fc } = _scoresSummaryIndices(groups, headers, hasTwoHeaders);
     let detailRows;
-    if (isJasaeEvent) {
-      // 첫 번째 하위행(슬사/전반 등)을 메인 행과 합쳐서 빈 행 제거
-      detailRows = [];
-      let pendingMain = null;
-      for (const row of rows) {
-        if (_scoresIsSubRow(row)) {
-          if (pendingMain !== null) {
-            // 첫 하위행: 메인 행의 고정 컬럼(등위/소속/성명) + 이 하위행 전체
-            detailRows.push([...pendingMain.slice(0, fc), ...row]);
-            pendingMain = null;
-          } else {
-            // 이후 하위행(복사/입사/후반 등): fc 빈 셀 패딩
-            detailRows.push([...new Array(fc).fill(''), ...row]);
-          }
-        } else {
-          if (pendingMain !== null) detailRows.push(pendingMain);
-          pendingMain = row;
-        }
-      }
-      if (pendingMain !== null) detailRows.push(pendingMain);
-    } else if (hasTwoHeaders) {
-      // 25m 권총 등 hasTwoHeaders 이벤트: 하위 행 fc 빈 셀 패딩으로 컬럼 정렬
+    if (hasTwoHeaders) {
+      // 3자세·속사·권총 등: 메인 행 그대로, 하위행(복사/입사/후반 등)만 fc 빈 셀 패딩
       detailRows = rows.map(row =>
         _scoresIsSubRow(row) ? [...new Array(fc).fill(''), ...row] : row
       );
