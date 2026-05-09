@@ -433,18 +433,23 @@
     }
     .scores-tab-active:hover, .scores-tab-inactive:hover { opacity: .85; }
     /* ── Community ── */
-    .comm-filter-btn { padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; border:1px solid #E5E7EB; background:#fff; color:#6B7280; cursor:pointer; transition:all .15s; white-space:nowrap; }
-    .comm-filter-btn:hover { border-color:#0B1E3F; color:#0B1E3F; }
-    .comm-filter-active { background:#0B1E3F !important; color:#fff !important; border-color:#0B1E3F !important; }
-    .comm-msg { background:#fff; border-radius:16px; padding:14px 16px; border:1px solid #F3F4F6; box-shadow:0 1px 3px rgba(0,0,0,.04); }
-    .comm-tag { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; margin-bottom:4px; }
-    .comm-tag-결선시간 { background:#FEF9C3; color:#92400E; }
-    .comm-tag-공식훈련 { background:#DBEAFE; color:#1E40AF; }
-    .comm-tag-장비검사 { background:#D1FAE5; color:#065F46; }
-    .comm-tag-기타     { background:#F3F4F6; color:#6B7280; }
-    .comm-like-btn { display:flex; align-items:center; gap:4px; font-size:11px; color:#9CA3AF; background:none; border:1px solid #E5E7EB; border-radius:20px; padding:3px 10px; cursor:pointer; transition:all .15s; }
-    .comm-like-btn:hover { border-color:#C9A24A; color:#C9A24A; }
-    .comm-like-btn.liked { background:#FEF3C7; border-color:#C9A24A; color:#92400E; }
+    .comm-chip-row { display:flex; gap:6px; flex-wrap:wrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:2px 0 2px; }
+    .comm-chip-row::-webkit-scrollbar { display:none; }
+    .comm-chip { flex-shrink:0; padding:4px 10px; border-radius:16px; font-size:11px; font-weight:600; border:1.5px solid #E5E7EB; color:#6B7280; background:#fff; cursor:pointer; transition:all .15s; white-space:nowrap; }
+    .comm-chip:hover { border-color:#0B1E3F; color:#0B1E3F; }
+    .comm-chip.active { background:#0B1E3F; color:#fff; border-color:#0B1E3F; }
+    .comm-filter-label { font-size:10px; font-weight:700; color:#9CA3AF; letter-spacing:.06em; text-transform:uppercase; margin-bottom:5px; }
+    .comm-verified-item { background:linear-gradient(135deg,#0B1E3F 0%,#1a3568 100%); border-radius:16px; padding:16px 18px; }
+    .comm-feed-card { background:#fff; border-radius:16px; border:1px solid #F0F0F0; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .comm-agree { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:700; border:1.5px solid #BBF7D0; border-radius:20px; padding:3px 9px; color:#059669; background:#F0FDF4; cursor:pointer; transition:all .15s; }
+    .comm-agree:hover,.comm-agree.active { background:#059669; color:#fff; border-color:#059669; }
+    .comm-disagree { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:700; border:1.5px solid #FECACA; border-radius:20px; padding:3px 9px; color:#DC2626; background:#FEF2F2; cursor:pointer; transition:all .15s; }
+    .comm-disagree:hover,.comm-disagree.active { background:#DC2626; color:#fff; border-color:#DC2626; }
+    .comm-shortcut { flex-shrink:0; display:inline-flex; align-items:center; gap:4px; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:700; border:1.5px solid #E5E7EB; color:#374151; background:#F9FAFB; cursor:pointer; transition:all .15s; white-space:nowrap; }
+    .comm-shortcut:hover { border-color:#0B1E3F; color:#0B1E3F; background:#fff; }
+    .comm-shortcut.active { background:#0B1E3F; color:#fff; border-color:#0B1E3F; }
+    .comm-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; display:flex; align-items:flex-end; justify-content:center; }
+    .comm-modal-sheet { background:#fff; border-radius:24px 24px 0 0; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; padding:20px 20px 36px; }
     @keyframes spinOnce {
       from { transform: rotate(0deg); }
       to   { transform: rotate(360deg); }
@@ -1527,69 +1532,76 @@
       </div>
     </div>
 
-    <div class="max-w-2xl mx-auto px-4 py-6 space-y-4">
+    <div class="max-w-2xl mx-auto px-4 py-5 space-y-4">
 
-      <!-- 대회 + 종목 선택 -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
+      <!-- 대회 선택 -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+        <label class="text-[11px] font-bold text-gray-400 tracking-widest uppercase mb-2 block">대회 선택</label>
+        <select id="comm-comp" onchange="commLoad()"
+          class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-navy focus:outline-none focus:ring-2 focus:ring-navy/30">
+          <option value="">— 대회를 선택하세요 —</option>
+        </select>
+      </div>
+
+      <!-- 캐스케이드 칩 필터 (종목 + 성별 통합) -->
+      <div id="comm-chips-wrap" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 px-4 py-4 space-y-3">
+        <!-- 종목 그룹 -->
         <div>
-          <label class="text-xs font-bold text-gray-500 tracking-widest uppercase mb-2 block">대회 선택</label>
-          <select id="comm-comp" onchange="commLoad()"
-            class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-navy focus:outline-none focus:ring-2 focus:ring-navy/30">
-            <option value="">— 대회를 선택하세요 —</option>
-          </select>
+          <p class="comm-filter-label">종목</p>
+          <div class="comm-chip-row" id="comm-chips-cat">
+            <button class="comm-chip" data-val="소총" onclick="commChipCat(this)">소총</button>
+            <button class="comm-chip" data-val="권총" onclick="commChipCat(this)">권총</button>
+            <button class="comm-chip" data-val="클레이" onclick="commChipCat(this)">클레이</button>
+          </div>
+          <div class="comm-chip-row mt-1.5" id="comm-chips-dist"></div>
+          <div class="comm-chip-row mt-1.5" id="comm-chips-event"></div>
         </div>
-        <!-- 종목 검색 (결선시간 필터 시 활성화) -->
-        <div id="comm-event-search-wrap" class="hidden">
-          <label class="text-xs font-bold text-gray-500 tracking-widest uppercase mb-2 block">종목 검색 <span class="text-gray-300 font-normal normal-case tracking-normal">(결선시간 필터 시)</span></label>
-          <div class="relative">
-            <input id="comm-event-search" type="text" placeholder="예) 10m 공기소총, 50m 3자세, 권총…"
-              oninput="commRender()"
-              class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30 pr-8">
-            <button onclick="document.getElementById('comm-event-search').value='';commRender()"
-              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-xs">✕</button>
+        <!-- 구분선 -->
+        <div class="border-t border-gray-100"></div>
+        <!-- 성별 그룹 -->
+        <div>
+          <p class="comm-filter-label">성별</p>
+          <div class="comm-chip-row" id="comm-chips-gender">
+            <button class="comm-chip" data-val="남자" onclick="commChipGender(this)">남자</button>
+            <button class="comm-chip" data-val="여자" onclick="commChipGender(this)">여자</button>
           </div>
         </div>
+        <!-- 종별 그룹 (동적, 옵션 없으면 숨김) -->
+        <div id="comm-chips-grade-wrap" class="hidden">
+          <p class="comm-filter-label">종별</p>
+          <div class="comm-chip-row" id="comm-chips-grade"></div>
+        </div>
+        <!-- 초기화 -->
+        <button onclick="commResetAllChips()" class="text-[11px] text-gray-400 hover:text-gray-600 font-semibold transition-colors">전체 초기화</button>
       </div>
 
-      <!-- 태그 필터 -->
-      <div id="comm-filter-wrap" class="flex gap-2 flex-wrap hidden">
-        <button onclick="commFilter('all')"       id="comm-f-all"      class="comm-filter-btn comm-filter-active">전체</button>
-        <button onclick="commFilter('결선시간')"  id="comm-f-결선시간" class="comm-filter-btn">🏆 결선시간</button>
-        <button onclick="commFilter('공식훈련')"  id="comm-f-공식훈련" class="comm-filter-btn">🏃 공식훈련</button>
-        <button onclick="commFilter('장비검사')"  id="comm-f-장비검사" class="comm-filter-btn">🔧 장비검사</button>
-        <button onclick="commFilter('기타')"      id="comm-f-기타"     class="comm-filter-btn">💬 기타</button>
+      <!-- 상단: 교차검증 완료 결선 시간 배너 -->
+      <div id="comm-verified-wrap" class="hidden space-y-2">
+        <p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase px-1">✅ 교차검증 완료 — 결선 시간</p>
+        <div id="comm-verified-list" class="space-y-2"></div>
       </div>
 
-      <!-- 메시지 목록 -->
-      <div id="comm-messages" class="space-y-2 min-h-[120px]">
-        <div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 제보가 표시됩니다</div>
-      </div>
+      <!-- 중단: 제보 CTA -->
+      <button id="comm-cta-btn" onclick="commOpenModal()"
+        class="hidden w-full bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-2xl py-4 px-5 font-bold shadow-lg shadow-amber-200/60 active:scale-95 transition-all text-left">
+        <span class="text-xl block mb-0.5">📸</span>
+        현장에 계신가요? 지금 제보하기
+        <span class="block font-normal text-white/75 text-xs mt-0.5">결선 상황판을 찍어 공유해 주세요</span>
+      </button>
 
-      <!-- 작성 폼 -->
-      <div id="comm-form-wrap" class="hidden">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
-          <div class="flex gap-2">
-            <input id="comm-nickname" type="text" placeholder="닉네임" maxlength="20"
-              class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30">
-            <select id="comm-tag" onchange="commTagChange()"
-              class="border border-gray-200 rounded-xl px-3 py-2 text-sm font-semibold text-navy focus:outline-none focus:ring-2 focus:ring-navy/30">
-              <option value="결선시간">🏆 결선시간</option>
-              <option value="공식훈련">🏃 공식훈련</option>
-              <option value="장비검사">🔧 장비검사</option>
-              <option value="기타">💬 기타</option>
-            </select>
+      <!-- 하단: 실시간 피드 -->
+      <div>
+        <div id="comm-feed-header" class="hidden flex items-center justify-between mb-2 px-1">
+          <p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase">실시간 현장 제보</p>
+          <div class="flex items-center gap-2">
+            <span id="comm-live-dot" class="text-[10px] text-emerald-500 font-semibold hidden">● LIVE</span>
+            <button id="comm-admin-btn" onclick="commToggleAdmin()" class="text-[10px] text-gray-300 hover:text-gray-500 font-semibold transition-colors">관리</button>
           </div>
-          <!-- 결선시간 선택 시: 종목 입력 -->
-          <div id="comm-event-row" class="flex items-center gap-2 hidden">
-            <input id="comm-event" type="text" placeholder="종목 (예: 10m 공기소총 남자 일반부)" maxlength="50"
-              class="w-full border border-amber-200 bg-amber-50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300 placeholder-amber-300">
-          </div>
-          <div class="flex gap-2">
-            <textarea id="comm-text" placeholder="예) 결선 14:00 시작, A관 1번 사대부터" maxlength="300" rows="2"
-              class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-navy/30"></textarea>
-            <button onclick="commPost()"
-              class="px-4 bg-navy text-white rounded-xl text-sm font-bold hover:bg-navy/80 active:scale-95 transition-all self-end py-2">전송</button>
-          </div>
+        </div>
+        <!-- 종목별 채팅방 바로가기 -->
+        <div id="comm-shortcuts" class="hidden comm-chip-row mb-3"></div>
+        <div id="comm-feed" class="space-y-3">
+          <div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 제보가 표시됩니다</div>
         </div>
       </div>
 
@@ -5190,139 +5202,655 @@ function _scoresClearTimers() {
 }
 
 // ── COMMUNITY ─────────────────────────────────────────
-const commState = { compId: '', filter: 'all', msgs: [], es: null, liked: new Set() };
+const commState = {
+  compId: '', msgs: [], es: null,
+  agreed: new Set(), disagreed: new Set(),
+  chipCat: '', chipDist: '', chipEvent: '', chipGender: '', chipGrade: '',
+  adminMode: false, adminPw: ''
+};
+
+// 정적 종목 계층 구조: cat(카테고리) → dist(거리/유형) → name(세부종목)
+const _ALL_EVENTS = [
+  { cat: '소총',   dist: '10m', name: '10m 공기소총' },
+  { cat: '소총',   dist: '50m', name: '50m 3자세' },
+  { cat: '소총',   dist: '50m', name: '50m 복사' },
+  { cat: '권총',   dist: '10m', name: '10m 공기권총' },
+  { cat: '권총',   dist: '25m', name: '25m 화약권총' },
+  { cat: '권총',   dist: '25m', name: '25m 속사권총' },
+  { cat: '클레이', dist: '',    name: '스키트' },
+  { cat: '클레이', dist: '',    name: '트랩' },
+];
+
+// 2단계: 거리/유형 칩 렌더 (chipCat 기준)
+function _commRenderDistChips() {
+  const row = document.getElementById('comm-chips-dist');
+  if (!row) return;
+  const dists = [...new Set(
+    _ALL_EVENTS
+      .filter(e => !commState.chipCat || e.cat === commState.chipCat)
+      .map(e => e.dist)
+      .filter(Boolean)
+  )];
+  row.innerHTML = dists.map(d =>
+    `<button class="comm-chip ${commState.chipDist === d ? 'active' : ''}" data-val="${escHtml(d)}" onclick="commChipDist(this)">${escHtml(d)}</button>`
+  ).join('');
+}
+
+// 3단계: 세부종목 칩 렌더 (chipCat + chipDist 기준)
+function _commRenderEventChips() {
+  const row = document.getElementById('comm-chips-event');
+  if (!row) return;
+  const events = _ALL_EVENTS
+    .filter(e =>
+      (!commState.chipCat  || e.cat  === commState.chipCat) &&
+      (!commState.chipDist || e.dist === commState.chipDist)
+    )
+    .map(e => e.name);
+  row.innerHTML = events.map(e =>
+    `<button class="comm-chip ${commState.chipEvent === e ? 'active' : ''}" data-val="${escHtml(e)}" onclick="commChipEvent(this)">${escHtml(e)}</button>`
+  ).join('');
+}
+
+// 종목별 채팅방 바로가기 렌더
+function commRenderShortcuts() {
+  const wrap = document.getElementById('comm-shortcuts');
+  if (!wrap) return;
+  if (!commState.compId) { wrap.classList.add('hidden'); return; }
+  const events = _ALL_EVENTS.filter(e =>
+    (!commState.chipCat  || e.cat  === commState.chipCat) &&
+    (!commState.chipDist || e.dist === commState.chipDist)
+  );
+  wrap.classList.toggle('hidden', events.length === 0);
+  wrap.innerHTML = events.map(e => {
+    const active = commState.chipEvent === e.name ? 'active' : '';
+    return `<button class="comm-shortcut ${active}" onclick="commShortcut('${e.name.replace(/'/g,"\\'")}')">💬 ${escHtml(e.name)}</button>`;
+  }).join('');
+}
+
+// 현재 대회 메시지에서 종별 칩 동적 생성
+function _commRenderGradeChips() {
+  const row = document.getElementById('comm-chips-grade');
+  const wrap = document.getElementById('comm-chips-grade-wrap');
+  if (!row) return;
+  let divs = [...new Set(commState.msgs.map(m => m.division).filter(Boolean))];
+  if (commState.chipGender === '남자') divs = divs.filter(d => d.includes('남'));
+  else if (commState.chipGender === '여자') divs = divs.filter(d => d.includes('여'));
+  row.innerHTML = divs.map(d =>
+    `<button class="comm-chip ${commState.chipGrade === d ? 'active' : ''}" data-val="${escHtml(d)}" onclick="commChipGrade(this)">${escHtml(d)}</button>`
+  ).join('');
+  wrap?.classList.toggle('hidden', divs.length === 0);
+}
 
 function commInit() {
   const sel = document.getElementById('comm-comp');
   if (!sel) return;
-  // 현재/예정/최근 대회 순으로 정렬
   const sorted = [...COMPETITIONS].sort((a, b) => {
     const order = s => s === 'ongoing' ? 0 : s === 'upcoming' ? 1 : 2;
     return order(compStatus(a)) - order(compStatus(b));
   });
   sel.innerHTML = '<option value="">— 대회를 선택하세요 —</option>' +
     sorted.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  // 진행중/예정 자동 선택
   const best = sorted.find(c => compStatus(c) === 'ongoing') || sorted.find(c => compStatus(c) === 'upcoming');
   if (best) { sel.value = best.id; commLoad(); }
+  // 개인화 칩 복원
+  commState.chipCat    = localStorage.getItem('comm-chip-cat')    || '';
+  commState.chipDist   = localStorage.getItem('comm-chip-dist')   || '';
+  commState.chipEvent  = localStorage.getItem('comm-chip-event')  || '';
+  commState.chipGender = localStorage.getItem('comm-chip-gender') || '';
+  commState.chipGrade  = localStorage.getItem('comm-chip-grade')  || '';
+  _commChipSync('comm-chips-cat',    commState.chipCat);
+  _commChipSync('comm-chips-gender', commState.chipGender);
+  _commRenderDistChips();
+  _commRenderEventChips();
+  commRenderShortcuts();
 }
 
 function commLoad() {
   const sel = document.getElementById('comm-comp');
   const compId = sel?.value;
-  if (!commState.liked) commState.liked = new Set();
   commState.compId = compId || '';
-  const wrap = document.getElementById('comm-form-wrap');
-  const filterWrap = document.getElementById('comm-filter-wrap');
+  const chipsWrap = document.getElementById('comm-chips-wrap');
+  const ctaBtn    = document.getElementById('comm-cta-btn');
+  const feedHdr   = document.getElementById('comm-feed-header');
   if (!compId) {
-    document.getElementById('comm-messages').innerHTML = '<div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 제보가 표시됩니다</div>';
-    wrap?.classList.add('hidden'); filterWrap?.classList.add('hidden'); return;
+    chipsWrap?.classList.add('hidden');
+    ctaBtn?.classList.add('hidden');
+    feedHdr?.classList.add('hidden');
+    document.getElementById('comm-verified-wrap')?.classList.add('hidden');
+    document.getElementById('comm-feed').innerHTML =
+      '<div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 제보가 표시됩니다</div>';
+    return;
   }
-  wrap?.classList.remove('hidden'); filterWrap?.classList.remove('hidden');
-  commTagChange();
-  // SSE 재연결
+  chipsWrap?.classList.remove('hidden');
+  ctaBtn?.classList.remove('hidden');
+  feedHdr?.classList.remove('hidden');
   if (commState.es) commState.es.close();
   const es = new EventSource(`/api/community/${compId}/stream`);
   commState.es = es;
   es.addEventListener('message', e => {
-    const msg = JSON.parse(e.data);
-    commState.msgs.unshift(msg);
+    commState.msgs.unshift(JSON.parse(e.data));
+    _commRenderEventChips();
+    _commRenderGradeChips();
+    commRenderShortcuts();
+    commRender();
+    document.getElementById('comm-live-dot')?.classList.remove('hidden');
+  });
+  es.addEventListener('agree', e => {
+    const { id, agree } = JSON.parse(e.data);
+    const m = commState.msgs.find(x => x.id === id);
+    if (m) { m.agree = agree; commRender(); }
+  });
+  es.addEventListener('disagree', e => {
+    const { id, disagree } = JSON.parse(e.data);
+    const m = commState.msgs.find(x => x.id === id);
+    if (m) { m.disagree = disagree; commRender(); }
+  });
+  es.addEventListener('delete', e => {
+    const { id } = JSON.parse(e.data);
+    commState.msgs = commState.msgs.filter(m => m.id !== id);
+    _commRenderGradeChips();
+    commRenderShortcuts();
     commRender();
   });
-  es.addEventListener('like', e => {
-    const { id, likes } = JSON.parse(e.data);
-    const m = commState.msgs.find(x => x.id === id);
-    if (m) { m.likes = likes; commRender(); }
-  });
-  // 초기 데이터 로드
   fetch(`/api/community/${compId}`)
     .then(r => r.json())
     .then(msgs => {
-      commState.msgs = [...msgs].reverse(); // 서버는 오래된 순, 표시는 최신 먼저
+      commState.msgs = [...msgs].reverse();
+      _commRenderEventChips();
+      _commRenderGradeChips();
+      commRenderShortcuts();
       commRender();
     });
 }
 
-function commFilter(tag) {
-  commState.filter = tag;
-  document.querySelectorAll('.comm-filter-btn').forEach(b => b.classList.remove('comm-filter-active'));
-  document.getElementById('comm-f-' + tag)?.classList.add('comm-filter-active');
-  const esWrap = document.getElementById('comm-event-search-wrap');
-  if (esWrap) {
-    if (tag === '결선시간') {
-      esWrap.classList.remove('hidden');
-    } else {
-      esWrap.classList.add('hidden');
-      const esInput = document.getElementById('comm-event-search');
-      if (esInput) esInput.value = '';
-    }
-  }
+function _commChipSync(rowId, val) {
+  document.querySelectorAll(`#${rowId} .comm-chip`).forEach(b =>
+    b.classList.toggle('active', b.dataset.val === val));
+}
+
+function commChipCat(btn) {
+  const val = btn.dataset.val;
+  commState.chipCat   = commState.chipCat === val ? '' : val;
+  commState.chipDist  = '';
+  commState.chipEvent = '';
+  localStorage.setItem('comm-chip-cat', commState.chipCat);
+  localStorage.removeItem('comm-chip-dist');
+  localStorage.removeItem('comm-chip-event');
+  _commChipSync('comm-chips-cat', commState.chipCat);
+  _commRenderDistChips();
+  _commRenderEventChips();
+  commRenderShortcuts();
+  commRender();
+}
+
+function commChipDist(btn) {
+  const val = btn.dataset.val;
+  commState.chipDist  = commState.chipDist === val ? '' : val;
+  commState.chipEvent = '';
+  localStorage.setItem('comm-chip-dist', commState.chipDist);
+  localStorage.removeItem('comm-chip-event');
+  _commChipSync('comm-chips-dist', commState.chipDist);
+  _commRenderEventChips();
+  commRenderShortcuts();
+  commRender();
+}
+
+function commChipEvent(btn) {
+  const val = btn.dataset.val;
+  commState.chipEvent = commState.chipEvent === val ? '' : val;
+  localStorage.setItem('comm-chip-event', commState.chipEvent);
+  _commChipSync('comm-chips-event', commState.chipEvent);
+  commRenderShortcuts();
+  commRender();
+}
+
+function commShortcut(eventName) {
+  commState.chipEvent = commState.chipEvent === eventName ? '' : eventName;
+  localStorage.setItem('comm-chip-event', commState.chipEvent);
+  _commChipSync('comm-chips-event', commState.chipEvent);
+  commRenderShortcuts();
+  commRender();
+}
+
+function commChipGender(btn) {
+  const val = btn.dataset.val;
+  commState.chipGender = commState.chipGender === val ? '' : val;
+  commState.chipGrade  = '';
+  localStorage.setItem('comm-chip-gender', commState.chipGender);
+  localStorage.removeItem('comm-chip-grade');
+  _commChipSync('comm-chips-gender', commState.chipGender);
+  _commRenderGradeChips();
+  commRender();
+}
+
+function commChipGrade(btn) {
+  const val = btn.dataset.val;
+  commState.chipGrade = commState.chipGrade === val ? '' : val;
+  localStorage.setItem('comm-chip-grade', commState.chipGrade);
+  _commChipSync('comm-chips-grade', commState.chipGrade);
+  commRender();
+}
+
+function commResetAllChips() {
+  commState.chipCat = commState.chipDist = commState.chipEvent = '';
+  commState.chipGender = commState.chipGrade = '';
+  ['comm-chip-cat','comm-chip-dist','comm-chip-event','comm-chip-gender','comm-chip-grade']
+    .forEach(k => localStorage.removeItem(k));
+  ['comm-chips-cat','comm-chips-dist','comm-chips-gender','comm-chips-grade']
+    .forEach(id => _commChipSync(id, ''));
+  _commRenderDistChips();
+  _commRenderEventChips();
+  _commRenderGradeChips();
+  commRenderShortcuts();
   commRender();
 }
 
 function commRender() {
-  const el = document.getElementById('comm-messages');
-  if (!el) return;
-  let filtered = commState.filter === 'all'
-    ? commState.msgs
-    : commState.msgs.filter(m => m.tag === commState.filter);
-  if (commState.filter === '결선시간') {
-    const q = (document.getElementById('comm-event-search')?.value || '').trim().toLowerCase();
-    if (q) filtered = filtered.filter(m => (m.event || '').toLowerCase().includes(q) || m.text.toLowerCase().includes(q));
+  // 확정 배너: agree >= 3인 결선시간
+  const verified = commState.msgs.filter(m => m.tag === '결선시간' && (m.agree || 0) >= 3);
+  const vWrap = document.getElementById('comm-verified-wrap');
+  const vList = document.getElementById('comm-verified-list');
+  if (verified.length > 0 && vWrap && vList) {
+    vWrap.classList.remove('hidden');
+    vList.innerHTML = verified.map(m => `
+      <div class="comm-verified-item">
+        <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+          <span class="text-xs font-bold text-amber-300">🏆 확정 결선 시간</span>
+          ${m.event ? `<span class="text-xs text-white/70 font-semibold">${escHtml(m.event)}</span>` : ''}
+          ${m.division ? `<span class="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full">${escHtml(m.division)}</span>` : ''}
+        </div>
+        <p class="text-white text-base font-bold leading-relaxed">${escHtml(m.text)}</p>
+        ${m.imageUrl ? `<img src="${escHtml(m.imageUrl)}" class="mt-2 rounded-xl w-full max-h-36 object-cover opacity-90">` : ''}
+        <p class="text-white/40 text-[10px] mt-2">👍 ${m.agree||0}명 확인</p>
+      </div>`).join('');
+  } else {
+    vWrap?.classList.add('hidden');
   }
-  if (filtered.length === 0) {
-    el.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">아직 제보가 없습니다<br><span class="text-xs">첫 번째로 정보를 공유해보세요!</span></div>';
+
+  // 피드 필터링 (3단계 캐스케이드 칩)
+  let msgs = commState.msgs;
+  if (commState.chipEvent) {
+    msgs = msgs.filter(m => (m.event || '') === commState.chipEvent);
+  } else if (commState.chipCat || commState.chipDist) {
+    const validNames = new Set(
+      _ALL_EVENTS
+        .filter(e =>
+          (!commState.chipCat  || e.cat  === commState.chipCat) &&
+          (!commState.chipDist || e.dist === commState.chipDist)
+        )
+        .map(e => e.name)
+    );
+    msgs = msgs.filter(m => !m.event || validNames.has(m.event));
+  }
+  if (commState.chipGender) {
+    const gKey = commState.chipGender === '남자' ? '남' : '여';
+    msgs = msgs.filter(m => (m.division || '').includes(gKey));
+  }
+  if (commState.chipGrade)
+    msgs = msgs.filter(m => (m.division || '') === commState.chipGrade);
+
+  const feedEl = document.getElementById('comm-feed');
+  if (!feedEl) return;
+  if (msgs.length === 0) {
+    feedEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">아직 제보가 없습니다<br><span class="text-xs">첫 번째로 정보를 공유해보세요!</span></div>';
     return;
   }
-  el.innerHTML = filtered.map(m => {
-    const c = bibCommCard(m).replace(/id="bib-cl-/g, 'id="comm-likes-');
-    return `<div class="comm-msg">${c}</div>`;
-  }).join('');
+  feedEl.innerHTML = msgs.map(commCard).join('');
 }
 
-function commTagChange() {
-  const tag = document.getElementById('comm-tag')?.value;
-  const eventRow = document.getElementById('comm-event-row');
-  if (eventRow) {
-    if (tag === '결선시간') eventRow.classList.remove('hidden');
-    else eventRow.classList.add('hidden');
+function commCard(m) {
+  const tagIcon = { '결선시간':'🏆', '공식훈련':'🏃', '장비검사':'🔧', '기타':'💬' };
+  const tagCls  = {
+    '결선시간':'bg-amber-50 text-amber-800 border-amber-200',
+    '공식훈련':'bg-blue-50 text-blue-800 border-blue-200',
+    '장비검사':'bg-green-50 text-green-800 border-green-200',
+    '기타':'bg-gray-100 text-gray-600 border-gray-200'
+  };
+  const s = Math.floor((Date.now() - m.ts) / 1000);
+  const ago = s < 60 ? '방금 전' : s < 3600 ? Math.floor(s/60)+'분 전'
+            : s < 86400 ? Math.floor(s/3600)+'시간 전' : Math.floor(s/86400)+'일 전';
+  const isAgreed    = commState.agreed.has(m.id);
+  const isDisagreed = commState.disagreed.has(m.id);
+  return `
+  <div class="comm-feed-card" style="${commState.adminMode?'border-color:#FECACA':''}">
+    ${m.imageUrl ? `<img src="${escHtml(m.imageUrl)}" alt="현장 사진" class="w-full max-h-56 object-cover">` : ''}
+    <div class="p-3.5">
+      <div class="flex items-center gap-1.5 mb-2 flex-wrap">
+        <span class="text-[10px] font-bold border rounded-md px-1.5 py-0.5 ${tagCls[m.tag]||tagCls['기타']}">${tagIcon[m.tag]||'💬'} ${escHtml(m.tag)}</span>
+        ${m.event ? `<span class="text-[10px] font-semibold text-gray-500">${escHtml(m.event)}</span>` : ''}
+        ${m.division ? `<span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md">${escHtml(m.division)}</span>` : ''}
+        ${commState.adminMode ? `<button onclick="commDeleteMsg('${m.id}')" class="ml-auto text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded-md transition-colors">삭제</button>` : ''}
+      </div>
+      <p class="text-sm text-gray-800 leading-relaxed mb-3">${escHtml(m.text)}</p>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] font-semibold text-navy/50">${escHtml(m.nickname)}</span>
+          <span class="text-[10px] text-gray-300">·</span>
+          <span class="text-[10px] text-gray-400">${ago}</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button onclick="commAgree('${m.id}')" class="comm-agree ${isAgreed?'active':''}">
+            👍 <span id="comm-ag-${m.id}">${m.agree||0}</span> 맞아요
+          </button>
+          <button onclick="commDisagree('${m.id}')" class="comm-disagree ${isDisagreed?'active':''}">
+            👎 <span id="comm-dis-${m.id}">${m.disagree||0}</span> 달라요
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function commAgree(id) {
+  if (commState.agreed.has(id) || commState.disagreed.has(id)) return;
+  commState.agreed.add(id);
+  fetch(`/api/community/msg/${id}/agree`, { method: 'POST' })
+    .then(r => r.json())
+    .then(({ agree }) => {
+      const m = commState.msgs.find(x => x.id === id);
+      if (m) { m.agree = agree; commRender(); }
+    });
+}
+
+function commDisagree(id) {
+  if (commState.agreed.has(id) || commState.disagreed.has(id)) return;
+  commState.disagreed.add(id);
+  fetch(`/api/community/msg/${id}/disagree`, { method: 'POST' })
+    .then(r => r.json())
+    .then(({ disagree }) => {
+      const m = commState.msgs.find(x => x.id === id);
+      if (m) { m.disagree = disagree; commRender(); }
+    });
+}
+
+function commOpenModal() {
+  const modal = document.getElementById('comm-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  const saved = localStorage.getItem('comm-nickname');
+  const nickEl = document.getElementById('comm-modal-nick');
+  if (nickEl && saved && !nickEl.value) nickEl.value = saved;
+  commModalTagChange();
+}
+
+function commCloseModal() {
+  document.getElementById('comm-modal')?.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function commModalTagChange() {
+  const tag = document.getElementById('comm-modal-tag')?.value;
+  const meta = document.getElementById('comm-modal-meta');
+  const imgWrap = document.getElementById('comm-modal-img-wrap');
+  const req = document.getElementById('comm-img-required');
+  // 종목/부는 항상 표시, 사진도 항상 표시 (결선시간만 필수)
+  meta?.classList.remove('hidden');
+  imgWrap?.classList.remove('hidden');
+  if (req) req.style.display = tag === '결선시간' ? '' : 'none';
+}
+
+function commImgPreview() {
+  const input = document.getElementById('comm-modal-img');
+  const file = input?.files?.[0];
+  if (!file) return;
+  commCompressImg(file).then(base64 => {
+    const preview = document.getElementById('comm-modal-img-preview');
+    const previewWrap = document.getElementById('comm-modal-img-preview-wrap');
+    const placeholder = document.getElementById('comm-modal-img-placeholder');
+    if (preview) preview.src = base64;
+    placeholder?.classList.add('hidden');
+    previewWrap?.classList.remove('hidden');
+  });
+}
+
+function commImgClear() {
+  const input = document.getElementById('comm-modal-img');
+  if (input) input.value = '';
+  const preview = document.getElementById('comm-modal-img-preview');
+  if (preview) preview.src = '';
+  document.getElementById('comm-modal-img-preview-wrap')?.classList.add('hidden');
+  document.getElementById('comm-modal-img-placeholder')?.classList.remove('hidden');
+}
+
+function commCompressImg(file, maxPx = 900, quality = 0.75) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(maxPx / Math.max(img.width, img.height), 1);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function commPost() {
+  const nickname = document.getElementById('comm-modal-nick')?.value.trim();
+  const tag      = document.getElementById('comm-modal-tag')?.value;
+  const event_   = document.getElementById('comm-modal-event')?.value || '';
+  const division = document.getElementById('comm-modal-div')?.value || '';
+  const text     = document.getElementById('comm-modal-text')?.value.trim();
+  const imgFile  = document.getElementById('comm-modal-img')?.files?.[0];
+
+  if (!nickname) { alert('닉네임을 입력하세요'); return; }
+  if (!text)     { alert('내용을 입력하세요'); return; }
+  if (!commState.compId) { alert('대회를 선택하세요'); return; }
+  if (tag === '결선시간') {
+    if (!imgFile)  { alert('결선시간 제보는 현장 사진이 필수입니다'); return; }
+    if (!event_)   { alert('종목을 선택해주세요'); return; }
   }
+
+  let imageData = '';
+  if (imgFile) imageData = await commCompressImg(imgFile);
+
+  const btn = document.getElementById('comm-modal-submit');
+  if (btn) { btn.disabled = true; btn.textContent = '전송 중...'; }
+
+  fetch(`/api/community/${commState.compId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nickname, tag, text, event: event_, division, imageData }),
+  }).then(r => {
+    if (!r.ok) return r.json().then(e => { throw new Error(e.error || `서버 오류 (${r.status})`); });
+    return r.json();
+  }).then(() => {
+    localStorage.setItem('comm-nickname', nickname);
+    document.getElementById('comm-modal-text').value = '';
+    document.getElementById('comm-modal-event').value = '';
+    document.getElementById('comm-modal-div').value = '';
+    commImgClear();
+    commCloseModal();
+  }).catch(err => {
+    alert('제보 등록 실패: ' + err.message);
+  }).finally(() => {
+    if (btn) { btn.disabled = false; btn.textContent = '제보 올리기'; }
+  });
 }
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function commToggleAdmin() {
+  if (commState.adminMode) {
+    commState.adminMode = false;
+    commState.adminPw = '';
+    document.getElementById('comm-admin-btn').textContent = '관리';
+    document.getElementById('comm-admin-btn').style.color = '';
+    commRender();
+  } else {
+    document.getElementById('comm-admin-modal')?.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('comm-admin-pw')?.focus(), 100);
+  }
+}
+
+function commCloseAdminModal() {
+  document.getElementById('comm-admin-modal')?.classList.add('hidden');
+  document.body.style.overflow = '';
+  document.getElementById('comm-admin-pw').value = '';
+}
+
+function commAdminAuth() {
+  const pw = document.getElementById('comm-admin-pw')?.value || '';
+  if (!pw) return;
+  fetch('/api/community/msg/__probe/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw, probe: true }),
+  }).then(r => {
+    if (r.status === 403) {
+      alert('비밀번호가 틀렸습니다');
+    } else {
+      commState.adminPw = pw;
+      commState.adminMode = true;
+      const btn = document.getElementById('comm-admin-btn');
+      btn.textContent = '관리 ON';
+      btn.style.color = '#DC2626';
+      commCloseAdminModal();
+      commRender();
+    }
+  });
+}
+
+function commDeleteMsg(id) {
+  if (!commState.adminMode) return;
+  if (!confirm('이 제보를 삭제할까요?')) return;
+  fetch(`/api/community/msg/${id}/delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: commState.adminPw }),
+  }).then(r => r.json()).then(d => {
+    if (d.error) { alert(d.error); return; }
+    commState.msgs = commState.msgs.filter(m => m.id !== id);
+    _commRenderGradeChips();
+    commRenderShortcuts();
+    commRender();
+  });
+}
+
 function commLike(id) {
+  if (!commState.liked) commState.liked = new Set();
   if (commState.liked.has(id)) return;
   commState.liked.add(id);
   fetch(`/api/community/msg/${id}/like`, { method: 'POST' })
     .then(r => r.json())
     .then(({ likes }) => {
-      const el = document.getElementById('comm-likes-' + id);
+      const el = document.getElementById(`bib-cl-${id}`);
       if (el) el.textContent = likes;
-      const btn = el?.closest('.comm-like-btn');
-      if (btn) btn.classList.add('liked');
+      el?.closest('button')?.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-800');
     });
 }
-
-function commPost() {
-  const nickname = document.getElementById('comm-nickname')?.value.trim();
-  const tag      = document.getElementById('comm-tag')?.value;
-  const text     = document.getElementById('comm-text')?.value.trim();
-  const event    = tag === '결선시간' ? (document.getElementById('comm-event')?.value.trim() || '') : '';
-  if (!nickname) { alert('닉네임을 입력하세요'); return; }
-  if (!text)     { alert('내용을 입력하세요'); return; }
-  if (!commState.compId) { alert('대회를 선택하세요'); return; }
-  fetch(`/api/community/${commState.compId}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nickname, tag, text, event }),
-  }).then(r => r.json()).then(msg => {
-    document.getElementById('comm-text').value = '';
-    localStorage.setItem('comm-nickname', nickname);
-  });
-}
 </script>
+
+<!-- ── 커뮤니티 관리자 비밀번호 모달 ── -->
+<div id="comm-admin-modal" class="comm-modal-overlay hidden" onclick="if(event.target===this)commCloseAdminModal()">
+  <div class="comm-modal-sheet" style="max-height:280px">
+    <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5"></div>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-extrabold text-navy text-lg">관리자 모드</h2>
+      <button onclick="commCloseAdminModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 text-sm hover:bg-gray-200">✕</button>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">비밀번호를 입력하면 제보 삭제 버튼이 활성화됩니다.</p>
+    <div class="flex gap-2">
+      <input id="comm-admin-pw" type="password" placeholder="관리자 비밀번호"
+        class="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30"
+        onkeydown="if(event.key==='Enter')commAdminAuth()">
+      <button onclick="commAdminAuth()" class="bg-navy text-white rounded-xl px-4 py-2.5 text-sm font-bold hover:bg-navy/90 active:scale-95 transition-all" style="background:#0B1E3F">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 커뮤니티 제보 모달 ── -->
+<div id="comm-modal" class="comm-modal-overlay hidden" onclick="if(event.target===this)commCloseModal()">
+  <div class="comm-modal-sheet">
+    <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5"></div>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-extrabold text-navy text-lg">현장 제보하기</h2>
+      <button onclick="commCloseModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 text-sm hover:bg-gray-200">✕</button>
+    </div>
+
+    <!-- 닉네임 + 태그 -->
+    <div class="flex gap-2 mb-3">
+      <input id="comm-modal-nick" type="text" placeholder="닉네임" maxlength="20"
+        class="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30">
+      <select id="comm-modal-tag" onchange="commModalTagChange()"
+        class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-navy focus:outline-none focus:ring-2 focus:ring-navy/30">
+        <option value="결선시간">🏆 결선시간</option>
+        <option value="공식훈련">🏃 공식훈련</option>
+        <option value="장비검사">🔧 장비검사</option>
+        <option value="기타">💬 기타</option>
+      </select>
+    </div>
+
+    <!-- 종목 + 부 -->
+    <div id="comm-modal-meta" class="grid grid-cols-2 gap-2 mb-3">
+      <select id="comm-modal-event"
+        class="border border-amber-200 bg-amber-50 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+        <option value="">종목 선택</option>
+        <option>10m 공기소총</option>
+        <option>50m 3자세</option>
+        <option>50m 복사</option>
+        <option>10m 공기권총</option>
+        <option>25m 화약권총</option>
+        <option>25m 속사권총</option>
+        <option>스키트</option>
+        <option>트랩</option>
+      </select>
+      <select id="comm-modal-div"
+        class="border border-amber-200 bg-amber-50 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+        <option value="">부 선택</option>
+        <option>남중</option>
+        <option>여중</option>
+        <option>남고</option>
+        <option>여고</option>
+        <option>남대</option>
+        <option>여대</option>
+        <option>남자일반</option>
+        <option>여자일반</option>
+        <option>혼성</option>
+      </select>
+    </div>
+
+    <!-- 사진 업로드 -->
+    <div id="comm-modal-img-wrap" class="mb-3">
+      <p class="text-xs font-semibold text-gray-500 mb-1.5">
+        현장 사진
+        <span id="comm-img-required" class="text-red-500 font-bold"> (결선시간 필수)</span>
+      </p>
+      <input id="comm-modal-img" type="file" accept="image/*" capture="environment" class="hidden" onchange="commImgPreview()">
+      <div id="comm-modal-img-placeholder"
+        onclick="document.getElementById('comm-modal-img').click()"
+        class="border-2 border-dashed border-gray-200 rounded-xl py-7 text-center cursor-pointer hover:border-amber-300 hover:bg-amber-50/50 transition-colors">
+        <div class="text-3xl mb-1">📷</div>
+        <p class="text-xs text-gray-400">탭하여 사진 추가</p>
+      </div>
+      <div id="comm-modal-img-preview-wrap" class="hidden relative">
+        <img id="comm-modal-img-preview" class="w-full max-h-52 object-cover rounded-xl">
+        <button onclick="commImgClear()"
+          class="absolute top-2 right-2 w-7 h-7 bg-black/50 text-white rounded-full text-xs flex items-center justify-center leading-none">✕</button>
+      </div>
+    </div>
+
+    <!-- 내용 -->
+    <textarea id="comm-modal-text" placeholder="예) 결선 14:00 시작 예정, A관 1번 사대" maxlength="300" rows="3"
+      class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-navy/30 mb-4"></textarea>
+
+    <!-- 제출 -->
+    <button id="comm-modal-submit" onclick="commPost()"
+      class="w-full bg-navy text-white font-bold py-3.5 rounded-xl text-sm hover:bg-navy/90 active:scale-95 transition-all">
+      제보 올리기
+    </button>
+  </div>
+</div>
+
 </body>
 </html>

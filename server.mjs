@@ -14,6 +14,10 @@ import { startWatcher } from './watcher.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT      = 3000;
 
+// ── 업로드 디렉토리 ──────────────────────────────────────
+const UPLOAD_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
 // ── 커뮤니티 메시지 저장 ─────────────────────────────────
 const COMMUNITY_FILE = path.join(__dirname, 'community.json');
 const communitySSE   = new Map(); // compId → Set<res>
@@ -1318,7 +1322,7 @@ const server = http.createServer(async (req, res) => {
     req.on('data', c => { body += c; });
     req.on('end', () => {
       try {
-        const { nickname, tag, text, event } = JSON.parse(body);
+        const { nickname, tag, text, event, division, imageData } = JSON.parse(body);
         if (!nickname?.trim() || !text?.trim()) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: '닉네임과 내용을 입력하세요.' }));
@@ -1326,15 +1330,32 @@ const server = http.createServer(async (req, res) => {
         }
         const VALID_TAGS = ['공식훈련', '장비검사', '결선시간', '기타'];
         const safeTag = VALID_TAGS.includes(tag) ? tag : '기타';
+
+        // 이미지 처리 (base64 → 파일 저장)
+        let imageUrl = '';
+        if (imageData && typeof imageData === 'string' && imageData.startsWith('data:image/')) {
+          const m = imageData.match(/^data:image\/(\w+);base64,(.+)$/);
+          if (m) {
+            const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
+            const buf = Buffer.from(m[2], 'base64');
+            const fname = `img_${Date.now()}_${Math.random().toString(36).slice(2,6)}.${ext}`;
+            fs.writeFileSync(path.join(UPLOAD_DIR, fname), buf);
+            imageUrl = `/uploads/${fname}`;
+          }
+        }
+
         const msg = {
           id:       Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
           compId,
           nickname: nickname.trim().slice(0, 20),
           tag:      safeTag,
           text:     text.trim().slice(0, 300),
-          event:    safeTag === '결선시간' ? (event || '').toString().trim().slice(0, 50) : '',
+          event:    (event || '').toString().trim().slice(0, 50),
+          division: (division || '').toString().trim().slice(0, 20),
+          imageUrl,
           ts:       Date.now(),
-          likes:    0,
+          agree:    0,
+          disagree: 0,
         };
         const data = loadCommunity();
         data.messages.push(msg);
@@ -1354,7 +1375,37 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ── POST /api/community/msg/:msgId/like ─────────────────
+  // ── POST /api/community/msg/:msgId/agree ────────────────
+  const agreeMatch = req.url.match(/^\/api\/community\/msg\/([^\/]+)\/agree$/);
+  if (req.method === 'POST' && agreeMatch) {
+    const msgId = agreeMatch[1];
+    const data  = loadCommunity();
+    const msg   = data.messages.find(m => m.id === msgId);
+    if (!msg) { res.writeHead(404); res.end('{}'); return; }
+    msg.agree = (msg.agree || 0) + 1;
+    saveCommunity(data);
+    broadcastCommunity(msg.compId, 'agree', { id: msgId, agree: msg.agree });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ agree: msg.agree }));
+    return;
+  }
+
+  // ── POST /api/community/msg/:msgId/disagree ──────────────
+  const disagreeMatch = req.url.match(/^\/api\/community\/msg\/([^\/]+)\/disagree$/);
+  if (req.method === 'POST' && disagreeMatch) {
+    const msgId = disagreeMatch[1];
+    const data  = loadCommunity();
+    const msg   = data.messages.find(m => m.id === msgId);
+    if (!msg) { res.writeHead(404); res.end('{}'); return; }
+    msg.disagree = (msg.disagree || 0) + 1;
+    saveCommunity(data);
+    broadcastCommunity(msg.compId, 'disagree', { id: msgId, disagree: msg.disagree });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ disagree: msg.disagree }));
+    return;
+  }
+
+  // ── POST /api/community/msg/:msgId/like (bib 패널 호환) ──
   const likeMatch = req.url.match(/^\/api\/community\/msg\/([^\/]+)\/like$/);
   if (req.method === 'POST' && likeMatch) {
     const msgId = likeMatch[1];
@@ -1366,6 +1417,57 @@ const server = http.createServer(async (req, res) => {
     broadcastCommunity(msg.compId, 'like', { id: msgId, likes: msg.likes });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ likes: msg.likes }));
+    return;
+  }
+
+  // ── POST /api/community/msg/:msgId/delete (관리자) ────────
+  const delMsgMatch = req.url.match(/^\/api\/community\/msg\/([^\/]+)\/delete$/);
+  if (req.method === 'POST' && delMsgMatch) {
+    const msgId = delMsgMatch[1];
+    let body = '';
+    req.on('data', c => body += c);
+    await new Promise(r => req.on('end', r));
+    let pw = '';
+    try { pw = JSON.parse(body).password || ''; } catch {}
+    const COMM_ADMIN_PW = process.env.ADMIN_PASSWORD || 'kimchi5841*';
+    if (pw !== COMM_ADMIN_PW) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: '비밀번호가 틀렸습니다' }));
+      return;
+    }
+    // probe 요청: 비밀번호 검증만 하고 실제 삭제 없이 반환
+    let bodyParsed = {};
+    try { bodyParsed = JSON.parse(body); } catch {}
+    if (bodyParsed.probe || msgId === '__probe') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+    const data = loadCommunity();
+    const idx  = data.messages.findIndex(m => m.id === msgId);
+    if (idx === -1) { res.writeHead(404); res.end('{}'); return; }
+    const [deleted] = data.messages.splice(idx, 1);
+    saveCommunity(data);
+    // 이미지 파일도 삭제
+    if (deleted.imageUrl) {
+      const imgPath = path.join(__dirname, deleted.imageUrl);
+      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+    }
+    broadcastCommunity(deleted.compId, 'delete', { id: msgId });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  // ── GET /uploads/:filename ───────────────────────────────
+  if (req.method === 'GET' && req.url.startsWith('/uploads/')) {
+    const fname    = path.basename(decodeURIComponent(req.url.slice('/uploads/'.length)));
+    const fpath    = path.join(UPLOAD_DIR, fname);
+    if (!fs.existsSync(fpath)) { res.writeHead(404); res.end('Not found'); return; }
+    const ext  = path.extname(fname).slice(1).toLowerCase();
+    const mime = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif', webp:'image/webp' }[ext] || 'application/octet-stream';
+    res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': 'public, max-age=86400' });
+    fs.createReadStream(fpath).pipe(res);
     return;
   }
 
