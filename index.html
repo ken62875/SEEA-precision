@@ -1802,18 +1802,19 @@
           <button class="comm-tab-btn active" id="comm-tab-feed" onclick="commSwitchTab('feed')">🏆 현장 제보</button>
           <button class="comm-tab-btn"        id="comm-tab-train" onclick="commSwitchTab('train')">🗓 공식훈련 일정</button>
         </div>
-        <!-- 가까운 일정 버튼 -->
+        <!-- 탭별 필터 버튼 -->
         <button id="comm-near-btn" onclick="commToggleNear()"
           class="mt-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-sm font-semibold border transition-all text-gray-500 border-gray-200 bg-white hover:border-navy/30 hover:text-navy active:scale-95">
-          <span>📅</span>
-          <span id="comm-near-label">가까운 일정</span>
+          <span id="comm-near-icon">🏅</span>
+          <span id="comm-near-label">오늘 경기 결선</span>
+          <span id="comm-near-sub" class="hidden text-[10px] font-normal text-gray-400"></span>
         </button>
       </div>
 
       <!-- ── 현장 제보 탭 ── -->
       <div id="comm-pane-feed">
         <!-- 교차검증 완료 결선 시간 배너 -->
-        <div id="comm-verified-wrap" class="hidden space-y-2">
+        <div id="comm-verified-wrap" class="hidden space-y-2 mb-4">
           <p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase px-1">✅ 교차검증 완료 — 결선 시간</p>
           <div id="comm-verified-list" class="space-y-2"></div>
         </div>
@@ -2319,7 +2320,7 @@
       결과
     </button>
 
-    <button class="btab-btn" data-tab="feed" onclick="navigate('feed')">
+    <button class="btab-btn" data-tab="community" onclick="navigate('community')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
       </svg>
@@ -5621,6 +5622,7 @@ const commState = {
   chipGenders: new Set(), chipGrades: new Set(),
   adminMode: false, adminPw: '',
   nearFilter: false,
+  currentTab: 'feed',
   trainExpandedDates: new Set(),
   myPostIds: new Set()
 };
@@ -5826,10 +5828,27 @@ function commInit() {
 
 function commSwitchTab(tab) {
   const isFeed = tab === 'feed';
+  commState.currentTab  = tab;
+  commState.nearFilter  = false;
+  document.getElementById('comm-near-btn')?.classList.remove('comm-near-active');
+
   document.getElementById('comm-pane-feed')?.classList.toggle('hidden', !isFeed);
   document.getElementById('comm-pane-train')?.classList.toggle('hidden', isFeed);
   document.getElementById('comm-tab-feed')?.classList.toggle('active', isFeed);
   document.getElementById('comm-tab-train')?.classList.toggle('active', !isFeed);
+
+  const icon  = document.getElementById('comm-near-icon');
+  const label = document.getElementById('comm-near-label');
+  const sub   = document.getElementById('comm-near-sub');
+  if (isFeed) {
+    if (icon)  icon.textContent  = '🏅';
+    if (label) label.textContent = '오늘 경기 결선';
+    sub?.classList.add('hidden');
+  } else {
+    if (icon)  icon.textContent  = '📅';
+    if (label) label.textContent = '가까운 일정';
+    if (sub)   { sub.textContent = '오늘 +2일까지'; sub.classList.remove('hidden'); }
+  }
 }
 
 function _trainExtractDate(text) {
@@ -6156,8 +6175,26 @@ function commResetAllChips() {
 }
 
 function commRender() {
-  // 확정 배너: agree >= 3 AND 오보 신고 < 3
-  const verified = commState.msgs.filter(m => m.tag === '결선시간' && (m.agree || 0) >= 3 && (m.obo || 0) < 3);
+  // 확정 배너: agree >= 3 AND 오보 신고 < 3 + 간편 필터 적용
+  let verified = commState.msgs.filter(m => m.tag === '결선시간' && (m.agree || 0) >= 3 && (m.obo || 0) < 3);
+  if (commState.chipGenders.size > 0) {
+    const gKeys = [...commState.chipGenders].map(g => g === '남자' ? '남' : '여');
+    verified = verified.filter(m => gKeys.some(gk => (m.division || '').includes(gk)));
+  }
+  if (commState.chipGrades.size > 0) {
+    const _GK = { '초등부':'초', '중등부':'중', '고등부':'고', '대학부':'대', '일반부':'일반' };
+    const gks = [...commState.chipGrades].map(g => _GK[g] || g);
+    verified = verified.filter(m => gks.some(gk => (m.division || '').includes(gk)));
+  }
+  if (commState.chipEvents.size > 0) {
+    verified = verified.filter(m => commState.chipEvents.has(m.event || ''));
+  } else if (commState.chipCats.size > 0 || commState.chipDists.size > 0) {
+    const validNames = new Set(_ALL_EVENTS.filter(e =>
+      (commState.chipCats.size  === 0 || commState.chipCats.has(e.cat)) &&
+      (commState.chipDists.size === 0 || commState.chipDists.has(e.dist))
+    ).map(e => e.name));
+    verified = verified.filter(m => !m.event || validNames.has(m.event));
+  }
   const vWrap = document.getElementById('comm-verified-wrap');
   const vList = document.getElementById('comm-verified-list');
   if (verified.length > 0 && vWrap && vList) {
@@ -6213,7 +6250,10 @@ function commRender() {
   const feedEl = document.getElementById('comm-feed');
   if (!feedEl) return;
   if (msgs.length === 0) {
-    feedEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">아직 제보가 없습니다<br><span class="text-xs">첫 번째로 정보를 공유해보세요!</span></div>';
+    const emptyMsg = commState.nearFilter && commState.currentTab === 'feed'
+      ? '아직 아무도 결선 시간을 제보하지 않았습니다<br><span class="text-xs">현장에 계시다면 첫 번째로 제보해 주세요! 🏅</span>'
+      : '아직 제보가 없습니다<br><span class="text-xs">첫 번째로 정보를 공유해보세요!</span>';
+    feedEl.innerHTML = `<div class="text-center text-gray-400 text-sm py-10">${emptyMsg}</div>`;
     return;
   }
   feedEl.innerHTML = msgs.map(commCard).join('');
