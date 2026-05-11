@@ -3729,12 +3729,14 @@ function _bibNormalizeEvent(evtName) {
     .trim();
 }
 
-// KSF 종목명 문자열에서 종별 추출 → 훈련포스트 division 형식(예: "여일반부")
+// KSF 종목명 문자열에서 종별 추출 → 훈련포스트 division 형식(예: "여고부")
 function _bibNormalizeDivision(evtName) {
   const m = evtName.match(/\s+((?:남자|여자|혼성)(?:\s+\S+부)?)$/);
   if (!m) return '';
   return m[1]
     .replace('남자', '남').replace('여자', '여').replace('혼성', '혼')
+    .replace('고등부', '고부').replace('중등부', '중부')
+    .replace('초등부', '초부').replace('대학부', '대부')
     .replace(/\s+/g, '');
 }
 
