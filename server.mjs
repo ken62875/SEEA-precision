@@ -19,12 +19,23 @@ const UPLOAD_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // ── 커뮤니티 메시지 저장 ─────────────────────────────────
-const COMMUNITY_FILE = path.join(__dirname, 'community.json');
-const communitySSE   = new Map(); // compId → Set<res>
+const COMMUNITY_FILE      = path.join(__dirname, 'community.json');
+const COMMUNITY_SEED_FILE = path.join(__dirname, 'community-seed.json');
+const communitySSE        = new Map(); // compId → Set<res>
 
 function loadCommunity() {
+  // 1) 런타임 파일 우선
   try { if (fs.existsSync(COMMUNITY_FILE)) return JSON.parse(fs.readFileSync(COMMUNITY_FILE, 'utf8')); }
   catch {}
+  // 2) 런타임 파일 없으면 seed 로드 → 곧바로 community.json으로 저장
+  try {
+    if (fs.existsSync(COMMUNITY_SEED_FILE)) {
+      const seed = JSON.parse(fs.readFileSync(COMMUNITY_SEED_FILE, 'utf8'));
+      fs.writeFileSync(COMMUNITY_FILE, JSON.stringify(seed), 'utf8');
+      console.log(`[COMM] community.json 없음 → seed(${seed.messages?.length ?? 0}건)에서 복원`);
+      return seed;
+    }
+  } catch {}
   return { messages: [] };
 }
 function saveCommunity(data) {

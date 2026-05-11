@@ -5557,8 +5557,8 @@ function commRenderTrainingSchedule() {
     return;
   }
   const catIcon = ev => {
-    if (ev.includes('권총')) return '🔫';
-    if (ev.includes('소총')) return '🎯';
+    if (ev.includes('소총') || ev.includes('3자세') || ev.includes('복사')) return '🎯';
+    if (ev.includes('권총') || ev.includes('파이어') || ev.includes('스텐다드') || ev.includes('속사') || ev.includes('스탠다드')) return '🔫';
     if (ev.includes('클레이') || ev.includes('트랩') || ev.includes('스키트')) return '🥏';
     return '🏆';
   };
