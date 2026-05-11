@@ -3163,7 +3163,7 @@ async function bibTeamResultSearch(c, name, result) {
       bibSetBtns(false); return;
     }
 
-    const fmtShortEvtL = n => n.replace(/[쎈센][터타][화파]이어\s*권총/g,'센터파이어').replace(/스[탠텐]다드\s*권총/g,'스텐다드');
+    const fmtShortEvtL = n => n.replace(/[쎈센][터타][화파이]이?어\s*권총?/g,'센터파이어').replace(/스[탠텐](?:다|더)드\s*권총?/g,'스탠다드');
     const cardsHtml = teamEvents.map((g, idx) => {
       const em = g.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s*\S+부)?)$/);
       const isF = em && em[2].startsWith('여자');
@@ -3462,8 +3462,8 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
   }
 
   const fmtShortEvt = n => n
-    .replace(/[쎈센][터타][화파]이어\s*권총/g, '센터파이어')
-    .replace(/스[탠텐]다드\s*권총/g, '스텐다드');
+    .replace(/[쎈센][터타][화파이]이?어\s*권총?/g, '센터파이어')
+    .replace(/스[탠텐](?:다|더)드\s*권총?/g, '스탠다드');
 
   // ── 팀 검색: 아코디언 ───────────────────────────────────
   if (isTeam) {
@@ -3723,8 +3723,8 @@ function _bibNormalizeEvent(evtName) {
     .replace(/\s+(?:남자|여자|혼성).*$/, '')               // 성별·부 제거
     .replace(/^(50m)\s+소총\s+/, '$1 ')                    // "50m 소총 3자세" → "50m 3자세"
     .replace(/^(50m)\s+권총\s+/, '$1 ')
-    .replace(/[쎈센][터타][화파]이어(?:\s*권총)?/g, '센터파이어')  // "센타화이어권총" 포함 처리
-    .replace(/스[탠텐](?:다|더)드(?:\s*권총)?/g, '스텐다드')      // "스탠다드권총" 포함 처리
+    .replace(/[쎈센][터타][화파이]이?어(?:\s*권총)?/g, '센터파이어')  // 센타화이어권총·쎈터파이어 등 모든 변형
+    .replace(/스[탠텐](?:다|더)드(?:\s*권총)?/g, '스탠다드')        // 스탠다드·스탠더드·스텐다드 등 모든 변형
     .replace(/([가-힣])\s+권총$/, '$1')                    // "25m XXX 권총" → "25m XXX"
     .replace(/\s*\(\d+발\)/, '')
     .trim();
@@ -4184,8 +4184,8 @@ function bibRenderPlayerResults(c, name, data) {
   };
 
   const fmtEvtName = n => n
-    .replace(/[쎈센][터타][화파]이어\s*권총/g, '센터파이어')
-    .replace(/스[탠텐]다드\s*권총/g, '스텐다드');
+    .replace(/[쎈센][터타][화파이]이?어\s*권총?/g, '센터파이어')
+    .replace(/스[탠텐](?:다|더)드\s*권총?/g, '스탠다드');
 
   const rowsHtml = results.map(r => {
     const m = r.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s*\S+부)?)$/);
@@ -5349,7 +5349,7 @@ const _ALL_EVENTS = [
   { cat: '권총',   dist: '10m', name: '10m 공기권총' },
   { cat: '권총',   dist: '25m', name: '25m 권총' },        // 여자
   { cat: '권총',   dist: '25m', name: '25m 속사권총' },    // 남자
-  { cat: '권총',   dist: '25m', name: '25m 스텐다드' },    // 남자
+  { cat: '권총',   dist: '25m', name: '25m 스탠다드' },    // 남자
   { cat: '권총',   dist: '25m', name: '25m 센터파이어' },  // 남자
   { cat: '권총',   dist: '50m', name: '50m 권총' },        // 남자
   { cat: '클레이', dist: '',    name: '스키트' },
@@ -5558,7 +5558,7 @@ function commRenderTrainingSchedule() {
   }
   const catIcon = ev => {
     if (ev.includes('소총') || ev.includes('3자세') || ev.includes('복사')) return '🎯';
-    if (ev.includes('권총') || ev.includes('파이어') || ev.includes('스텐다드') || ev.includes('속사') || ev.includes('스탠다드')) return '🔫';
+    if (ev.includes('권총') || ev.includes('파이어') || ev.includes('스탠다드') || ev.includes('속사')) return '🔫';
     if (ev.includes('클레이') || ev.includes('트랩') || ev.includes('스키트')) return '🥏';
     return '🏆';
   };
@@ -6241,7 +6241,7 @@ function commLike(id) {
           <option>10m 공기권총</option>
           <option>25m 권총</option>
           <option>25m 속사권총</option>
-          <option>25m 스텐다드</option>
+          <option>25m 스탠다드</option>
           <option>25m 센터파이어</option>
           <option>50m 권총</option>
         </optgroup>
