@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: seea-precision
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.mjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: KSF_ID
+        sync: false
+      - key: KSF_PW
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
