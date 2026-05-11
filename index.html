@@ -3163,7 +3163,7 @@ async function bibTeamResultSearch(c, name, result) {
       bibSetBtns(false); return;
     }
 
-    const fmtShortEvtL = n => n.replace(/[쎈센][터타]화이어\s*권총/g,'센터화이어').replace(/스탠다드\s*권총/g,'스탠다드');
+    const fmtShortEvtL = n => n.replace(/[쎈센][터타][화파]이어\s*권총/g,'센터파이어').replace(/스[탠텐]다드\s*권총/g,'스텐다드');
     const cardsHtml = teamEvents.map((g, idx) => {
       const em = g.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s*\S+부)?)$/);
       const isF = em && em[2].startsWith('여자');
@@ -3462,8 +3462,8 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
   }
 
   const fmtShortEvt = n => n
-    .replace(/[쎈센][터타]화이어\s*권총/g, '센터화이어')
-    .replace(/스탠다드\s*권총/g, '스탠다드');
+    .replace(/[쎈센][터타][화파]이어\s*권총/g, '센터파이어')
+    .replace(/스[탠텐]다드\s*권총/g, '스텐다드');
 
   // ── 팀 검색: 아코디언 ───────────────────────────────────
   if (isTeam) {
@@ -3723,8 +3723,9 @@ function _bibNormalizeEvent(evtName) {
     .replace(/\s+(?:남자|여자|혼성).*$/, '')   // 성별·부 제거
     .replace(/^(50m)\s+소총\s+/, '$1 ')         // "50m 소총 3자세" → "50m 3자세"
     .replace(/^(50m)\s+권총\s+/, '$1 ')
-    .replace(/([가-힣])\s+권총$/, '$1')          // "25m 스탠다드 권총" → "25m 스탠다드"
-    .replace(/센터화이어|센타화이어/g, '센타파이어')
+    .replace(/([가-힣])\s+권총$/, '$1')          // "25m 스텐다드 권총" → "25m 스텐다드"
+    .replace(/[쎈센][터타][화파]이어/g, '센터파이어')
+    .replace(/스[탠텐]다드/g, '스텐다드')
     .replace(/\s*\(\d+발\)/, '')
     .trim();
 }
@@ -4183,8 +4184,8 @@ function bibRenderPlayerResults(c, name, data) {
   };
 
   const fmtEvtName = n => n
-    .replace(/[쎈센][터타]화이어\s*권총/g, '센터화이어')
-    .replace(/스탠다드\s*권총/g, '스탠다드');
+    .replace(/[쎈센][터타][화파]이어\s*권총/g, '센터파이어')
+    .replace(/스[탠텐]다드\s*권총/g, '스텐다드');
 
   const rowsHtml = results.map(r => {
     const m = r.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s*\S+부)?)$/);
@@ -5348,8 +5349,8 @@ const _ALL_EVENTS = [
   { cat: '권총',   dist: '10m', name: '10m 공기권총' },
   { cat: '권총',   dist: '25m', name: '25m 권총' },        // 여자
   { cat: '권총',   dist: '25m', name: '25m 속사권총' },    // 남자
-  { cat: '권총',   dist: '25m', name: '25m 스탠다드' },    // 남자
-  { cat: '권총',   dist: '25m', name: '25m 센타파이어' },  // 남자
+  { cat: '권총',   dist: '25m', name: '25m 스텐다드' },    // 남자
+  { cat: '권총',   dist: '25m', name: '25m 센터파이어' },  // 남자
   { cat: '권총',   dist: '50m', name: '50m 권총' },        // 남자
   { cat: '클레이', dist: '',    name: '스키트' },
   { cat: '클레이', dist: '',    name: '트랩' },
@@ -6240,8 +6241,8 @@ function commLike(id) {
           <option>10m 공기권총</option>
           <option>25m 권총</option>
           <option>25m 속사권총</option>
-          <option>25m 스탠다드</option>
-          <option>25m 센타파이어</option>
+          <option>25m 스텐다드</option>
+          <option>25m 센터파이어</option>
           <option>50m 권총</option>
         </optgroup>
         <optgroup label="클레이">
