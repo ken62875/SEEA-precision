@@ -7,5 +7,6 @@ Thumbs.db
 .claude/
 watcher-state.json
 community.json
+bib-cache.json
 feed.json
 # rules/ 폴더는 포함 (규정집 PDF 배포 필요)

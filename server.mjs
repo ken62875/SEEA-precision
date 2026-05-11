@@ -37,8 +37,31 @@ function broadcastCommunity(compId, event, payload) {
   for (const res of clients) { try { res.write(chunk); } catch {} }
 }
 
-// 대회별 전체 선수 캐시 (메모리, 2시간 유지)
+// 대회별 전체 선수 캐시 (메모리 + 디스크 퍼시스턴스)
+const BIB_CACHE_FILE = path.join(__dirname, 'bib-cache.json');
 const compPlayersCache = new Map(); // compCode → { players: [], ts: number }
+
+// 서버 시작 시 디스크 캐시 복원 (재배포 후에도 즉시 응답 가능)
+try {
+  if (fs.existsSync(BIB_CACHE_FILE)) {
+    const saved = JSON.parse(fs.readFileSync(BIB_CACHE_FILE, 'utf8'));
+    const TTL   = 12 * 60 * 60 * 1000;
+    let loaded  = 0;
+    for (const [comp, entry] of Object.entries(saved)) {
+      if (Date.now() - entry.ts < TTL) { compPlayersCache.set(comp, entry); loaded++; }
+    }
+    if (loaded) console.log(`[CACHE] 디스크 캐시 복원 — ${loaded}개 대회`);
+  }
+} catch (e) { console.log('[CACHE] 디스크 캐시 로드 실패:', e.message); }
+
+function saveBibCacheToDisk() {
+  try {
+    const obj = {};
+    for (const [k, v] of compPlayersCache) obj[k] = v;
+    fs.writeFileSync(BIB_CACHE_FILE, JSON.stringify(obj), 'utf8');
+  } catch {}
+}
+
 // 대회 목록 캐시 (30분)
 let compListCache = null; // { data: [], ts: number }
 // 순위 캐시 (5분)
@@ -496,6 +519,7 @@ const server = http.createServer(async (req, res) => {
       searchBib(comp, '', 'name').then(result => {
         if (result.ok && result.allPlayers?.length) {
           compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
+          saveBibCacheToDisk();
           console.log(`[WARM] ${comp} 캐시 완료 — ${result.allPlayers.length}명`);
         }
       }).catch(e => console.log(`[WARM] ${comp} 캐시 실패: ${e.message}`));
@@ -788,6 +812,7 @@ const server = http.createServer(async (req, res) => {
         const result = await searchBib(comp, name, searchMode);
         if (result.ok && result.allPlayers?.length) {
           compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
+          saveBibCacheToDisk();
         }
         if (!result.ok) {
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -834,6 +859,7 @@ const server = http.createServer(async (req, res) => {
       searchBib(comp, '', 'name').then(result => {
         if (result.ok && result.allPlayers?.length) {
           compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
+          saveBibCacheToDisk();
         }
       }).catch(() => {});
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -936,6 +962,7 @@ const server = http.createServer(async (req, res) => {
         const result = await searchBib(comp, '', 'name'); // 전체 가져오기
         if (!result.ok) throw new Error(result.error || '데이터 없음');
         compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
+        saveBibCacheToDisk();
         players = result.allPlayers;
       }
       // 속사(알파벳 사대)와 일반(숫자 사대) 모두 처리
@@ -1086,6 +1113,7 @@ const server = http.createServer(async (req, res) => {
       const result = await searchBib(comp, '', 'name');
       if (result.ok && result.allPlayers?.length) {
         compPlayersCache.set(comp, { players: injectBirthYears(result.allPlayers), ts: Date.now() });
+        saveBibCacheToDisk();
       }
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ ok: true, players: compPlayersCache.get(comp)?.players?.length ?? 0 }));
@@ -1636,6 +1664,7 @@ server.listen(PORT, () => {
       searchBib(comp.jname, '', 'name').then(result => {
         if (result.ok && result.allPlayers?.length) {
           compPlayersCache.set(comp.jname, { players: injectBirthYears(result.allPlayers), ts: Date.now() });
+          saveBibCacheToDisk();
           console.log(`[PREWARM] ${comp.jname} (${comp.name}) 완료 — ${result.allPlayers.length}명`);
         }
       }).catch(e => console.log(`[PREWARM] ${comp.jname} 실패: ${e.message}`));
