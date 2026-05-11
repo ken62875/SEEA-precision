@@ -23,6 +23,13 @@ const COMMUNITY_FILE      = path.join(__dirname, 'community.json');
 const COMMUNITY_SEED_FILE = path.join(__dirname, 'community-seed.json');
 const communitySSE        = new Map(); // compId → Set<res>
 
+// KSF 종목명 표기 통일 (쎈타화이어권총 → 센터파이어, 스탠다드권총 → 스탠다드 등)
+function normalizeEventLabel(label) {
+  return (label || '')
+    .replace(/[쎈센쏀][터타][화파이]이?어(?:\s*권총)?/g, '센터파이어')
+    .replace(/스[탠텐](?:다|더)드(?:\s*권총)?/g, '스탠다드');
+}
+
 function loadCommunity() {
   // 1) 런타임 파일 우선
   try { if (fs.existsSync(COMMUNITY_FILE)) return JSON.parse(fs.readFileSync(COMMUNITY_FILE, 'utf8')); }
@@ -1254,7 +1261,7 @@ const server = http.createServer(async (req, res) => {
         if (!seenPerson.has(key)) {
           seenPerson.add(key);
           unique.push({
-            eventLabel:   evt.eventLabel,
+            eventLabel:   normalizeEventLabel(evt.eventLabel),
             personUrl:    evt.personUrl,
             groupUrl:     evt.groupUrl,
             scheduleDate: evt.scheduleDate,
@@ -1355,6 +1362,10 @@ const server = http.createServer(async (req, res) => {
       _myAgree:    deviceId ? (m.agreeVoters   || []).includes(deviceId) : false,
       _myObo:      deviceId ? (m.oboVoters     || []).includes(deviceId) : false,
       _myDisagree: deviceId ? (m.disagreeVoters|| []).includes(deviceId) : false,
+      // 5분 이내 본인 제보 여부 (취소 버튼 표시용)
+      _myPost:     deviceId && m.authorDeviceId === deviceId && (Date.now() - m.ts) < 5 * 60 * 1000,
+      // authorDeviceId는 클라이언트에 노출하지 않음
+      authorDeviceId: undefined,
     }));
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(filtered));
@@ -1369,7 +1380,7 @@ const server = http.createServer(async (req, res) => {
     req.on('data', c => { body += c; });
     req.on('end', () => {
       try {
-        const { nickname, tag, text, event, division, imageData } = JSON.parse(body);
+        const { nickname, tag, text, event, division, imageData, deviceId: authorDeviceId } = JSON.parse(body);
         if (!nickname?.trim() || !text?.trim()) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: '닉네임과 내용을 입력하세요.' }));
@@ -1378,11 +1389,15 @@ const server = http.createServer(async (req, res) => {
         const VALID_TAGS = ['공식훈련', '장비검사', '결선시간', '기타'];
         const safeTag = VALID_TAGS.includes(tag) ? tag : '기타';
 
-        // 결선시간 중복 차단: 같은 compId + event는 1개만 허용
+        // 결선시간 중복 차단: 같은 compId + event + division은 1개만 허용
+        // 오보 2개 이상 메시지는 신뢰도 상실로 중복 체크 대상에서 제외
         if (safeTag === '결선시간' && event) {
           const data = loadCommunity();
           const existing = data.messages.find(m =>
-            m.compId === compId && m.tag === '결선시간' && m.event === event.toString().trim()
+            m.compId === compId && m.tag === '결선시간' &&
+            m.event === event.toString().trim() &&
+            (m.division || '') === (division ? division.toString().trim() : '') &&
+            (m.obo || 0) < 2
           );
           if (existing) {
             res.writeHead(409, { 'Content-Type': 'application/json' });
@@ -1413,10 +1428,11 @@ const server = http.createServer(async (req, res) => {
           event:    (event || '').toString().trim().slice(0, 50),
           division: (division || '').toString().trim().slice(0, 20),
           imageUrl,
-          ts:       Date.now(),
-          agree:    0,
-          disagree: 0,
-          obo:      0,
+          ts:             Date.now(),
+          agree:          0,
+          disagree:       0,
+          obo:            0,
+          authorDeviceId: (authorDeviceId || '').toString().slice(0, 64),
         };
         const data = loadCommunity();
         data.messages.push(msg);
@@ -1535,8 +1551,24 @@ const server = http.createServer(async (req, res) => {
       else            msg.oboVoters.push(deviceId);  // 신고
     }
     msg.obo = msg.oboVoters.length;
-    saveCommunity(data);
     const voted = deviceId ? msg.oboVoters.includes(deviceId) : null;
+
+    // 오보 3개 달성 → 자동 삭제
+    if (msg.obo >= 3) {
+      const delIdx = data.messages.findIndex(m => m.id === msgId);
+      if (delIdx !== -1) data.messages.splice(delIdx, 1);
+      saveCommunity(data);
+      if (msg.imageUrl) {
+        const imgPath = path.join(__dirname, msg.imageUrl);
+        if (fs.existsSync(imgPath)) try { fs.unlinkSync(imgPath); } catch {}
+      }
+      broadcastCommunity(msg.compId, 'delete', { id: msgId });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ obo: msg.obo, voted, autoDeleted: true }));
+      return;
+    }
+
+    saveCommunity(data);
     broadcastCommunity(msg.compId, 'obo', { id: msgId, obo: msg.obo });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ obo: msg.obo, voted }));
@@ -1575,6 +1607,40 @@ const server = http.createServer(async (req, res) => {
     if (deleted.imageUrl) {
       const imgPath = path.join(__dirname, deleted.imageUrl);
       if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+    }
+    broadcastCommunity(deleted.compId, 'delete', { id: msgId });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  // ── POST /api/community/msg/:msgId/self-delete (본인 취소, 5분 이내) ──
+  const selfDelMatch = req.url.match(/^\/api\/community\/msg\/([^\/]+)\/self-delete$/);
+  if (req.method === 'POST' && selfDelMatch) {
+    const msgId = selfDelMatch[1];
+    let body = ''; req.on('data', c => body += c);
+    await new Promise(r => req.on('end', r));
+    let deviceId = '';
+    try { deviceId = JSON.parse(body).deviceId || ''; } catch {}
+    const data = loadCommunity();
+    const idx  = data.messages.findIndex(m => m.id === msgId);
+    if (idx === -1) { res.writeHead(404); res.end('{}'); return; }
+    const msg = data.messages[idx];
+    if (!deviceId || msg.authorDeviceId !== deviceId) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: '권한 없음' }));
+      return;
+    }
+    if (Date.now() - msg.ts > 5 * 60 * 1000) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: '5분이 경과하여 취소할 수 없습니다' }));
+      return;
+    }
+    const [deleted] = data.messages.splice(idx, 1);
+    saveCommunity(data);
+    if (deleted.imageUrl) {
+      const imgPath = path.join(__dirname, deleted.imageUrl);
+      if (fs.existsSync(imgPath)) try { fs.unlinkSync(imgPath); } catch {}
     }
     broadcastCommunity(deleted.compId, 'delete', { id: msgId });
     res.writeHead(200, { 'Content-Type': 'application/json' });

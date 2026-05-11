@@ -52,6 +52,25 @@
       width: 580px; height: 580px;
       opacity: .055; pointer-events: none;
     }
+    /* ── Hero Carousel ── */
+    .hero-carousel { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+    .hero-carousel::-webkit-scrollbar { display:none; }
+    .hero-slide { flex-shrink:0; width:100%; scroll-snap-align:start; }
+    .hero-dot { border:none; cursor:pointer; background:rgba(255,255,255,.28); border-radius:999px; height:4px; width:14px; transition:all .3s; padding:0; }
+    .hero-dot.active { background:#C9A24A; width:24px; }
+    /* ── Guide Slides ── */
+    .guide-badge { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.1em; color:#C9A24A; margin-bottom:10px; }
+    .guide-step-wrap { display:flex; align-items:stretch; gap:0; width:100%; margin:18px 0; }
+    .guide-step { flex:1; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px 8px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .guide-step-icon { width:32px; height:32px; border-radius:50%; background:rgba(201,162,74,.15); display:flex; align-items:center; justify-content:center; }
+    .guide-step-num { font-size:9px; font-weight:700; color:#C9A24A; letter-spacing:.05em; }
+    .guide-step-label { font-size:11px; font-weight:600; color:#fff; line-height:1.3; }
+    .guide-arrow { color:rgba(255,255,255,.2); font-size:14px; display:flex; align-items:center; padding:0 3px; flex-shrink:0; }
+    .guide-feature { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+    .guide-feature:last-child { border-bottom:none; }
+    .guide-feature-icon { width:28px; height:28px; border-radius:8px; background:rgba(201,162,74,.12); border:1px solid rgba(201,162,74,.2); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+    .guide-cta { display:inline-flex; align-items:center; gap:6px; background:#C9A24A; color:#0B1E3F; font-size:13px; font-weight:700; border:none; border-radius:12px; padding:11px 20px; cursor:pointer; transition:all .18s; margin-top:22px; }
+    .guide-cta:active { transform:scale(.97); opacity:.9; }
 
     /* ── Bottom tab bar ── */
     @media (max-width: 767px) {
@@ -453,14 +472,21 @@
     .comm-tab-btn { flex:1; padding:7px 0; font-size:12px; font-weight:700; border-radius:11px; border:none; background:transparent; color:#9CA3AF; cursor:pointer; transition:all .18s; }
     .comm-tab-btn.active { background:#fff; color:#0B1E3F; box-shadow:0 1px 4px rgba(0,0,0,.10); }
     /* ── Training schedule ── */
-    .train-event-card { background:#fff; border-radius:16px; border:1px solid #F0F0F0; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); }
-    .train-event-hdr { display:flex; align-items:center; gap:8px; padding:12px 14px 10px; border-bottom:1px solid #F3F4F6; }
-    .train-event-name { font-size:14px; font-weight:800; color:#0B1E3F; }
-    .train-row { display:flex; gap:8px; padding:9px 14px; border-bottom:1px solid #F9FAFB; align-items:flex-start; }
+    .train-event-card { background:#fff; border-radius:10px; border:1px solid #EBEBEB; overflow:hidden; }
+    .train-event-hdr { padding:7px 12px 6px; border-bottom:1px solid #F3F4F6; }
+    .train-event-name { font-size:11px; font-weight:700; color:#4B5563; letter-spacing:.01em; }
+    .train-row { display:flex; gap:8px; padding:7px 12px; border-bottom:1px solid #F9FAFB; align-items:flex-start; }
     .train-row:last-child { border-bottom:none; }
-    .train-division { flex-shrink:0; font-size:11px; font-weight:700; color:#6B7280; background:#F3F4F6; border-radius:8px; padding:2px 8px; margin-top:1px; min-width:52px; text-align:center; }
-    .train-schedule { font-size:12px; color:#374151; line-height:1.7; white-space:pre-wrap; }
+    .train-division { flex-shrink:0; font-size:10px; font-weight:600; color:#9CA3AF; background:#F9FAFB; border-radius:6px; padding:2px 7px; margin-top:1px; }
+    .train-schedule { font-size:11px; color:#374151; line-height:1.7; white-space:pre-wrap; }
     .train-changed { background:#FFF3CD; border-left:3px solid #F59E0B; }
+    .train-date-hdr { width:100%; display:flex; align-items:center; justify-content:space-between; padding:10px 4px 8px; font-size:13px; font-weight:700; color:#374151; letter-spacing:.02em; background:transparent; border:none; cursor:pointer; }
+    .train-date-hdr:hover { color:#0B1E3F; }
+    .train-date-hdr-today { color:#0B1E3F; }
+    .train-date-chevron { width:14px; height:14px; color:#9CA3AF; transition:transform .2s; flex-shrink:0; }
+    .train-date-chevron.open { transform:rotate(180deg); }
+    .train-date-today-badge { font-size:10px; font-weight:600; background:#0B1E3F; color:#fff; border-radius:6px; padding:1px 6px; margin-left:6px; vertical-align:middle; }
+    .comm-near-active { border-color:#F59E0B !important; color:#B45309 !important; background:#FFFBEB !important; }
     .train-changed .train-schedule { color:#92400E; }
     .comm-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; display:flex; align-items:flex-end; justify-content:center; }
     .comm-modal-sheet { background:#fff; border-radius:24px 24px 0 0; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; padding:20px 20px 36px; }
@@ -620,63 +646,207 @@
   ───────────────────────────────────── -->
   <section id="page-home" class="page-section">
 
-    <!-- HERO -->
-    <div class="relative bg-navy min-h-[78vh] md:min-h-[82vh] flex items-center overflow-hidden">
-      <!-- Target decoration (SVG) -->
-      <svg class="hero-target" viewBox="0 0 580 580" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="290" cy="290" r="270" stroke="white" stroke-width="1" fill="none"/>
-        <circle cx="290" cy="290" r="210" stroke="white" stroke-width="1" fill="none"/>
-        <circle cx="290" cy="290" r="150" stroke="white" stroke-width="1" fill="none"/>
-        <circle cx="290" cy="290" r="95"  stroke="white" stroke-width="1" fill="none"/>
-        <circle cx="290" cy="290" r="46"  stroke="white" stroke-width="2" fill="none"/>
-        <circle cx="290" cy="290" r="18"  stroke="white" stroke-width="2" fill="none"/>
-        <line x1="290" y1="0"   x2="290" y2="580" stroke="white" stroke-width=".5"/>
-        <line x1="0"   y1="290" x2="580" y2="290" stroke="white" stroke-width=".5"/>
-      </svg>
+    <!-- HERO CAROUSEL -->
+    <div class="relative bg-navy overflow-hidden">
+      <!-- 슬라이드 컨테이너 -->
+      <div id="hero-carousel" class="hero-carousel">
 
-      <div class="max-w-7xl mx-auto px-6 py-14 md:py-20 relative z-10 w-full">
-        <div class="max-w-2xl">
-          <!-- Badge -->
-          <div class="inline-flex items-center gap-2 mb-8">
-            <span class="w-2 h-2 rounded-full bg-gold animate-pulse"></span>
-            <span class="text-white/55 text-xs font-semibold tracking-widest uppercase">한국 사격 선수를 위한 필수 플랫폼</span>
+        <!-- ── 슬라이드 1: 메인 히어로 ── -->
+        <div class="hero-slide relative bg-navy min-h-[78vh] md:min-h-[82vh] flex items-center overflow-hidden">
+          <svg class="hero-target" viewBox="0 0 580 580" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="290" cy="290" r="270" stroke="white" stroke-width="1" fill="none"/>
+            <circle cx="290" cy="290" r="210" stroke="white" stroke-width="1" fill="none"/>
+            <circle cx="290" cy="290" r="150" stroke="white" stroke-width="1" fill="none"/>
+            <circle cx="290" cy="290" r="95"  stroke="white" stroke-width="1" fill="none"/>
+            <circle cx="290" cy="290" r="46"  stroke="white" stroke-width="2" fill="none"/>
+            <circle cx="290" cy="290" r="18"  stroke="white" stroke-width="2" fill="none"/>
+            <line x1="290" y1="0"   x2="290" y2="580" stroke="white" stroke-width=".5"/>
+            <line x1="0"   y1="290" x2="580" y2="290" stroke="white" stroke-width=".5"/>
+          </svg>
+          <div class="max-w-7xl mx-auto px-6 py-14 md:py-20 relative z-10 w-full">
+            <div class="max-w-2xl">
+              <div class="inline-flex items-center gap-2 mb-8">
+                <span class="w-2 h-2 rounded-full bg-gold animate-pulse"></span>
+                <span class="text-white/55 text-xs font-semibold tracking-widest uppercase">한국 사격 선수를 위한 필수 플랫폼</span>
+              </div>
+              <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.1] tracking-tight mb-6">
+                흔들림 없는 <span class="text-gold">확신.</span><br>
+                오심을 넘는<br class="sm:hidden"> 가장 빠른 해답.
+              </h1>
+              <p class="text-white/60 text-base md:text-lg leading-relaxed mb-10 max-w-xl">
+                내 사대번호 검색부터 복잡한 규정 확인까지.<br>오직 격발에만 집중하도록,<br>SEEA가 다 찾아드립니다.
+              </p>
+              <div class="flex flex-wrap gap-4 mb-10">
+                <button onclick="navigate('bib')" class="btn-primary flex items-center gap-2 text-base">
+                  사대번호 조회
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+                <button onclick="navigate('scores')" class="btn-outline-white text-base">경기 결과 보기</button>
+              </div>
+              <p class="text-white/25 text-[11px] font-semibold tracking-wider">← 슬라이드하여 기능 가이드 보기</p>
+            </div>
           </div>
+        </div>
 
-          <!-- Headline -->
-          <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-[1.1] tracking-tight mb-6">
-            흔들림 없는 <span class="text-gold">확신.</span><br>
-            오심을 넘는<br class="sm:hidden"> 가장 빠른 해답.
-          </h1>
-
-          <!-- Sub copy -->
-          <p class="text-white/60 text-base md:text-lg leading-relaxed mb-10 max-w-xl">
-            내 사대번호 검색부터 복잡한 규정 확인까지.<br>오직 격발에만 집중하도록,<br>SEEA가 다 찾아드립니다.
-          </p>
-
-          <!-- CTA -->
-          <div class="flex flex-wrap gap-4">
-            <button onclick="navigate('bib')" class="btn-primary flex items-center gap-2 text-base">
-              사대번호 조회
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </button>
-            <button onclick="navigate('scores')" class="btn-outline-white text-base">
-              경기 결과 보기
+        <!-- ── 슬라이드 2: 사대번호 조회 ── -->
+        <div class="hero-slide relative bg-navy min-h-[78vh] md:min-h-[82vh] flex items-center overflow-hidden px-6 py-16">
+          <svg class="hero-target" style="opacity:.025" viewBox="0 0 580 580" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="290" cy="290" r="270" stroke="white" stroke-width="1" fill="none"/>
+            <circle cx="290" cy="290" r="150" stroke="white" stroke-width="1" fill="none"/>
+            <circle cx="290" cy="290" r="46"  stroke="white" stroke-width="2" fill="none"/>
+          </svg>
+          <div class="relative z-10 w-full max-w-lg mx-auto">
+            <p class="guide-badge">01 · BIB LOOKUP</p>
+            <h2 class="text-3xl font-extrabold text-white leading-tight mb-2">내 사대번호,<br><span class="text-gold">3초 만에</span> 확인</h2>
+            <p class="text-white/50 text-sm mb-1">이름 하나로 종목·조·사대를 한눈에 조회합니다.</p>
+            <!-- 스텝 도식 -->
+            <div class="guide-step-wrap">
+              <div class="guide-step">
+                <div class="guide-step-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                <p class="guide-step-num">STEP 1</p>
+                <p class="guide-step-label">대회<br>선택</p>
+              </div>
+              <div class="guide-arrow">›</div>
+              <div class="guide-step">
+                <div class="guide-step-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+                <p class="guide-step-num">STEP 2</p>
+                <p class="guide-step-label">이름<br>입력</p>
+              </div>
+              <div class="guide-arrow">›</div>
+              <div class="guide-step">
+                <div class="guide-step-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="#C9A24A"/></svg></div>
+                <p class="guide-step-num">STEP 3</p>
+                <p class="guide-step-label">조·사대<br>확인</p>
+              </div>
+            </div>
+            <!-- 부가 기능 -->
+            <div class="space-y-0">
+              <div class="guide-feature">
+                <div class="guide-feature-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                <div><p class="text-white text-xs font-semibold">동명이인 구분</p><p class="text-white/45 text-[11px] mt-0.5">소속·생년 기준으로 정확하게 구분</p></div>
+              </div>
+              <div class="guide-feature">
+                <div class="guide-feature-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></div>
+                <div><p class="text-white text-xs font-semibold">앞·뒤 사대 확인</p><p class="text-white/45 text-[11px] mt-0.5">인접 사대 선수 정보 바로 확인</p></div>
+              </div>
+              <div class="guide-feature">
+                <div class="guide-feature-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+                <div><p class="text-white text-xs font-semibold">소속별 전체 조회</p><p class="text-white/45 text-[11px] mt-0.5">팀 전체 사대 세부일정 한번에</p></div>
+              </div>
+            </div>
+            <button onclick="navigate('bib')" class="guide-cta">
+              사대번호 조회하기
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
           </div>
         </div>
-      </div>
 
-      <!-- Scroll hint -->
-      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-white/25 select-none">
-        <span class="text-[10px] tracking-widest uppercase">Scroll</span>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-bounce">
-          <path d="M12 5v14M5 12l7 7 7-7"/>
-        </svg>
+        <!-- ── 슬라이드 3: 현장 제보 ── -->
+        <div class="hero-slide relative bg-navy min-h-[78vh] md:min-h-[82vh] flex items-center overflow-hidden px-6 py-16">
+          <svg class="hero-target" style="opacity:.025" viewBox="0 0 580 580" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="290" cy="290" r="270" stroke="white" stroke-width="1" fill="none"/>
+            <circle cx="290" cy="290" r="150" stroke="white" stroke-width="1" fill="none"/>
+          </svg>
+          <div class="relative z-10 w-full max-w-lg mx-auto">
+            <p class="guide-badge">02 · LIVE REPORT</p>
+            <h2 class="text-3xl font-extrabold text-white leading-tight mb-2">결선 시간,<br><span class="text-gold">직접 공유</span>하세요</h2>
+            <p class="text-white/50 text-sm mb-1">현장 제보로 실시간 결선 정보를 모두와 공유합니다.</p>
+            <!-- 플로우 도식 -->
+            <div class="guide-step-wrap mt-5">
+              <div class="guide-step">
+                <div class="guide-step-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+                <p class="guide-step-num">STEP 1</p>
+                <p class="guide-step-label">제보<br>작성</p>
+              </div>
+              <div class="guide-arrow">›</div>
+              <div class="guide-step">
+                <div class="guide-step-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                <p class="guide-step-num">STEP 2</p>
+                <p class="guide-step-label">교차<br>검증</p>
+              </div>
+              <div class="guide-arrow">›</div>
+              <div class="guide-step">
+                <div class="guide-step-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+                <p class="guide-step-num">STEP 3</p>
+                <p class="guide-step-label">확정<br>배너</p>
+              </div>
+            </div>
+            <div class="space-y-0">
+              <div class="guide-feature">
+                <div class="guide-feature-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                <div><p class="text-white text-xs font-semibold">오보 자동 방지</p><p class="text-white/45 text-[11px] mt-0.5">오보 3건 → 자동 삭제, 5분 내 본인 취소 가능</p></div>
+              </div>
+              <div class="guide-feature">
+                <div class="guide-feature-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                <div><p class="text-white text-xs font-semibold">공식훈련 일정</p><p class="text-white/45 text-[11px] mt-0.5">날짜·성별·종별 필터로 내 일정만 확인</p></div>
+              </div>
+            </div>
+            <button onclick="navigate('community')" class="guide-cta">
+              커뮤니티 바로가기
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- ── 슬라이드 4: 경기 결과 ── -->
+        <div class="hero-slide relative bg-navy min-h-[78vh] md:min-h-[82vh] flex items-center overflow-hidden px-6 py-16">
+          <svg class="hero-target" style="opacity:.025" viewBox="0 0 580 580" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="290" cy="290" r="270" stroke="white" stroke-width="1" fill="none"/>
+            <circle cx="290" cy="290" r="150" stroke="white" stroke-width="1" fill="none"/>
+          </svg>
+          <div class="relative z-10 w-full max-w-lg mx-auto">
+            <p class="guide-badge">03 · RESULTS</p>
+            <h2 class="text-3xl font-extrabold text-white leading-tight mb-2">개인·단체 성적,<br><span class="text-gold">한눈에</span> 조회</h2>
+            <p class="text-white/50 text-sm mb-1">종목별 결과부터 소속팀 단체 순위까지 모두 확인합니다.</p>
+            <!-- 2x2 기능 그리드 -->
+            <div class="grid grid-cols-2 gap-2.5 mt-5 mb-2">
+              <div class="bg-white/5 border border-white/10 rounded-xl p-3.5">
+                <div class="w-7 h-7 rounded-lg bg-gold/15 border border-gold/25 flex items-center justify-center mb-2">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <p class="text-white text-xs font-bold">개인 성적</p>
+                <p class="text-white/40 text-[10px] mt-0.5">종목별 순위·점수</p>
+              </div>
+              <div class="bg-white/5 border border-white/10 rounded-xl p-3.5">
+                <div class="w-7 h-7 rounded-lg bg-gold/15 border border-gold/25 flex items-center justify-center mb-2">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <p class="text-white text-xs font-bold">소속별 단체 순위</p>
+                <p class="text-white/40 text-[10px] mt-0.5">팀 성적 종합 비교</p>
+              </div>
+              <div class="bg-white/5 border border-white/10 rounded-xl p-3.5">
+                <div class="w-7 h-7 rounded-lg bg-gold/15 border border-gold/25 flex items-center justify-center mb-2">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <p class="text-white text-xs font-bold">실시간 업데이트</p>
+                <p class="text-white/40 text-[10px] mt-0.5">진행 중 경기 반영</p>
+              </div>
+              <div class="bg-white/5 border border-white/10 rounded-xl p-3.5">
+                <div class="w-7 h-7 rounded-lg bg-gold/15 border border-gold/25 flex items-center justify-center mb-2">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                <p class="text-white text-xs font-bold">신기록 배지</p>
+                <p class="text-white/40 text-[10px] mt-0.5">세계·아시아신기록 표시</p>
+              </div>
+            </div>
+            <button onclick="navigate('scores')" class="guide-cta">
+              경기 결과 조회하기
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /hero-carousel -->
+
+      <!-- 슬라이드 도트 -->
+      <div id="hero-dots" class="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+        <button class="hero-dot active" onclick="heroGoTo(0)" aria-label="슬라이드 1"></button>
+        <button class="hero-dot" onclick="heroGoTo(1)" aria-label="슬라이드 2"></button>
+        <button class="hero-dot" onclick="heroGoTo(2)" aria-label="슬라이드 3"></button>
+        <button class="hero-dot" onclick="heroGoTo(3)" aria-label="슬라이드 4"></button>
       </div>
     </div>
-    <!-- /HERO -->
+    <!-- /HERO CAROUSEL -->
 
     <!-- ── QUICK ACTION GRID ── -->
     <div class="bg-[#071426] px-4 pt-5 pb-6">
@@ -1564,8 +1734,24 @@
         </select>
       </div>
 
-      <!-- 캐스케이드 칩 필터 -->
-      <div id="comm-chips-wrap" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 px-4 py-4 space-y-3">
+      <!-- 간편 필터 토글 버튼 -->
+      <div id="comm-filter-toggle-wrap" class="hidden">
+        <button onclick="commToggleFilter()"
+          class="w-full flex items-center gap-2 px-3.5 py-2.5 bg-white border border-gray-200 rounded-2xl text-sm font-semibold text-gray-600 hover:border-navy/30 hover:text-navy transition-colors">
+          <svg class="w-4 h-4 text-gray-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm2 4a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm2 4a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <span>간편 필터</span>
+          <span id="comm-filter-active-count" class="hidden text-[10px] font-bold bg-navy text-white rounded-full px-1.5 min-w-[18px] text-center" style="padding-top:2px;padding-bottom:2px"></span>
+          <span class="text-[10px] text-gray-400 font-normal ml-0.5">중복 선택 가능</span>
+          <svg id="comm-filter-chevron" class="ml-auto w-4 h-4 text-gray-300 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 캐스케이드 칩 필터 (토글로 열림) -->
+      <div id="comm-chips-wrap" class="hidden bg-white rounded-2xl border border-gray-100 px-4 py-4 space-y-3">
         <!-- 성별 -->
         <div>
           <p class="comm-filter-label">성별</p>
@@ -1614,8 +1800,14 @@
       <div id="comm-tab-wrap" class="hidden">
         <div class="comm-tab-bar">
           <button class="comm-tab-btn active" id="comm-tab-feed" onclick="commSwitchTab('feed')">🏆 현장 제보</button>
-          <button class="comm-tab-btn"        id="comm-tab-train" onclick="commSwitchTab('train')">🗓 훈련 일정</button>
+          <button class="comm-tab-btn"        id="comm-tab-train" onclick="commSwitchTab('train')">🗓 공식훈련 일정</button>
         </div>
+        <!-- 가까운 일정 버튼 -->
+        <button id="comm-near-btn" onclick="commToggleNear()"
+          class="mt-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-sm font-semibold border transition-all text-gray-500 border-gray-200 bg-white hover:border-navy/30 hover:text-navy active:scale-95">
+          <span>📅</span>
+          <span id="comm-near-label">가까운 일정</span>
+        </button>
       </div>
 
       <!-- ── 현장 제보 탭 ── -->
@@ -1635,7 +1827,7 @@
         </button>
 
         <!-- 실시간 피드 -->
-        <div>
+        <div class="mt-4">
           <div id="comm-feed-header" class="hidden flex items-center justify-between mb-2 px-1">
             <p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase">실시간 현장 제보</p>
             <div class="flex items-center gap-2">
@@ -1643,17 +1835,15 @@
               <button id="comm-admin-btn" onclick="commToggleAdmin()" class="text-[10px] text-gray-300 hover:text-gray-500 font-semibold transition-colors">관리</button>
             </div>
           </div>
-          <div id="comm-shortcuts" class="hidden comm-chip-row mb-3"></div>
           <div id="comm-feed" class="space-y-3">
             <div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 제보가 표시됩니다</div>
           </div>
         </div>
       </div>
 
-      <!-- ── 훈련 일정 탭 ── -->
+      <!-- ── 공식훈련 일정 탭 ── -->
       <div id="comm-pane-train" class="hidden space-y-3">
-        <p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase px-1">📋 공식훈련 일정</p>
-        <div id="comm-train-feed" class="space-y-3">
+        <div id="comm-train-feed" class="space-y-2">
           <div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 훈련 일정이 표시됩니다</div>
         </div>
       </div>
@@ -2177,6 +2367,7 @@ function navigate(page) {
   if (page === 'feed')      feedLoad();
   if (page === 'scores')    scoresInit();
   if (page === 'community') commInit();
+  if (page === 'home')      heroCarouselPeek();
 }
 
 window.addEventListener('popstate', () => {
@@ -2194,6 +2385,40 @@ window.addEventListener('DOMContentLoaded', () => {
   const savedNick = localStorage.getItem('comm-nickname');
   if (savedNick) { const el = document.getElementById('comm-nickname'); if (el) el.value = savedNick; }
 });
+
+// ── HERO CAROUSEL ────────────────────────────────
+function heroGoTo(idx) {
+  const c = document.getElementById('hero-carousel');
+  if (!c) return;
+  c.scrollTo({ left: c.offsetWidth * idx, behavior: 'smooth' });
+}
+(function heroCarouselInit() {
+  const c = document.getElementById('hero-carousel');
+  if (!c) return;
+  const dots = document.querySelectorAll('#hero-dots .hero-dot');
+  c.addEventListener('scroll', () => {
+    const idx = Math.round(c.scrollLeft / c.offsetWidth);
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  }, { passive: true });
+  // 첫 진입 시 peek 실행
+  heroCarouselPeek();
+})();
+
+function heroCarouselPeek() {
+  const c = document.getElementById('hero-carousel');
+  if (!c) return;
+  // 이미 스와이프했거나 이번 세션에 이미 보여줬으면 스킵
+  if (c.scrollLeft > 0) return;
+  if (sessionStorage.getItem('heroPeeked')) return;
+  sessionStorage.setItem('heroPeeked', '1');
+  // 페이지 렌더 완료 후 peek 실행
+  setTimeout(() => {
+    c.scrollTo({ left: Math.round(c.offsetWidth * 0.2), behavior: 'smooth' });
+    setTimeout(() => {
+      c.scrollTo({ left: 0, behavior: 'smooth' });
+    }, 600);
+  }, 900);
+}
 
 // ── NAVBAR SCROLL SHADOW ─────────────────────────
 window.addEventListener('scroll', () => {
@@ -2956,6 +3181,10 @@ async function bibSelectPersonCard(idx) {
     });
     result.innerHTML = bibResultFound(c, name, filtered, total, searchMode, true);
     bibLoadTeamRankings(c.ksfCode, name);
+    const _evFilter = new Set(
+      filtered.map(p => `${_bibNormalizeEvent(p.event)}|${_bibNormalizeDivision(p.event)}`)
+    );
+    bibCommLoad(c.id, _evFilter);
   } else {
     bibSetBtns(true);
     result.innerHTML = `<div class="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
@@ -3163,7 +3392,7 @@ async function bibTeamResultSearch(c, name, result) {
       bibSetBtns(false); return;
     }
 
-    const fmtShortEvtL = n => n.replace(/[쎈센][터타][화파이]이?어\s*권총?/g,'센터파이어').replace(/스[탠텐](?:다|더)드\s*권총?/g,'스탠다드');
+    const fmtShortEvtL = n => n.replace(/[쎈센][터타][화파이]이?어(?:\s*권총)?/g,'센터파이어').replace(/스[탠텐](?:다|더)드(?:\s*권총)?/g,'스탠다드');
     const cardsHtml = teamEvents.map((g, idx) => {
       const em = g.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s*\S+부)?)$/);
       const isF = em && em[2].startsWith('여자');
@@ -3462,8 +3691,8 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
   }
 
   const fmtShortEvt = n => n
-    .replace(/[쎈센][터타][화파이]이?어\s*권총?/g, '센터파이어')
-    .replace(/스[탠텐](?:다|더)드\s*권총?/g, '스탠다드');
+    .replace(/[쎈센][터타][화파이]이?어(?:\s*권총)?/g, '센터파이어')
+    .replace(/스[탠텐](?:다|더)드(?:\s*권총)?/g, '스탠다드');
 
   // ── 팀 검색: 아코디언 ───────────────────────────────────
   if (isTeam) {
@@ -3718,6 +3947,13 @@ function bibCommToggleForm(compId) {
 }
 
 // KSF 종목명(예: "50m 소총 3자세 여자 일반부") → 훈련포스트 종목명(예: "50m 3자세") 정규화
+// 성별·종별은 유지한 채 종목명 표기만 통일 (표시용)
+function _normalizeEvtLabel(n) {
+  return n
+    .replace(/[쎈센][터타][화파이]이?어(?:\s*권총)?/g, '센터파이어')
+    .replace(/스[탠텐](?:다|더)드(?:\s*권총)?/g, '스탠다드');
+}
+
 function _bibNormalizeEvent(evtName) {
   return evtName
     .replace(/\s+(?:남자|여자|혼성).*$/, '')               // 성별·부 제거
@@ -4184,8 +4420,8 @@ function bibRenderPlayerResults(c, name, data) {
   };
 
   const fmtEvtName = n => n
-    .replace(/[쎈센][터타][화파이]이?어\s*권총?/g, '센터파이어')
-    .replace(/스[탠텐](?:다|더)드\s*권총?/g, '스탠다드');
+    .replace(/[쎈센][터타][화파이]이?어(?:\s*권총)?/g, '센터파이어')
+    .replace(/스[탠텐](?:다|더)드(?:\s*권총)?/g, '스탠다드');
 
   const rowsHtml = results.map(r => {
     const m = r.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s*\S+부)?)$/);
@@ -4867,7 +5103,7 @@ function _scoresRenderEvents(events) {
       <div class="scores-event-row mb-2 ${canOpen ? 'cursor-pointer' : 'opacity-50 cursor-default'}"
         ${canOpen ? `onclick="scoresOpenModal('${esc(evt.eventLabel)}','${pUrl}','${gUrl}')"` : ''}>
         <div class="flex-1 min-w-0">
-          <p class="font-semibold text-navy text-sm">${esc(evt.eventLabel)}</p>
+          <p class="font-semibold text-navy text-sm">${esc(_normalizeEvtLabel(evt.eventLabel))}</p>
           ${sched ? `<p class="text-xs text-gray-400 mt-0.5">${esc(sched)}</p>` : ''}
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
@@ -4884,10 +5120,10 @@ function _scoresRenderEvents(events) {
 function _scoresParseEvent(label) {
   // 소총: 공기소총·3자세·복사·비임동·자유형소총 포함
   const cat =
-    /소총|3자세|복사|비임동/.test(label) ? '소총'    :
-    /권총/.test(label)                   ? '권총'    :
-    /트랩|스키트|더블트랩/.test(label)   ? '클레이'  :
-    /러닝/.test(label)                   ? '러닝타겟' : '기타';
+    /소총|3자세|복사|비임동/.test(label)         ? '소총'    :
+    /권총|센터파이어|스탠다드|속사/.test(label)  ? '권총'    :
+    /트랩|스키트|더블트랩/.test(label)           ? '클레이'  :
+    /러닝/.test(label)                           ? '러닝타겟' : '기타';
   const gender =
     /여자/.test(label) ? '여자' :
     /혼성/.test(label) ? '혼성' :
@@ -5025,7 +5261,7 @@ async function scoresOpenModal(eventLabel, personUrl, groupUrl) {
   _scoresClearTimers();
   _scoresUpdateViewBtns('summary');
 
-  document.getElementById('scores-modal-title').textContent    = eventLabel;
+  document.getElementById('scores-modal-title').textContent    = _normalizeEvtLabel(eventLabel);
   document.getElementById('scores-modal-subtitle').textContent = '';
   document.getElementById('scores-tab-group').style.display    = groupUrl ? '' : 'none';
   document.getElementById('scores-modal').classList.remove('hidden');
@@ -5338,7 +5574,10 @@ const commState = {
   agreed: new Set(), disagreed: new Set(), oboed: new Set(),
   chipCats: new Set(), chipDists: new Set(), chipEvents: new Set(),
   chipGenders: new Set(), chipGrades: new Set(),
-  adminMode: false, adminPw: ''
+  adminMode: false, adminPw: '',
+  nearFilter: false,
+  trainExpandedDates: new Set(),
+  myPostIds: new Set()
 };
 
 // 정적 종목 계층 구조: cat(카테고리) → dist(거리/유형) → name(세부종목)
@@ -5548,41 +5787,106 @@ function commSwitchTab(tab) {
   document.getElementById('comm-tab-train')?.classList.toggle('active', !isFeed);
 }
 
+function _trainExtractDate(text) {
+  const m = text.match(/(\d+월\s*\d+일(?:\s*\([가-힣]+\))?)/);
+  return m ? m[1].replace(/\s+/g, ' ') : '';
+}
+
+function _trainSortDate(d) {
+  const m = d.match(/(\d+)월\s*(\d+)일/);
+  return m ? parseInt(m[1]) * 100 + parseInt(m[2]) : 9999;
+}
+
+
 function commRenderTrainingSchedule() {
   const el = document.getElementById('comm-train-feed');
   if (!el) return;
-  const trainMsgs = commState.msgs.filter(m => m.tag === '공식훈련');
+  let trainMsgs = commState.msgs.filter(m => m.tag === '공식훈련');
+
   if (trainMsgs.length === 0) {
     el.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">공식훈련 일정이 없습니다</div>';
     return;
   }
-  const catIcon = ev => {
-    if (ev.includes('소총') || ev.includes('3자세') || ev.includes('복사')) return '🎯';
-    if (ev.includes('권총') || ev.includes('파이어') || ev.includes('스탠다드') || ev.includes('속사')) return '🔫';
-    if (ev.includes('클레이') || ev.includes('트랩') || ev.includes('스키트')) return '🥏';
-    return '🏆';
-  };
-  const grouped = {};
+
+  // 가까운 일정 필터 (오늘~이틀 후)
+  if (commState.nearFilter) {
+    const now = new Date();
+    const validDates = new Set([0, 1, 2].map(offset => {
+      const d = new Date(now.getTime() + offset * 86400000);
+      return `${d.getMonth()+1}월 ${d.getDate()}일`;
+    }));
+    trainMsgs = trainMsgs.filter(m => {
+      const d = _trainExtractDate(m.text).replace(/\s*\([^)]*\)/, '').trim();
+      return validDates.has(d);
+    });
+  }
+  if (commState.chipGenders.size > 0) {
+    const gKeys = [...commState.chipGenders].map(g => g === '남자' ? '남' : '여');
+    trainMsgs = trainMsgs.filter(m => gKeys.some(gk => (m.division || '').includes(gk)));
+  }
+  if (commState.chipGrades.size > 0) {
+    const _GRADE_KEY = { '초등부':'초', '중등부':'중', '고등부':'고', '대학부':'대', '일반부':'일반' };
+    const gks = [...commState.chipGrades].map(g => _GRADE_KEY[g] || g);
+    trainMsgs = trainMsgs.filter(m => gks.some(gk => (m.division || '').includes(gk)));
+  }
+
+  if (trainMsgs.length === 0) {
+    el.innerHTML = '<div class="text-center text-gray-400 text-sm py-6">조건에 맞는 훈련 일정이 없습니다</div>';
+    return;
+  }
+
+  // 날짜별 그룹 → 그 안에서 종목별 그룹
+  const byDate = {};
   trainMsgs.forEach(m => {
-    const key = m.event || '기타';
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(m);
+    const d = _trainExtractDate(m.text) || '날짜 미정';
+    if (!byDate[d]) byDate[d] = {};
+    const ev = m.event || '기타';
+    if (!byDate[d][ev]) byDate[d][ev] = [];
+    byDate[d][ev].push(m);
   });
-  el.innerHTML = Object.entries(grouped).map(([evName, rows]) => `
-    <div class="train-event-card">
-      <div class="train-event-hdr">
-        <span style="font-size:18px">${catIcon(evName)}</span>
-        <span class="train-event-name">${escHtml(evName)}</span>
-      </div>
-      ${rows.map(m => {
-        const schedText = m.text.replace(/^📋\s*공식훈련\n?/, '').trim();
-        return `<div class="train-row">
-          <span class="train-division">${escHtml(m.division || '')}</span>
-          <span class="train-schedule">${escHtml(schedText)}</span>
-        </div>`;
-      }).join('')}
-    </div>
-  `).join('');
+
+  const sortedDates = Object.keys(byDate).sort((a, b) => _trainSortDate(a) - _trainSortDate(b));
+
+  // 오늘 날짜 계산
+  const now = new Date();
+  const todayStr = `${now.getMonth()+1}월 ${now.getDate()}일`;
+
+  el.innerHTML = sortedDates.map((d, idx) => {
+    const normalizedD = d.replace(/\s*\([^)]*\)/, '').trim();
+    const isToday = normalizedD === todayStr;
+
+    // 오늘은 자동 펼침, 나머지는 최초 렌더 시 접힘
+    if (isToday && !commState.trainExpandedDates.has(d)) {
+      commState.trainExpandedDates.add(d);
+    }
+    const isExpanded = commState.trainExpandedDates.has(d);
+
+    const evGroups = byDate[d];
+    const evHtml = Object.entries(evGroups).map(([evName, rows]) => `
+      <div class="train-event-card">
+        <div class="train-event-hdr">
+          <span class="train-event-name">${escHtml(evName)}</span>
+        </div>
+        ${rows.map(m => {
+          const schedText = m.text.replace(/^📋\s*공식훈련\n?/, '').replace(_trainExtractDate(m.text), '').trim();
+          return `<div class="train-row">
+            <span class="train-division">${escHtml(m.division || '')}</span>
+            <span class="train-schedule">${escHtml(schedText)}</span>
+          </div>`;
+        }).join('')}
+      </div>`).join('');
+
+    return `
+      <div>
+        <button class="train-date-hdr${isToday ? ' train-date-hdr-today' : ''}" data-idx="${idx}" data-date="${escHtml(d)}" onclick="commTrainToggleDate(this)">
+          <span>${escHtml(d)}${isToday ? '<span class="train-date-today-badge">오늘</span>' : ''}</span>
+          <svg id="train-date-chevron-${idx}" class="train-date-chevron${isExpanded ? ' open' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div id="train-date-body-${idx}" class="${isExpanded ? '' : 'hidden'} space-y-1.5 mb-4">
+          ${evHtml}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function commLoad() {
@@ -5594,6 +5898,7 @@ function commLoad() {
   const feedHdr   = document.getElementById('comm-feed-header');
   if (!compId) {
     chipsWrap?.classList.add('hidden');
+    document.getElementById('comm-filter-toggle-wrap')?.classList.add('hidden');
     ctaBtn?.classList.add('hidden');
     feedHdr?.classList.add('hidden');
     document.getElementById('comm-verified-wrap')?.classList.add('hidden');
@@ -5604,10 +5909,17 @@ function commLoad() {
     if (trainFeed) trainFeed.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 훈련 일정이 표시됩니다</div>';
     return;
   }
-  chipsWrap?.classList.remove('hidden');
+  // 토글 버튼만 표시, 필터 패널 자체는 닫힌 상태 유지
+  document.getElementById('comm-filter-toggle-wrap')?.classList.remove('hidden');
+  chipsWrap?.classList.add('hidden');
   ctaBtn?.classList.remove('hidden');
   feedHdr?.classList.remove('hidden');
   document.getElementById('comm-tab-wrap')?.classList.remove('hidden');
+  // 가까운 일정 버튼 초기화
+  commState.nearFilter = false;
+  commState.trainExpandedDates = new Set();
+  const nearBtn = document.getElementById('comm-near-btn');
+  nearBtn?.classList.remove('comm-near-active');
   if (commState.es) commState.es.close();
   const es = new EventSource(`/api/community/${compId}/stream`);
   commState.es = es;
@@ -5651,6 +5963,8 @@ function commLoad() {
       commState.agreed    = new Set(msgs.filter(m => m._myAgree).map(m => m.id));
       commState.oboed     = new Set(msgs.filter(m => m._myObo).map(m => m.id));
       commState.disagreed = new Set(msgs.filter(m => m._myDisagree).map(m => m.id));
+      // 5분 이내 본인 제보 복원 (새로고침 후 취소 버튼 유지)
+      msgs.filter(m => m._myPost).forEach(m => commState.myPostIds.add(m.id));
       _commRenderEventChips();
       commRenderShortcuts();
       commRender();
@@ -5663,6 +5977,58 @@ function _commChipSyncSet(rowId, set) {
     b.classList.toggle('active', set.has(b.dataset.val)));
 }
 
+function commToggleFilter() {
+  const wrap = document.getElementById('comm-chips-wrap');
+  const chevron = document.getElementById('comm-filter-chevron');
+  const isOpen = !wrap.classList.contains('hidden');
+  wrap.classList.toggle('hidden', isOpen);
+  chevron?.classList.toggle('rotate-180', !isOpen);
+}
+
+function commTrainToggleDate(btn) {
+  const idx     = btn.dataset.idx;
+  const rawDate = btn.dataset.date;
+  const body    = document.getElementById(`train-date-body-${idx}`);
+  const chevron = document.getElementById(`train-date-chevron-${idx}`);
+  const isHidden = body?.classList.contains('hidden');
+  if (isHidden) {
+    commState.trainExpandedDates.add(rawDate);
+    body?.classList.remove('hidden');
+    chevron?.classList.add('open');
+  } else {
+    commState.trainExpandedDates.delete(rawDate);
+    body?.classList.add('hidden');
+    chevron?.classList.remove('open');
+  }
+}
+
+function commToggleNear() {
+  commState.nearFilter = !commState.nearFilter;
+  const btn = document.getElementById('comm-near-btn');
+  btn?.classList.toggle('comm-near-active', commState.nearFilter);
+  commRender();
+  commRenderTrainingSchedule();
+}
+
+
+function _updateFilterBadge() {
+  const total = commState.chipCats.size + commState.chipDists.size +
+                commState.chipEvents.size + commState.chipGenders.size + commState.chipGrades.size;
+  const badge = document.getElementById('comm-filter-active-count');
+  const btn   = document.getElementById('comm-filter-toggle-wrap')?.querySelector('button');
+  if (!badge) return;
+  if (total > 0) {
+    badge.textContent = total;
+    badge.classList.remove('hidden');
+    btn?.classList.add('border-navy/40', 'text-navy');
+    btn?.classList.remove('border-gray-200', 'text-gray-600');
+  } else {
+    badge.classList.add('hidden');
+    btn?.classList.remove('border-navy/40', 'text-navy');
+    btn?.classList.add('border-gray-200', 'text-gray-600');
+  }
+}
+
 function commChipCat(btn) {
   const val = btn.dataset.val;
   commState.chipCats.has(val) ? commState.chipCats.delete(val) : commState.chipCats.add(val);
@@ -5672,6 +6038,7 @@ function commChipCat(btn) {
   _commRenderEventChips();
   commRenderShortcuts();
   commRender();
+  _updateFilterBadge();
 }
 
 function commChipDist(btn) {
@@ -5682,6 +6049,7 @@ function commChipDist(btn) {
   _commRenderEventChips();
   commRenderShortcuts();
   commRender();
+  _updateFilterBadge();
 }
 
 function commChipEvent(btn) {
@@ -5691,6 +6059,7 @@ function commChipEvent(btn) {
   _commChipSyncSet('comm-chips-event', commState.chipEvents);
   commRenderShortcuts();
   commRender();
+  _updateFilterBadge();
 }
 
 function commShortcut(eventName) {
@@ -5699,6 +6068,7 @@ function commShortcut(eventName) {
   _commChipSyncSet('comm-chips-event', commState.chipEvents);
   commRenderShortcuts();
   commRender();
+  _updateFilterBadge();
 }
 
 function commChipGender(btn) {
@@ -5707,6 +6077,8 @@ function commChipGender(btn) {
   localStorage.setItem('comm-chip-genders', JSON.stringify([...commState.chipGenders]));
   _commChipSyncSet('comm-chips-gender', commState.chipGenders);
   commRender();
+  commRenderTrainingSchedule();
+  _updateFilterBadge();
 }
 
 function commChipGrade(btn) {
@@ -5715,6 +6087,8 @@ function commChipGrade(btn) {
   localStorage.setItem('comm-chip-grades', JSON.stringify([...commState.chipGrades]));
   _commChipSyncSet('comm-chips-grade', commState.chipGrades);
   commRender();
+  commRenderTrainingSchedule();
+  _updateFilterBadge();
 }
 
 function commResetAllChips() {
@@ -5732,6 +6106,8 @@ function commResetAllChips() {
   _commRenderEventChips();
   commRenderShortcuts();
   commRender();
+  commRenderTrainingSchedule();
+  _updateFilterBadge();
 }
 
 function commRender() {
@@ -5749,7 +6125,7 @@ function commRender() {
           ${m.division ? `<span class="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full">${escHtml(m.division)}</span>` : ''}
         </div>
         <p class="text-white text-base font-bold leading-relaxed">${escHtml(m.text)}</p>
-        ${m.imageUrl ? `<img src="${escHtml(m.imageUrl)}" class="mt-2 rounded-xl w-full max-h-36 object-cover opacity-90">` : ''}
+        ${m.imageUrl ? `<img id="comm-img-v-${m.id}" src="${escHtml(m.imageUrl)}" class="hidden mt-2 rounded-xl w-full max-h-36 object-cover opacity-90"><button onclick="commToggleImg('v-${m.id}',this)" class="mt-1.5 text-[11px] font-semibold text-white/60 border border-white/20 rounded-lg px-2.5 py-1 active:scale-95 transition-all">📷 사진 보기</button>` : ''}
         <p class="text-white/40 text-[10px] mt-2">👍 ${m.agree||0}명 확인</p>
       </div>`).join('');
   } else {
@@ -5780,6 +6156,14 @@ function commRender() {
     const gks = [...commState.chipGrades].map(g => _GRADE_KEY[g] || g);
     msgs = msgs.filter(m => gks.some(gk => (m.division || '').includes(gk)));
   }
+  if (commState.nearFilter) {
+    const now = new Date();
+    const todayStr = `${now.getMonth()+1}월 ${now.getDate()}일`;
+    msgs = msgs.filter(m => {
+      const kst = new Date(m.ts + 9 * 3600 * 1000);
+      return `${kst.getUTCMonth()+1}월 ${kst.getUTCDate()}일` === todayStr;
+    });
+  }
 
   const feedEl = document.getElementById('comm-feed');
   if (!feedEl) return;
@@ -5806,15 +6190,24 @@ function commCard(m) {
   const oboCount  = m.obo || 0;
   const isFinale  = m.tag === '결선시간';
   const oboWarn   = isFinale && oboCount >= 3;
+  const oboSoft   = isFinale && oboCount === 2;
+  const isMyPost  = commState.myPostIds.has(m.id) && (Date.now() - m.ts) < 5 * 60 * 1000;
   const adminBorder = commState.adminMode ? 'border-color:#FECACA' : '';
-  const oboBorder   = oboWarn ? 'border-color:#FCA5A5' : '';
+  const oboBorder   = oboWarn ? 'border-color:#FCA5A5' : oboSoft ? 'border-color:#FCD34D' : '';
   return `
   <div class="comm-feed-card" style="${adminBorder || oboBorder}">
-    ${m.imageUrl ? `<img src="${escHtml(m.imageUrl)}" alt="현장 사진" class="w-full max-h-56 object-cover">` : ''}
     <div class="p-3.5">
       ${oboWarn ? `<div class="flex items-center gap-1.5 mb-2 bg-red-50 rounded-lg px-2.5 py-1.5">
         <span class="text-xs">⚠️</span>
         <span class="text-[11px] font-bold text-red-600">오보 신고 ${oboCount}건 — 정보를 확인해주세요</span>
+      </div>` : ''}
+      ${oboSoft ? `<div class="flex items-center gap-1.5 mb-2 bg-amber-50 rounded-lg px-2.5 py-1.5">
+        <span class="text-xs">⚠️</span>
+        <span class="text-[11px] font-semibold text-amber-700">오보 신고 2건 — 새 제보로 대체되었을 수 있습니다</span>
+      </div>` : ''}
+      ${isMyPost ? `<div class="flex items-center justify-between mb-2 bg-blue-50 rounded-lg px-2.5 py-1.5">
+        <span class="text-[11px] font-semibold text-blue-600">내가 올린 제보 · 5분 이내 취소 가능</span>
+        <button onclick="commSelfDelete('${m.id}')" class="text-[11px] font-bold text-red-500 hover:text-red-700 bg-white border border-red-200 rounded-md px-2 py-0.5 active:scale-95 transition-all">취소</button>
       </div>` : ''}
       <div class="flex items-center gap-1.5 mb-2 flex-wrap">
         <span class="text-[10px] font-bold border rounded-md px-1.5 py-0.5 ${tagCls[m.tag]||tagCls['기타']}">${tagIcon[m.tag]||'💬'} ${escHtml(m.tag)}</span>
@@ -5823,6 +6216,7 @@ function commCard(m) {
         ${commState.adminMode ? `<button onclick="commDeleteMsg('${m.id}')" class="ml-auto text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded-md transition-colors">삭제</button>` : ''}
       </div>
       <p class="text-sm text-gray-800 leading-relaxed mb-3">${escHtml(m.text)}</p>
+      ${m.imageUrl ? `<div class="mb-3"><img id="comm-img-${m.id}" src="${escHtml(m.imageUrl)}" alt="현장 사진" class="hidden w-full max-h-56 object-cover rounded-xl mb-1.5"><button onclick="commToggleImg('${m.id}',this)" class="text-[11px] font-semibold text-navy/60 border border-gray-200 rounded-lg px-2.5 py-1 hover:bg-gray-50 active:scale-95 transition-all">📷 사진 보기</button></div>` : ''}
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1.5">
           <span class="text-[10px] font-semibold text-navy/50">${escHtml(m.nickname)}</span>
@@ -5845,6 +6239,13 @@ function commCard(m) {
       </div>
     </div>
   </div>`;
+}
+
+function commToggleImg(id, btn) {
+  const img = document.getElementById(`comm-img-${id}`);
+  if (!img) return;
+  const hidden = img.classList.toggle('hidden');
+  btn.textContent = hidden ? '📷 사진 보기' : '📷 사진 닫기';
 }
 
 function commAgree(id) {
@@ -5879,6 +6280,22 @@ function commObo(id) {
     const m = commState.msgs.find(x => x.id === id);
     if (m) { m.obo = d.obo; commRender(); }
   });
+}
+
+function commSelfDelete(id) {
+  if (!confirm('제보를 취소하시겠습니까?')) return;
+  fetch(`/api/community/msg/${id}/self-delete`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceId: getDeviceId() }),
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      commState.myPostIds.delete(id);
+      commState.msgs = commState.msgs.filter(m => m.id !== id);
+      commRender();
+    } else {
+      alert(d.error || '취소할 수 없습니다');
+    }
+  }).catch(() => alert('서버 오류가 발생했습니다'));
 }
 
 function commDisagree(id) {
@@ -5937,15 +6354,19 @@ function commModalTagChange() {
   commModalUpdatePreview();
 }
 
-function commModalEventChange() {
-  commModalUpdatePreview();
+function commModalCheckDup() {
   const tag    = document.getElementById('comm-modal-tag')?.value;
   const event_ = document.getElementById('comm-modal-event')?.value;
   const warn   = document.getElementById('comm-modal-dup-warn');
   const warnTxt= document.getElementById('comm-modal-dup-text');
   const submit = document.getElementById('comm-modal-submit');
   if (tag === '결선시간' && event_) {
-    const dup = commState.msgs.find(m => m.tag === '결선시간' && m.event === event_);
+    const gender   = document.querySelector('#comm-modal-gender-row .comm-chip.active')?.dataset.val || '';
+    const grade    = document.querySelector('#comm-modal-grade-row .comm-chip.active')?.dataset.val || '';
+    const division = [gender, grade].filter(Boolean).join(' ');
+    const dup = commState.msgs.find(m =>
+      m.tag === '결선시간' && m.event === event_ && (m.division || '') === division
+    );
     if (dup && warn && warnTxt) {
       warn.classList.remove('hidden');
       warnTxt.textContent = `현재 제보: ${dup.text}`;
@@ -5960,10 +6381,16 @@ function commModalEventChange() {
   }
 }
 
+function commModalEventChange() {
+  commModalUpdatePreview();
+  commModalCheckDup();
+}
+
 function commModalChip(btn, rowId) {
   document.querySelectorAll(`#${rowId} .comm-chip`).forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   commModalUpdatePreview();
+  commModalCheckDup();
 }
 
 function commModalUpdatePreview() {
@@ -6079,7 +6506,7 @@ async function commPost() {
   fetch(`/api/community/${commState.compId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nickname, tag, text, event: event_, division, imageData }),
+    body: JSON.stringify({ nickname, tag, text, event: event_, division, imageData, deviceId: getDeviceId() }),
   }).then(r => {
     if (r.status === 409) {
       return r.json().then(d => {
@@ -6091,7 +6518,8 @@ async function commPost() {
     }
     if (!r.ok) return r.json().then(e => { throw new Error(e.error || `서버 오류 (${r.status})`); });
     return r.json();
-  }).then(() => {
+  }).then(msg => {
+    if (msg?.id) commState.myPostIds.add(msg.id);
     localStorage.setItem('comm-nickname', nickname);
     document.getElementById('comm-modal-event').value = '';
     document.getElementById('comm-modal-text').value = '';
@@ -6216,21 +6644,42 @@ function commLike(id) {
     </div>
 
     <!-- 닉네임 + 태그 -->
-    <div class="flex gap-2 mb-4">
+    <div class="flex gap-1.5 mb-3">
       <input id="comm-modal-nick" type="text" placeholder="닉네임" maxlength="20"
-        class="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30">
+        class="min-w-0 flex-1 border border-gray-200 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-navy/30">
       <select id="comm-modal-tag" onchange="commModalTagChange()"
-        class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-navy focus:outline-none focus:ring-2 focus:ring-navy/30">
+        class="shrink-0 border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-semibold text-navy focus:outline-none focus:ring-2 focus:ring-navy/30">
         <option value="결선시간">🏆 결선시간</option>
         <option value="기타">💬 기타</option>
       </select>
     </div>
 
+    <!-- 성별 -->
+    <div class="mb-2.5">
+      <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">성별</p>
+      <div class="flex gap-1.5" id="comm-modal-gender-row">
+        <button class="comm-chip" data-val="남자" onclick="commModalChip(this,'comm-modal-gender-row')">남자</button>
+        <button class="comm-chip" data-val="여자" onclick="commModalChip(this,'comm-modal-gender-row')">여자</button>
+      </div>
+    </div>
+
+    <!-- 종별 -->
+    <div class="mb-2.5">
+      <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">종별</p>
+      <div class="flex gap-1.5 flex-wrap" id="comm-modal-grade-row">
+        <button class="comm-chip" data-val="초등부" onclick="commModalChip(this,'comm-modal-grade-row')">초등부</button>
+        <button class="comm-chip" data-val="중등부" onclick="commModalChip(this,'comm-modal-grade-row')">중등부</button>
+        <button class="comm-chip" data-val="고등부" onclick="commModalChip(this,'comm-modal-grade-row')">고등부</button>
+        <button class="comm-chip" data-val="대학부" onclick="commModalChip(this,'comm-modal-grade-row')">대학부</button>
+        <button class="comm-chip" data-val="일반부" onclick="commModalChip(this,'comm-modal-grade-row')">일반부</button>
+      </div>
+    </div>
+
     <!-- 종목 -->
-    <div class="mb-3">
-      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">종목</p>
+    <div class="mb-2.5">
+      <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">종목</p>
       <select id="comm-modal-event" onchange="commModalEventChange()"
-        class="w-full border border-amber-200 bg-amber-50 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+        class="w-full border border-amber-200 bg-amber-50 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-300">
         <option value="">종목 선택</option>
         <optgroup label="소총">
           <option>10m 공기소총</option>
@@ -6253,54 +6702,34 @@ function commLike(id) {
     </div>
 
     <!-- 중복 경고 (결선시간 + 이미 제보 있을 때) -->
-    <div id="comm-modal-dup-warn" class="hidden mb-3 bg-amber-50 border border-amber-300 rounded-xl px-3 py-2.5">
-      <p class="text-[11px] font-bold text-amber-700 mb-0.5">⚠️ 이미 제보된 종목입니다</p>
-      <p id="comm-modal-dup-text" class="text-xs text-amber-800"></p>
-      <p class="text-[11px] text-amber-600 mt-1">내용이 틀렸다면 해당 제보에서 <strong>오보신고</strong> 버튼을 눌러주세요.</p>
-    </div>
-
-    <!-- 성별 -->
-    <div class="mb-3">
-      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">성별</p>
-      <div class="flex gap-2" id="comm-modal-gender-row">
-        <button class="comm-chip" data-val="남자" onclick="commModalChip(this,'comm-modal-gender-row')">남자</button>
-        <button class="comm-chip" data-val="여자" onclick="commModalChip(this,'comm-modal-gender-row')">여자</button>
-      </div>
-    </div>
-
-    <!-- 종별 -->
-    <div class="mb-4">
-      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">종별</p>
-      <div class="flex gap-2 flex-wrap" id="comm-modal-grade-row">
-        <button class="comm-chip" data-val="초등부" onclick="commModalChip(this,'comm-modal-grade-row')">초등부</button>
-        <button class="comm-chip" data-val="중등부" onclick="commModalChip(this,'comm-modal-grade-row')">중등부</button>
-        <button class="comm-chip" data-val="고등부" onclick="commModalChip(this,'comm-modal-grade-row')">고등부</button>
-        <button class="comm-chip" data-val="대학부" onclick="commModalChip(this,'comm-modal-grade-row')">대학부</button>
-        <button class="comm-chip" data-val="일반부" onclick="commModalChip(this,'comm-modal-grade-row')">일반부</button>
-      </div>
+    <div id="comm-modal-dup-warn" class="hidden mb-2.5 bg-amber-50 border border-amber-300 rounded-xl px-3 py-2">
+      <p class="text-[10px] font-bold text-amber-700 mb-0.5">⚠️ 이미 제보된 종목입니다</p>
+      <p id="comm-modal-dup-text" class="text-[11px] text-amber-800"></p>
+      <p class="text-[10px] text-amber-600 mt-1">내용이 틀렸다면 해당 제보에서 <strong>오보신고</strong> 버튼을 눌러주세요.</p>
     </div>
 
     <!-- 구분선 -->
-    <div class="border-t border-gray-100 mb-4"></div>
+    <div class="border-t border-gray-100 mb-3"></div>
 
     <!-- 결선시간 전용: 날짜·시각·장소 -->
-    <div id="comm-modal-time-section" class="mb-4">
-      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">결선 날짜 / 시각 / 장소</p>
-      <div class="flex items-center gap-1.5 mb-2">
+    <div id="comm-modal-time-section" class="mb-3">
+      <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">결선 날짜 / 시간</p>
+      <div class="flex items-center gap-1.5 mb-3">
         <div id="comm-drum-month" class="drum-picker rounded-xl border border-gray-100" style="width:44px"></div>
-        <span class="text-gray-400 text-sm">월</span>
+        <span class="text-gray-400 text-xs">월</span>
         <div id="comm-drum-day" class="drum-picker rounded-xl border border-gray-100" style="width:44px"></div>
-        <span class="text-gray-400 text-sm">일</span>
+        <span class="text-gray-400 text-xs">일</span>
         <span class="mx-1 text-gray-200">|</span>
         <div id="comm-drum-hour" class="drum-picker rounded-xl border border-gray-100" style="width:44px"></div>
-        <span class="text-gray-400 text-sm">:</span>
+        <span class="text-gray-400 text-xs">:</span>
         <div id="comm-drum-min" class="drum-picker rounded-xl border border-gray-100" style="width:44px"></div>
         <input type="hidden" id="comm-modal-month">
         <input type="hidden" id="comm-modal-day">
         <input type="hidden" id="comm-modal-hour">
         <input type="hidden" id="comm-modal-minute">
       </div>
-      <div class="flex gap-2" id="comm-modal-venue-row">
+      <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">장소</p>
+      <div class="flex gap-2 mb-2" id="comm-modal-venue-row">
         <button class="comm-chip" data-val="결선장" onclick="commModalChip(this,'comm-modal-venue-row')">결선장</button>
         <button class="comm-chip" data-val="본선장" onclick="commModalChip(this,'comm-modal-venue-row')">본선장</button>
       </div>
@@ -6313,11 +6742,11 @@ function commLike(id) {
 
     <!-- 자유 텍스트 (결선시간 제외) -->
     <textarea id="comm-modal-text" placeholder="내용을 입력하세요" maxlength="300" rows="3"
-      class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-navy/30 mb-3 hidden"></textarea>
+      class="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-navy/30 mb-3 hidden"></textarea>
 
     <!-- 사진 업로드 -->
-    <div id="comm-modal-img-wrap" class="mb-4">
-      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+    <div id="comm-modal-img-wrap" class="mb-3">
+      <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
         현장 사진<span id="comm-img-required" class="text-red-400 normal-case font-semibold"> (결선시간 필수)</span>
       </p>
       <!-- 두 input: 카메라 / 앨범 -->
