@@ -2367,7 +2367,7 @@ function navigate(page) {
   if (page === 'feed')      feedLoad();
   if (page === 'scores')    scoresInit();
   if (page === 'community') commInit();
-  if (page === 'home')      heroCarouselPeek();
+  if (page === 'home')      heroOnEnter();
 }
 
 window.addEventListener('popstate', () => {
@@ -2387,38 +2387,83 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── HERO CAROUSEL ────────────────────────────────
+let _heroTimer    = null;
+let _heroTotal    = 0;
+let _heroInited   = false;
+
 function heroGoTo(idx) {
   const c = document.getElementById('hero-carousel');
   if (!c) return;
   c.scrollTo({ left: c.offsetWidth * idx, behavior: 'smooth' });
 }
-(function heroCarouselInit() {
+
+function _heroCurrentIdx() {
+  const c = document.getElementById('hero-carousel');
+  return c ? Math.round(c.scrollLeft / c.offsetWidth) : 0;
+}
+
+function _heroStartAuto() {
+  _heroStopAuto();
+  if (_heroTotal < 2) return;
+  _heroTimer = setInterval(() => {
+    heroGoTo((_heroCurrentIdx() + 1) % _heroTotal);
+  }, 3000);
+}
+
+function _heroStopAuto() {
+  if (_heroTimer) { clearInterval(_heroTimer); _heroTimer = null; }
+}
+
+function heroCarouselInit() {
   const c = document.getElementById('hero-carousel');
   if (!c) return;
+  _heroTotal = c.querySelectorAll('.hero-slide').length;
+  if (_heroInited) { _heroStartAuto(); return; }
+  _heroInited = true;
+
   const dots = document.querySelectorAll('#hero-dots .hero-dot');
   c.addEventListener('scroll', () => {
     const idx = Math.round(c.scrollLeft / c.offsetWidth);
     dots.forEach((d, i) => d.classList.toggle('active', i === idx));
   }, { passive: true });
-  // 첫 진입 시 peek 실행
-  heroCarouselPeek();
-})();
 
-function heroCarouselPeek() {
-  const c = document.getElementById('hero-carousel');
-  if (!c) return;
-  // 이미 스와이프했거나 이번 세션에 이미 보여줬으면 스킵
-  if (c.scrollLeft > 0) return;
-  if (sessionStorage.getItem('heroPeeked')) return;
-  sessionStorage.setItem('heroPeeked', '1');
-  // 페이지 렌더 완료 후 peek 실행
-  setTimeout(() => {
-    c.scrollTo({ left: Math.round(c.offsetWidth * 0.2), behavior: 'smooth' });
-    setTimeout(() => {
-      c.scrollTo({ left: 0, behavior: 'smooth' });
-    }, 600);
-  }, 900);
+  // 손가락으로 넘길 때 자동슬라이드 일시 정지
+  c.addEventListener('touchstart', _heroStopAuto, { passive: true });
+  c.addEventListener('touchend',   () => setTimeout(_heroStartAuto, 1500), { passive: true });
+
+  // peek → 자동슬라이드 순서
+  _heroCarouselPeek();
 }
+
+function _heroCarouselPeek() {
+  if (sessionStorage.getItem('heroPeeked')) {
+    _heroStartAuto();
+    return;
+  }
+  sessionStorage.setItem('heroPeeked', '1');
+  const c = document.getElementById('hero-carousel');
+  if (!c) { _heroStartAuto(); return; }
+
+  // 레이아웃 확정 후 실행
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      if (c.scrollLeft > 0) { _heroStartAuto(); return; }
+      const peekPx = Math.round(c.offsetWidth * 0.22);
+      c.scrollTo({ left: peekPx, behavior: 'smooth' });
+      setTimeout(() => {
+        c.scrollTo({ left: 0, behavior: 'smooth' });
+        setTimeout(_heroStartAuto, 800);
+      }, 700);
+    }, 900);
+  });
+}
+
+// 페이지 진입 시 호출
+function heroOnEnter() {
+  heroCarouselInit();
+}
+
+document.addEventListener('DOMContentLoaded', heroCarouselInit);
 
 // ── NAVBAR SCROLL SHADOW ─────────────────────────
 window.addEventListener('scroll', () => {
