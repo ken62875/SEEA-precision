@@ -2446,7 +2446,7 @@ function _heroCarouselPeek() {
 
   // 레이아웃 확정 후 실행
   setTimeout(() => {
-    const peekPx = Math.round(c.offsetWidth * 0.25);
+    const peekPx = Math.round(c.offsetWidth * 0.15);
 
     // scroll-snap 끄기 → 중간 위치에서 강제 스냅 방지
     c.style.scrollSnapType = 'none';
@@ -2460,7 +2460,7 @@ function _heroCarouselPeek() {
         _heroStartAuto();
       }, 700);
     }, 800);
-  }, 1000);
+  }, 500);
 }
 
 // 페이지 진입 시 호출
