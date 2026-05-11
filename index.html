@@ -2445,17 +2445,22 @@ function _heroCarouselPeek() {
   if (!c) { _heroStartAuto(); return; }
 
   // 레이아웃 확정 후 실행
-  requestAnimationFrame(() => {
+  setTimeout(() => {
+    const peekPx = Math.round(c.offsetWidth * 0.25);
+
+    // scroll-snap 끄기 → 중간 위치에서 강제 스냅 방지
+    c.style.scrollSnapType = 'none';
+    c.scrollTo({ left: peekPx, behavior: 'smooth' });
+
     setTimeout(() => {
-      if (c.scrollLeft > 0) { _heroStartAuto(); return; }
-      const peekPx = Math.round(c.offsetWidth * 0.22);
-      c.scrollTo({ left: peekPx, behavior: 'smooth' });
+      c.scrollTo({ left: 0, behavior: 'smooth' });
       setTimeout(() => {
-        c.scrollTo({ left: 0, behavior: 'smooth' });
-        setTimeout(_heroStartAuto, 800);
+        // 복귀 완료 후 snap 복원 + 자동슬라이드 시작
+        c.style.scrollSnapType = '';
+        _heroStartAuto();
       }, 700);
-    }, 900);
-  });
+    }, 800);
+  }, 1000);
 }
 
 // 페이지 진입 시 호출
