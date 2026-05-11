@@ -2436,17 +2436,12 @@ function heroCarouselInit() {
 }
 
 function _heroCarouselPeek() {
-  if (sessionStorage.getItem('heroPeeked')) {
-    _heroStartAuto();
-    return;
-  }
-  sessionStorage.setItem('heroPeeked', '1');
   const c = document.getElementById('hero-carousel');
   if (!c) { _heroStartAuto(); return; }
 
   // 레이아웃 확정 후 실행
   setTimeout(() => {
-    const peekPx = Math.round(c.offsetWidth * 0.15);
+    const peekPx = Math.round(c.offsetWidth * 0.10);
 
     // scroll-snap 끄기 → 중간 위치에서 강제 스냅 방지
     c.style.scrollSnapType = 'none';
@@ -2460,7 +2455,7 @@ function _heroCarouselPeek() {
         _heroStartAuto();
       }, 700);
     }, 800);
-  }, 500);
+  }, 300);
 }
 
 // 페이지 진입 시 호출
