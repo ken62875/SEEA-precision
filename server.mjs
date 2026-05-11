@@ -1304,11 +1304,19 @@ const server = http.createServer(async (req, res) => {
   }
 
   // ── GET /api/community/:compId ──────────────────────────
-  const getMsgMatch = req.url.match(/^\/api\/community\/([^\/]+)$/);
+  const _getMsgUrl   = new URL(req.url, 'http://localhost');
+  const getMsgMatch  = _getMsgUrl.pathname.match(/^\/api\/community\/([^\/]+)$/);
   if (req.method === 'GET' && getMsgMatch) {
-    const compId = getMsgMatch[1];
+    const compId  = getMsgMatch[1];
+    const deviceId = _getMsgUrl.searchParams.get('deviceId') || '';
     const { messages } = loadCommunity();
-    const filtered = messages.filter(m => m.compId === compId);
+    const filtered = messages.filter(m => m.compId === compId).map(m => ({
+      ...m,
+      // 이 디바이스가 투표했는지 여부를 함께 반환
+      _myAgree:    deviceId ? (m.agreeVoters   || []).includes(deviceId) : false,
+      _myObo:      deviceId ? (m.oboVoters     || []).includes(deviceId) : false,
+      _myDisagree: deviceId ? (m.disagreeVoters|| []).includes(deviceId) : false,
+    }));
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(filtered));
     return;
@@ -1330,6 +1338,19 @@ const server = http.createServer(async (req, res) => {
         }
         const VALID_TAGS = ['공식훈련', '장비검사', '결선시간', '기타'];
         const safeTag = VALID_TAGS.includes(tag) ? tag : '기타';
+
+        // 결선시간 중복 차단: 같은 compId + event는 1개만 허용
+        if (safeTag === '결선시간' && event) {
+          const data = loadCommunity();
+          const existing = data.messages.find(m =>
+            m.compId === compId && m.tag === '결선시간' && m.event === event.toString().trim()
+          );
+          if (existing) {
+            res.writeHead(409, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'duplicate', existing }));
+            return;
+          }
+        }
 
         // 이미지 처리 (base64 → 파일 저장)
         let imageUrl = '';
@@ -1356,6 +1377,7 @@ const server = http.createServer(async (req, res) => {
           ts:       Date.now(),
           agree:    0,
           disagree: 0,
+          obo:      0,
         };
         const data = loadCommunity();
         data.messages.push(msg);
@@ -1375,33 +1397,62 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ── POST /api/community/msg/:msgId/agree ────────────────
+  // ── POST /api/community/msg/:msgId/agree (토글) ──────────
   const agreeMatch = req.url.match(/^\/api\/community\/msg\/([^\/]+)\/agree$/);
   if (req.method === 'POST' && agreeMatch) {
     const msgId = agreeMatch[1];
-    const data  = loadCommunity();
-    const msg   = data.messages.find(m => m.id === msgId);
+    let body = ''; req.on('data', c => body += c);
+    await new Promise(r => req.on('end', r));
+    let deviceId = '';
+    try { deviceId = JSON.parse(body).deviceId || ''; } catch {}
+    const data = loadCommunity();
+    const msg  = data.messages.find(m => m.id === msgId);
     if (!msg) { res.writeHead(404); res.end('{}'); return; }
-    msg.agree = (msg.agree || 0) + 1;
+    if (!msg.agreeVoters) msg.agreeVoters = [];
+    if (!msg.oboVoters)   msg.oboVoters   = [];
+    // 오보 신고한 사람은 맞아요 불가
+    if (deviceId && msg.oboVoters.includes(deviceId)) {
+      res.writeHead(409, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: '오보 신고한 제보입니다', agree: msg.agreeVoters.length, voted: false }));
+      return;
+    }
+    if (deviceId) {
+      const idx = msg.agreeVoters.indexOf(deviceId);
+      if (idx !== -1) msg.agreeVoters.splice(idx, 1); // 철회
+      else            msg.agreeVoters.push(deviceId);  // 투표
+    }
+    msg.agree = msg.agreeVoters.length;
     saveCommunity(data);
+    const voted = deviceId ? msg.agreeVoters.includes(deviceId) : null;
     broadcastCommunity(msg.compId, 'agree', { id: msgId, agree: msg.agree });
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ agree: msg.agree }));
+    res.end(JSON.stringify({ agree: msg.agree, voted }));
     return;
   }
 
-  // ── POST /api/community/msg/:msgId/disagree ──────────────
+  // ── POST /api/community/msg/:msgId/disagree (토글) ────────
   const disagreeMatch = req.url.match(/^\/api\/community\/msg\/([^\/]+)\/disagree$/);
   if (req.method === 'POST' && disagreeMatch) {
     const msgId = disagreeMatch[1];
-    const data  = loadCommunity();
-    const msg   = data.messages.find(m => m.id === msgId);
+    let body = ''; req.on('data', c => body += c);
+    await new Promise(r => req.on('end', r));
+    let deviceId = '';
+    try { deviceId = JSON.parse(body).deviceId || ''; } catch {}
+    const data = loadCommunity();
+    const msg  = data.messages.find(m => m.id === msgId);
     if (!msg) { res.writeHead(404); res.end('{}'); return; }
-    msg.disagree = (msg.disagree || 0) + 1;
+    if (!msg.disagreeVoters) msg.disagreeVoters = [];
+    if (deviceId) {
+      const idx = msg.disagreeVoters.indexOf(deviceId);
+      if (idx !== -1) msg.disagreeVoters.splice(idx, 1);
+      else            msg.disagreeVoters.push(deviceId);
+    }
+    msg.disagree = msg.disagreeVoters.length;
     saveCommunity(data);
+    const voted = deviceId ? msg.disagreeVoters.includes(deviceId) : null;
     broadcastCommunity(msg.compId, 'disagree', { id: msgId, disagree: msg.disagree });
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ disagree: msg.disagree }));
+    res.end(JSON.stringify({ disagree: msg.disagree, voted }));
     return;
   }
 
@@ -1417,6 +1468,39 @@ const server = http.createServer(async (req, res) => {
     broadcastCommunity(msg.compId, 'like', { id: msgId, likes: msg.likes });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ likes: msg.likes }));
+    return;
+  }
+
+  // ── POST /api/community/msg/:msgId/obo (토글) ────────────
+  const oboMatch = req.url.match(/^\/api\/community\/msg\/([^\/]+)\/obo$/);
+  if (req.method === 'POST' && oboMatch) {
+    const msgId = oboMatch[1];
+    let body = ''; req.on('data', c => body += c);
+    await new Promise(r => req.on('end', r));
+    let deviceId = '';
+    try { deviceId = JSON.parse(body).deviceId || ''; } catch {}
+    const data = loadCommunity();
+    const msg  = data.messages.find(m => m.id === msgId);
+    if (!msg) { res.writeHead(404); res.end('{}'); return; }
+    if (!msg.oboVoters)   msg.oboVoters   = [];
+    if (!msg.agreeVoters) msg.agreeVoters = [];
+    // 맞아요 누른 사람은 오보 불가
+    if (deviceId && msg.agreeVoters.includes(deviceId)) {
+      res.writeHead(409, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: '맞아요한 제보입니다', obo: msg.oboVoters.length, voted: false }));
+      return;
+    }
+    if (deviceId) {
+      const idx = msg.oboVoters.indexOf(deviceId);
+      if (idx !== -1) msg.oboVoters.splice(idx, 1); // 철회
+      else            msg.oboVoters.push(deviceId);  // 신고
+    }
+    msg.obo = msg.oboVoters.length;
+    saveCommunity(data);
+    const voted = deviceId ? msg.oboVoters.includes(deviceId) : null;
+    broadcastCommunity(msg.compId, 'obo', { id: msgId, obo: msg.obo });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ obo: msg.obo, voted }));
     return;
   }
 

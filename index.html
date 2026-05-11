@@ -448,8 +448,29 @@
     .comm-shortcut { flex-shrink:0; display:inline-flex; align-items:center; gap:4px; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:700; border:1.5px solid #E5E7EB; color:#374151; background:#F9FAFB; cursor:pointer; transition:all .15s; white-space:nowrap; }
     .comm-shortcut:hover { border-color:#0B1E3F; color:#0B1E3F; background:#fff; }
     .comm-shortcut.active { background:#0B1E3F; color:#fff; border-color:#0B1E3F; }
+    /* ── Community tabs ── */
+    .comm-tab-bar { display:flex; gap:0; background:#F3F4F6; border-radius:14px; padding:3px; }
+    .comm-tab-btn { flex:1; padding:7px 0; font-size:12px; font-weight:700; border-radius:11px; border:none; background:transparent; color:#9CA3AF; cursor:pointer; transition:all .18s; }
+    .comm-tab-btn.active { background:#fff; color:#0B1E3F; box-shadow:0 1px 4px rgba(0,0,0,.10); }
+    /* ── Training schedule ── */
+    .train-event-card { background:#fff; border-radius:16px; border:1px solid #F0F0F0; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+    .train-event-hdr { display:flex; align-items:center; gap:8px; padding:12px 14px 10px; border-bottom:1px solid #F3F4F6; }
+    .train-event-name { font-size:14px; font-weight:800; color:#0B1E3F; }
+    .train-row { display:flex; gap:8px; padding:9px 14px; border-bottom:1px solid #F9FAFB; align-items:flex-start; }
+    .train-row:last-child { border-bottom:none; }
+    .train-division { flex-shrink:0; font-size:11px; font-weight:700; color:#6B7280; background:#F3F4F6; border-radius:8px; padding:2px 8px; margin-top:1px; min-width:52px; text-align:center; }
+    .train-schedule { font-size:12px; color:#374151; line-height:1.7; white-space:pre-wrap; }
+    .train-changed { background:#FFF3CD; border-left:3px solid #F59E0B; }
+    .train-changed .train-schedule { color:#92400E; }
     .comm-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; display:flex; align-items:flex-end; justify-content:center; }
     .comm-modal-sheet { background:#fff; border-radius:24px 24px 0 0; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; padding:20px 20px 36px; }
+    .drum-picker { position:relative; height:108px; overflow:hidden; cursor:ns-resize; user-select:none; touch-action:none; }
+    .drum-picker .dp-list { position:absolute; width:100%; will-change:transform; }
+    .drum-picker .dp-item { height:36px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#c0c8d8; transition:font-size .12s, color .12s, font-weight .12s; }
+    .drum-picker .dp-item.dp-sel { font-size:15px; font-weight:700; color:#0B1E3F; }
+    .drum-picker .dp-fade-top { position:absolute; top:0; left:0; right:0; height:36px; background:linear-gradient(to bottom,rgba(255,255,255,.96),rgba(255,255,255,.1)); pointer-events:none; z-index:2; }
+    .drum-picker .dp-fade-bot { position:absolute; bottom:0; left:0; right:0; height:36px; background:linear-gradient(to top,rgba(255,255,255,.96),rgba(255,255,255,.1)); pointer-events:none; z-index:2; }
+    .drum-picker .dp-hl { position:absolute; top:36px; left:2px; right:2px; height:36px; border-top:1.5px solid #E5E7EB; border-bottom:1.5px solid #E5E7EB; background:rgba(248,249,252,.7); pointer-events:none; z-index:2; border-radius:8px; }
     @keyframes spinOnce {
       from { transform: rotate(0deg); }
       to   { transform: rotate(360deg); }
@@ -1543,22 +1564,9 @@
         </select>
       </div>
 
-      <!-- 캐스케이드 칩 필터 (종목 + 성별 통합) -->
+      <!-- 캐스케이드 칩 필터 -->
       <div id="comm-chips-wrap" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 px-4 py-4 space-y-3">
-        <!-- 종목 그룹 -->
-        <div>
-          <p class="comm-filter-label">종목</p>
-          <div class="comm-chip-row" id="comm-chips-cat">
-            <button class="comm-chip" data-val="소총" onclick="commChipCat(this)">소총</button>
-            <button class="comm-chip" data-val="권총" onclick="commChipCat(this)">권총</button>
-            <button class="comm-chip" data-val="클레이" onclick="commChipCat(this)">클레이</button>
-          </div>
-          <div class="comm-chip-row mt-1.5" id="comm-chips-dist"></div>
-          <div class="comm-chip-row mt-1.5" id="comm-chips-event"></div>
-        </div>
-        <!-- 구분선 -->
-        <div class="border-t border-gray-100"></div>
-        <!-- 성별 그룹 -->
+        <!-- 성별 -->
         <div>
           <p class="comm-filter-label">성별</p>
           <div class="comm-chip-row" id="comm-chips-gender">
@@ -1566,42 +1574,87 @@
             <button class="comm-chip" data-val="여자" onclick="commChipGender(this)">여자</button>
           </div>
         </div>
-        <!-- 종별 그룹 (동적, 옵션 없으면 숨김) -->
-        <div id="comm-chips-grade-wrap" class="hidden">
+        <!-- 종별 -->
+        <div>
           <p class="comm-filter-label">종별</p>
-          <div class="comm-chip-row" id="comm-chips-grade"></div>
+          <div class="comm-chip-row" id="comm-chips-grade">
+            <button class="comm-chip" data-val="초등부" onclick="commChipGrade(this)">초등부</button>
+            <button class="comm-chip" data-val="중등부" onclick="commChipGrade(this)">중등부</button>
+            <button class="comm-chip" data-val="고등부" onclick="commChipGrade(this)">고등부</button>
+            <button class="comm-chip" data-val="대학부" onclick="commChipGrade(this)">대학부</button>
+            <button class="comm-chip" data-val="일반부" onclick="commChipGrade(this)">일반부</button>
+          </div>
+        </div>
+        <!-- 구분선 -->
+        <div class="border-t border-gray-100"></div>
+        <!-- 종목 -->
+        <div>
+          <p class="comm-filter-label">종목</p>
+          <div class="comm-chip-row" id="comm-chips-cat">
+            <button class="comm-chip" data-val="소총" onclick="commChipCat(this)">소총</button>
+            <button class="comm-chip" data-val="권총" onclick="commChipCat(this)">권총</button>
+            <button class="comm-chip" data-val="클레이" onclick="commChipCat(this)">클레이</button>
+          </div>
+        </div>
+        <!-- 사선 (동적) -->
+        <div id="comm-chips-dist-wrap" class="hidden">
+          <p class="comm-filter-label">사선</p>
+          <div class="comm-chip-row" id="comm-chips-dist"></div>
+        </div>
+        <!-- 세부종목 (동적) -->
+        <div id="comm-chips-event-wrap" class="hidden">
+          <p class="comm-filter-label">세부종목</p>
+          <div class="comm-chip-row" id="comm-chips-event"></div>
         </div>
         <!-- 초기화 -->
         <button onclick="commResetAllChips()" class="text-[11px] text-gray-400 hover:text-gray-600 font-semibold transition-colors">전체 초기화</button>
       </div>
 
-      <!-- 상단: 교차검증 완료 결선 시간 배너 -->
-      <div id="comm-verified-wrap" class="hidden space-y-2">
-        <p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase px-1">✅ 교차검증 완료 — 결선 시간</p>
-        <div id="comm-verified-list" class="space-y-2"></div>
+      <!-- 탭 스위처 -->
+      <div id="comm-tab-wrap" class="hidden">
+        <div class="comm-tab-bar">
+          <button class="comm-tab-btn active" id="comm-tab-feed" onclick="commSwitchTab('feed')">🏆 현장 제보</button>
+          <button class="comm-tab-btn"        id="comm-tab-train" onclick="commSwitchTab('train')">🗓 훈련 일정</button>
+        </div>
       </div>
 
-      <!-- 중단: 제보 CTA -->
-      <button id="comm-cta-btn" onclick="commOpenModal()"
-        class="hidden w-full bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-2xl py-4 px-5 font-bold shadow-lg shadow-amber-200/60 active:scale-95 transition-all text-left">
-        <span class="text-xl block mb-0.5">📸</span>
-        현장에 계신가요? 지금 제보하기
-        <span class="block font-normal text-white/75 text-xs mt-0.5">결선 상황판을 찍어 공유해 주세요</span>
-      </button>
+      <!-- ── 현장 제보 탭 ── -->
+      <div id="comm-pane-feed">
+        <!-- 교차검증 완료 결선 시간 배너 -->
+        <div id="comm-verified-wrap" class="hidden space-y-2">
+          <p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase px-1">✅ 교차검증 완료 — 결선 시간</p>
+          <div id="comm-verified-list" class="space-y-2"></div>
+        </div>
 
-      <!-- 하단: 실시간 피드 -->
-      <div>
-        <div id="comm-feed-header" class="hidden flex items-center justify-between mb-2 px-1">
-          <p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase">실시간 현장 제보</p>
-          <div class="flex items-center gap-2">
-            <span id="comm-live-dot" class="text-[10px] text-emerald-500 font-semibold hidden">● LIVE</span>
-            <button id="comm-admin-btn" onclick="commToggleAdmin()" class="text-[10px] text-gray-300 hover:text-gray-500 font-semibold transition-colors">관리</button>
+        <!-- 제보 CTA -->
+        <button id="comm-cta-btn" onclick="commOpenModal()"
+          class="hidden w-full bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-2xl py-4 px-5 font-bold shadow-lg shadow-amber-200/60 active:scale-95 transition-all text-left">
+          <span class="text-xl block mb-0.5">📸</span>
+          현장에 계신가요? 지금 제보하기
+          <span class="block font-normal text-white/75 text-xs mt-0.5">결선 시간을 확인했다면 제보해 주세요</span>
+        </button>
+
+        <!-- 실시간 피드 -->
+        <div>
+          <div id="comm-feed-header" class="hidden flex items-center justify-between mb-2 px-1">
+            <p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase">실시간 현장 제보</p>
+            <div class="flex items-center gap-2">
+              <span id="comm-live-dot" class="text-[10px] text-emerald-500 font-semibold hidden">● LIVE</span>
+              <button id="comm-admin-btn" onclick="commToggleAdmin()" class="text-[10px] text-gray-300 hover:text-gray-500 font-semibold transition-colors">관리</button>
+            </div>
+          </div>
+          <div id="comm-shortcuts" class="hidden comm-chip-row mb-3"></div>
+          <div id="comm-feed" class="space-y-3">
+            <div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 제보가 표시됩니다</div>
           </div>
         </div>
-        <!-- 종목별 채팅방 바로가기 -->
-        <div id="comm-shortcuts" class="hidden comm-chip-row mb-3"></div>
-        <div id="comm-feed" class="space-y-3">
-          <div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 제보가 표시됩니다</div>
+      </div>
+
+      <!-- ── 훈련 일정 탭 ── -->
+      <div id="comm-pane-train" class="hidden space-y-3">
+        <p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase px-1">📋 공식훈련 일정</p>
+        <div id="comm-train-feed" class="space-y-3">
+          <div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 훈련 일정이 표시됩니다</div>
         </div>
       </div>
 
@@ -3045,7 +3098,11 @@ async function bibSearch() {
     } else {
       result.innerHTML = bibResultFound(c, name, data.matched, data.total, data.searchMode);
       bibLoadTeamRankings(c.ksfCode, name);
-      bibCommLoad(c.id);
+      // 종목+종별 조합키로 필터 구성 (예: "10m 공기소총|여일반부")
+      const _evFilter = new Set(
+        data.matched.map(p => `${_bibNormalizeEvent(p.event)}|${_bibNormalizeDivision(p.event)}`)
+      );
+      bibCommLoad(c.id, _evFilter);
     }
   } catch (e) {
     console.error('[bibSearch error]', e);
@@ -3503,6 +3560,7 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
         <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">
           출처: 대한사격연맹 공식 사이트 · 실시간 수집
         </div>
+        ${bibCommPanel(c.id)}
       </div>`;
   }
 
@@ -3609,7 +3667,8 @@ function bibCommPanel(compId) {
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A24A" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span class="text-sm font-bold text-navy">훈련·장비 일정</span>
+          <span class="text-sm font-bold text-navy">공식훈련 일정</span>
+          <span class="text-[10px] text-blue-500 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded font-semibold">내 종목만</span>
           <span id="bib-comm-live-${compId}" class="text-[10px] text-emerald-500 font-semibold hidden">● LIVE</span>
         </div>
         <button onclick="bibCommToggleForm('${compId}')"
@@ -3658,24 +3717,88 @@ function bibCommToggleForm(compId) {
   }
 }
 
+// KSF 종목명(예: "50m 소총 3자세 여자 일반부") → 훈련포스트 종목명(예: "50m 3자세") 정규화
+function _bibNormalizeEvent(evtName) {
+  return evtName
+    .replace(/\s+(?:남자|여자|혼성).*$/, '')   // 성별·부 제거
+    .replace(/^(50m)\s+소총\s+/, '$1 ')         // "50m 소총 3자세" → "50m 3자세"
+    .replace(/^(50m)\s+권총\s+/, '$1 ')
+    .replace(/([가-힣])\s+권총$/, '$1')          // "25m 스탠다드 권총" → "25m 스탠다드"
+    .replace(/센터화이어|센타화이어/g, '센타파이어')
+    .replace(/\s*\(\d+발\)/, '')
+    .trim();
+}
+
+// KSF 종목명 문자열에서 종별 추출 → 훈련포스트 division 형식(예: "여일반부")
+function _bibNormalizeDivision(evtName) {
+  const m = evtName.match(/\s+((?:남자|여자|혼성)(?:\s+\S+부)?)$/);
+  if (!m) return '';
+  return m[1]
+    .replace('남자', '남').replace('여자', '여').replace('혼성', '혼')
+    .replace(/\s+/g, '');
+}
+
+function _bibTrainSortKey(m) {
+  const dm = m.text.match(/(\d+)월\s*(\d+)일/);
+  const tm = m.text.match(/(\d{1,2}):(\d{2})/);
+  const mo  = dm ? +dm[1] : 99, dy = dm ? +dm[2] : 99;
+  const hr  = tm ? +tm[1] : 99, mn = tm ? +tm[2] : 99;
+  return mo * 1000000 + dy * 10000 + hr * 100 + mn;
+}
+
 const _bibCommESMap = {};
+const _bibCommMsgsCache = {};
+const _bibCommFilterMap = {};
 const _bibCommTrainTags = new Set(['공식훈련', '장비검사']);
-function bibCommLoad(compId) {
-  if (_bibCommESMap[compId]) return; // 이미 연결됨
-  // SSE
+
+function bibCommLoad(compId, eventFilter) {
+  _bibCommFilterMap[compId] = eventFilter || new Set();
+
+  const listEl = document.getElementById(`bib-comm-list-${compId}`);
+  if (!listEl) return;
+
+  function renderFromCache() {
+    const ef = _bibCommFilterMap[compId];
+    const msgs = (_bibCommMsgsCache[compId] || [])
+      .filter(m =>
+        _bibCommTrainTags.has(m.tag) &&
+        (!ef || ef.size === 0 || ef.has(`${m.event}|${m.division || ''}`))
+      )
+      .sort((a, b) => _bibTrainSortKey(a) - _bibTrainSortKey(b));
+    const lEl = document.getElementById(`bib-comm-list-${compId}`);
+    if (!lEl) return;
+    if (msgs.length === 0) {
+      lEl.innerHTML = '<div class="bib-comm-empty text-xs text-gray-400 text-center py-3">해당 종목 훈련 일정 제보가 없습니다</div>';
+      return;
+    }
+    const shown = msgs.slice(0, 8);
+    lEl.innerHTML = shown.map(bibCommCard).join('');
+    if (msgs.length > 8) {
+      lEl.insertAdjacentHTML('beforeend',
+        `<button onclick="bibCommShowAll('${compId}')" class="w-full text-xs text-navy/60 hover:text-navy py-2 font-medium">이전 제보 더보기 (${msgs.length - 8}개)</button>`);
+    }
+  }
+
+  // 이미 연결됨: 새 필터로 화면만 갱신
+  if (_bibCommESMap[compId]) {
+    renderFromCache();
+    return;
+  }
+
+  // 최초 연결: SSE + 초기 fetch
   const es = new EventSource(`/api/community/${compId}/stream`);
   _bibCommESMap[compId] = es;
   es.addEventListener('message', e => {
     const msg = JSON.parse(e.data);
-    if (!_bibCommTrainTags.has(msg.tag)) return; // 결선시간/기타 제외
-    if (!commState.liked) commState.liked = new Set();
-    const listEl = document.getElementById(`bib-comm-list-${compId}`);
-    if (listEl) {
-      const card = bibCommCard(msg);
-      // 빈 메시지 placeholder 제거
-      const placeholder = listEl.querySelector('.bib-comm-empty');
-      if (placeholder) placeholder.remove();
-      listEl.insertAdjacentHTML('afterbegin', card);
+    if (!_bibCommTrainTags.has(msg.tag)) return;
+    if (!_bibCommMsgsCache[compId]) _bibCommMsgsCache[compId] = [];
+    _bibCommMsgsCache[compId].unshift(msg);
+    const ef = _bibCommFilterMap[compId];
+    if (ef && ef.size > 0 && !ef.has(`${msg.event}|${msg.division || ''}`)) return;
+    const lEl = document.getElementById(`bib-comm-list-${compId}`);
+    if (lEl) {
+      lEl.querySelector('.bib-comm-empty')?.remove();
+      lEl.insertAdjacentHTML('afterbegin', bibCommCard(msg));
       document.getElementById(`bib-comm-live-${compId}`)?.classList.remove('hidden');
     }
   });
@@ -3684,33 +3807,24 @@ function bibCommLoad(compId) {
     const el = document.getElementById(`bib-cl-${id}`);
     if (el) el.textContent = likes;
   });
-  // 초기 로드
   fetch(`/api/community/${compId}`)
     .then(r => r.json())
     .then(msgs => {
-      const listEl = document.getElementById(`bib-comm-list-${compId}`);
-      if (!listEl) return;
-      const trainMsgs = [...msgs].reverse().filter(m => _bibCommTrainTags.has(m.tag));
-      if (trainMsgs.length === 0) {
-        listEl.innerHTML = '<div class="bib-comm-empty text-xs text-gray-400 text-center py-3">훈련·장비 일정 제보가 없습니다</div>';
-        return;
-      }
-      const shown = trainMsgs.slice(0, 8);
-      listEl.innerHTML = shown.map(bibCommCard).join('');
-      if (trainMsgs.length > 8) {
-        listEl.insertAdjacentHTML('beforeend',
-          `<button onclick="bibCommShowAll('${compId}')" class="w-full text-xs text-navy/60 hover:text-navy py-2 font-medium">이전 제보 더보기 (${trainMsgs.length - 8}개)</button>`);
-      }
+      _bibCommMsgsCache[compId] = [...msgs].reverse();
+      renderFromCache();
     });
 }
 
 function bibCommShowAll(compId) {
-  fetch(`/api/community/${compId}`)
-    .then(r => r.json())
-    .then(msgs => {
-      const listEl = document.getElementById(`bib-comm-list-${compId}`);
-      if (listEl) listEl.innerHTML = [...msgs].reverse().filter(m => _bibCommTrainTags.has(m.tag)).map(bibCommCard).join('');
-    });
+  const ef = _bibCommFilterMap[compId];
+  const msgs = (_bibCommMsgsCache[compId] || [])
+    .filter(m =>
+      _bibCommTrainTags.has(m.tag) &&
+      (!ef || ef.size === 0 || ef.has(`${m.event}|${m.division || ''}`))
+    )
+    .sort((a, b) => _bibTrainSortKey(a) - _bibTrainSortKey(b));
+  const listEl = document.getElementById(`bib-comm-list-${compId}`);
+  if (listEl) listEl.innerHTML = msgs.map(bibCommCard).join('');
 }
 
 function bibCommCard(m) {
@@ -3720,21 +3834,26 @@ function bibCommCard(m) {
   const s = Math.floor((Date.now() - m.ts) / 1000);
   const ago = s < 60 ? '방금 전' : s < 3600 ? Math.floor(s/60)+'분 전' : s < 86400 ? Math.floor(s/3600)+'시간 전' : Math.floor(s/86400)+'일 전';
   const isLiked = commState.liked.has(m.id);
-  const eventLine = m.event ? `<p class="text-[10px] font-semibold text-amber-600 mt-0.5 break-words">${escHtml(m.event)}</p>` : '';
+  // 공식훈련 텍스트: "📋 공식훈련\n5월 13일 (수)\n  1조 14:00~14:40" → 날짜+일정만 표시
+  const displayText = m.tag === '공식훈련'
+    ? m.text.replace(/^📋\s*공식훈련\n?/, '').trim()
+    : m.text;
+  const eventBadge = m.event
+    ? `<span class="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-100 rounded-md px-2 py-0.5">${escHtml(m.event)}</span>`
+    : '';
+  const divisionBadge = m.division
+    ? `<span class="text-[9px] font-semibold text-gray-500 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5">${escHtml(m.division)}</span>`
+    : '';
   return `
-  <div class="flex items-start gap-2.5 py-2.5 border-b border-gray-50 last:border-0">
-    <span class="shrink-0 text-[10px] font-bold border rounded px-1.5 py-0.5 mt-0.5 ${tagCls[m.tag]||tagCls['기타']}">${tagIcon[m.tag]||'💬'} ${escHtml(m.tag)}</span>
-    <div class="flex-1 min-w-0">
-      ${eventLine}
-      <p class="text-xs text-gray-800 leading-relaxed break-words">${escHtml(m.text)}</p>
-      <div class="flex items-center gap-2 mt-1">
-        <span class="text-[10px] font-semibold text-navy/60">${escHtml(m.nickname)}</span>
-        <span class="text-[10px] text-gray-400">${ago}</span>
-      </div>
+  <div class="py-2.5 border-b border-gray-50 last:border-0">
+    <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+      ${eventBadge}${divisionBadge}
     </div>
-    <button onclick="commLike('${m.id}')" class="shrink-0 flex items-center gap-1 text-[10px] border rounded-full px-2 py-0.5 transition-colors ${isLiked?'bg-amber-50 border-amber-200 text-amber-800':'border-gray-200 text-gray-400 hover:border-amber-200 hover:text-amber-700'}">
-      👍 <span id="bib-cl-${m.id}">${m.likes||0}</span>
-    </button>
+    <p class="text-xs text-gray-800 leading-relaxed break-words whitespace-pre-line">${escHtml(displayText)}</p>
+    ${m.tag !== '공식훈련' ? `<div class="flex items-center gap-2 mt-1">
+      <span class="text-[10px] font-semibold text-navy/60">${escHtml(m.nickname)}</span>
+      <span class="text-[10px] text-gray-400">${ago}</span>
+    </div>` : ''}
   </div>`;
 }
 
@@ -5202,10 +5321,20 @@ function _scoresClearTimers() {
 }
 
 // ── COMMUNITY ─────────────────────────────────────────
+function getDeviceId() {
+  let id = localStorage.getItem('comm-device-id');
+  if (!id) {
+    id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem('comm-device-id', id);
+  }
+  return id;
+}
+
 const commState = {
   compId: '', msgs: [], es: null,
-  agreed: new Set(), disagreed: new Set(),
-  chipCat: '', chipDist: '', chipEvent: '', chipGender: '', chipGrade: '',
+  agreed: new Set(), disagreed: new Set(), oboed: new Set(),
+  chipCats: new Set(), chipDists: new Set(), chipEvents: new Set(),
+  chipGenders: new Set(), chipGrades: new Set(),
   adminMode: false, adminPw: ''
 };
 
@@ -5215,40 +5344,47 @@ const _ALL_EVENTS = [
   { cat: '소총',   dist: '50m', name: '50m 3자세' },
   { cat: '소총',   dist: '50m', name: '50m 복사' },
   { cat: '권총',   dist: '10m', name: '10m 공기권총' },
-  { cat: '권총',   dist: '25m', name: '25m 화약권총' },
-  { cat: '권총',   dist: '25m', name: '25m 속사권총' },
+  { cat: '권총',   dist: '25m', name: '25m 권총' },        // 여자
+  { cat: '권총',   dist: '25m', name: '25m 속사권총' },    // 남자
+  { cat: '권총',   dist: '25m', name: '25m 스탠다드' },    // 남자
+  { cat: '권총',   dist: '25m', name: '25m 센타파이어' },  // 남자
+  { cat: '권총',   dist: '50m', name: '50m 권총' },        // 남자
   { cat: '클레이', dist: '',    name: '스키트' },
   { cat: '클레이', dist: '',    name: '트랩' },
 ];
 
-// 2단계: 거리/유형 칩 렌더 (chipCat 기준)
+// 사선 칩 렌더 (chipCats 기준)
 function _commRenderDistChips() {
-  const row = document.getElementById('comm-chips-dist');
+  const row  = document.getElementById('comm-chips-dist');
+  const wrap = document.getElementById('comm-chips-dist-wrap');
   if (!row) return;
   const dists = [...new Set(
     _ALL_EVENTS
-      .filter(e => !commState.chipCat || e.cat === commState.chipCat)
+      .filter(e => commState.chipCats.size === 0 || commState.chipCats.has(e.cat))
       .map(e => e.dist)
       .filter(Boolean)
   )];
   row.innerHTML = dists.map(d =>
-    `<button class="comm-chip ${commState.chipDist === d ? 'active' : ''}" data-val="${escHtml(d)}" onclick="commChipDist(this)">${escHtml(d)}</button>`
+    `<button class="comm-chip ${commState.chipDists.has(d) ? 'active' : ''}" data-val="${escHtml(d)}" onclick="commChipDist(this)">${escHtml(d)}</button>`
   ).join('');
+  wrap?.classList.toggle('hidden', dists.length === 0);
 }
 
-// 3단계: 세부종목 칩 렌더 (chipCat + chipDist 기준)
+// 세부종목 칩 렌더 (chipCats + chipDists 기준)
 function _commRenderEventChips() {
-  const row = document.getElementById('comm-chips-event');
+  const row  = document.getElementById('comm-chips-event');
+  const wrap = document.getElementById('comm-chips-event-wrap');
   if (!row) return;
   const events = _ALL_EVENTS
     .filter(e =>
-      (!commState.chipCat  || e.cat  === commState.chipCat) &&
-      (!commState.chipDist || e.dist === commState.chipDist)
+      (commState.chipCats.size  === 0 || commState.chipCats.has(e.cat)) &&
+      (commState.chipDists.size === 0 || commState.chipDists.has(e.dist))
     )
     .map(e => e.name);
   row.innerHTML = events.map(e =>
-    `<button class="comm-chip ${commState.chipEvent === e ? 'active' : ''}" data-val="${escHtml(e)}" onclick="commChipEvent(this)">${escHtml(e)}</button>`
+    `<button class="comm-chip ${commState.chipEvents.has(e) ? 'active' : ''}" data-val="${escHtml(e)}" onclick="commChipEvent(this)">${escHtml(e)}</button>`
   ).join('');
+  wrap?.classList.toggle('hidden', events.length === 0);
 }
 
 // 종목별 채팅방 바로가기 렌더
@@ -5257,29 +5393,122 @@ function commRenderShortcuts() {
   if (!wrap) return;
   if (!commState.compId) { wrap.classList.add('hidden'); return; }
   const events = _ALL_EVENTS.filter(e =>
-    (!commState.chipCat  || e.cat  === commState.chipCat) &&
-    (!commState.chipDist || e.dist === commState.chipDist)
+    (commState.chipCats.size  === 0 || commState.chipCats.has(e.cat)) &&
+    (commState.chipDists.size === 0 || commState.chipDists.has(e.dist))
   );
   wrap.classList.toggle('hidden', events.length === 0);
   wrap.innerHTML = events.map(e => {
-    const active = commState.chipEvent === e.name ? 'active' : '';
+    const active = commState.chipEvents.has(e.name) ? 'active' : '';
     return `<button class="comm-shortcut ${active}" onclick="commShortcut('${e.name.replace(/'/g,"\\'")}')">💬 ${escHtml(e.name)}</button>`;
   }).join('');
 }
 
-// 현재 대회 메시지에서 종별 칩 동적 생성
-function _commRenderGradeChips() {
-  const row = document.getElementById('comm-chips-grade');
-  const wrap = document.getElementById('comm-chips-grade-wrap');
-  if (!row) return;
-  let divs = [...new Set(commState.msgs.map(m => m.division).filter(Boolean))];
-  if (commState.chipGender === '남자') divs = divs.filter(d => d.includes('남'));
-  else if (commState.chipGender === '여자') divs = divs.filter(d => d.includes('여'));
-  row.innerHTML = divs.map(d =>
-    `<button class="comm-chip ${commState.chipGrade === d ? 'active' : ''}" data-val="${escHtml(d)}" onclick="commChipGrade(this)">${escHtml(d)}</button>`
-  ).join('');
-  wrap?.classList.toggle('hidden', divs.length === 0);
-}
+
+// ── DRUM PICKER (iOS 스타일 스크롤 시간 선택기) ──────────────────
+(function () {
+  const _drums = {};
+
+  function makeDrum(el, items, placeholder, hiddenId, onChange) {
+    if (!el) return;
+    const H = 36;
+    const all = [{ v: '', label: placeholder }, ...items];
+    let idx = 0, ty = 0, drag = false, startY = 0, startTY = 0;
+
+    function offsetOf(i) { return -i * H + H; }
+    function clamp(i)    { return Math.max(0, Math.min(all.length - 1, i)); }
+
+    function applyTY(y, animate) {
+      ty = y;
+      const list = el.querySelector('.dp-list');
+      if (!list) return;
+      list.style.transition = animate ? 'transform .22s cubic-bezier(.17,.89,.45,1)' : 'none';
+      list.style.transform = `translateY(${y}px)`;
+    }
+
+    function refreshItems() {
+      el.querySelectorAll('.dp-item').forEach((item, i) => item.classList.toggle('dp-sel', i === idx));
+      const h = document.getElementById(hiddenId);
+      if (h) h.value = all[idx].v;
+      if (onChange) onChange(all[idx].v);
+    }
+
+    function snapTo(i) {
+      idx = clamp(i);
+      applyTY(offsetOf(idx), true);
+      refreshItems();
+    }
+
+    function setByValue(v) {
+      const i = all.findIndex(item => item.v === String(v));
+      if (i >= 0) snapTo(i);
+    }
+
+    el.innerHTML = `
+      <div class="dp-fade-top"></div>
+      <div class="dp-hl"></div>
+      <div class="dp-list">
+        ${all.map((item, i) => `<div class="dp-item${i === 0 ? ' dp-sel' : ''}">${item.label}</div>`).join('')}
+      </div>
+      <div class="dp-fade-bot"></div>`;
+
+    applyTY(offsetOf(0), false);
+
+    el.addEventListener('touchstart', e => {
+      drag = true; startY = e.touches[0].clientY; startTY = ty;
+      el.querySelector('.dp-list').style.transition = 'none';
+    }, { passive: true });
+    el.addEventListener('touchmove', e => {
+      if (!drag) return;
+      e.preventDefault();
+      applyTY(startTY + (e.touches[0].clientY - startY), false);
+    }, { passive: false });
+    el.addEventListener('touchend', () => { if (drag) { drag = false; snapTo(Math.round((H - ty) / H)); } });
+
+    el.addEventListener('mousedown', e => {
+      drag = true; startY = e.clientY; startTY = ty;
+      el.querySelector('.dp-list').style.transition = 'none';
+      e.preventDefault();
+    });
+    const onMove = e => { if (drag) applyTY(startTY + (e.clientY - startY), false); };
+    const onUp   = () => { if (drag) { drag = false; snapTo(Math.round((H - ty) / H)); } };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+
+    el.addEventListener('wheel', e => {
+      e.preventDefault();
+      snapTo(idx + (e.deltaY > 0 ? 1 : -1));
+    }, { passive: false });
+
+    _drums[hiddenId] = { snapTo, reset: () => snapTo(0), setByValue };
+  }
+
+  window._initCommDrums = function () {
+    const months = Array.from({ length: 12 }, (_, i) => ({ v: String(i + 1), label: String(i + 1).padStart(2, '0') }));
+    const days   = Array.from({ length: 31 }, (_, i) => ({ v: String(i + 1), label: String(i + 1).padStart(2, '0') }));
+    const hrs    = Array.from({ length: 24 }, (_, i) => ({ v: String(i),     label: String(i).padStart(2, '0') }));
+    const mins   = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => ({ v: String(m), label: String(m).padStart(2, '0') }));
+    makeDrum(document.getElementById('comm-drum-month'), months, '월', 'comm-modal-month', () => commModalUpdatePreview());
+    makeDrum(document.getElementById('comm-drum-day'),   days,   '일', 'comm-modal-day',   () => commModalUpdatePreview());
+    makeDrum(document.getElementById('comm-drum-hour'),  hrs,    '시', 'comm-modal-hour',  () => commModalUpdatePreview());
+    makeDrum(document.getElementById('comm-drum-min'),   mins,   '분', 'comm-modal-minute',() => commModalUpdatePreview());
+  };
+
+  window._setCommDrumsToNow = function () {
+    const now = new Date();
+    const roundedMin = Math.round(now.getMinutes() / 5) * 5;
+    let h = now.getHours(), m = roundedMin;
+    if (m >= 60) { h = (h + 1) % 24; m = 0; }
+    _drums['comm-modal-month']  ?.setByValue(now.getMonth() + 1);
+    _drums['comm-modal-day']    ?.setByValue(now.getDate());
+    _drums['comm-modal-hour']   ?.setByValue(h);
+    _drums['comm-modal-minute'] ?.setByValue(m);
+  };
+
+  window._resetCommDrums = function () {
+    ['comm-modal-month','comm-modal-day','comm-modal-hour','comm-modal-minute']
+      .forEach(id => _drums[id]?.reset());
+  };
+})();
 
 function commInit() {
   const sel = document.getElementById('comm-comp');
@@ -5292,17 +5521,65 @@ function commInit() {
     sorted.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
   const best = sorted.find(c => compStatus(c) === 'ongoing') || sorted.find(c => compStatus(c) === 'upcoming');
   if (best) { sel.value = best.id; commLoad(); }
-  // 개인화 칩 복원
-  commState.chipCat    = localStorage.getItem('comm-chip-cat')    || '';
-  commState.chipDist   = localStorage.getItem('comm-chip-dist')   || '';
-  commState.chipEvent  = localStorage.getItem('comm-chip-event')  || '';
-  commState.chipGender = localStorage.getItem('comm-chip-gender') || '';
-  commState.chipGrade  = localStorage.getItem('comm-chip-grade')  || '';
-  _commChipSync('comm-chips-cat',    commState.chipCat);
-  _commChipSync('comm-chips-gender', commState.chipGender);
+  // 개인화 칩 복원 (Set 기반)
+  const _parseSet = key => new Set(JSON.parse(localStorage.getItem(key) || '[]'));
+  commState.chipCats    = _parseSet('comm-chip-cats');
+  commState.chipDists   = _parseSet('comm-chip-dists');
+  commState.chipEvents  = _parseSet('comm-chip-events');
+  commState.chipGenders = _parseSet('comm-chip-genders');
+  commState.chipGrades  = _parseSet('comm-chip-grades');
+  _commChipSyncSet('comm-chips-cat',    commState.chipCats);
+  _commChipSyncSet('comm-chips-gender', commState.chipGenders);
+  _commChipSyncSet('comm-chips-grade',  commState.chipGrades);
   _commRenderDistChips();
   _commRenderEventChips();
   commRenderShortcuts();
+  _initCommDrums();
+}
+
+function commSwitchTab(tab) {
+  const isFeed = tab === 'feed';
+  document.getElementById('comm-pane-feed')?.classList.toggle('hidden', !isFeed);
+  document.getElementById('comm-pane-train')?.classList.toggle('hidden', isFeed);
+  document.getElementById('comm-tab-feed')?.classList.toggle('active', isFeed);
+  document.getElementById('comm-tab-train')?.classList.toggle('active', !isFeed);
+}
+
+function commRenderTrainingSchedule() {
+  const el = document.getElementById('comm-train-feed');
+  if (!el) return;
+  const trainMsgs = commState.msgs.filter(m => m.tag === '공식훈련');
+  if (trainMsgs.length === 0) {
+    el.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">공식훈련 일정이 없습니다</div>';
+    return;
+  }
+  const catIcon = ev => {
+    if (ev.includes('권총')) return '🔫';
+    if (ev.includes('소총')) return '🎯';
+    if (ev.includes('클레이') || ev.includes('트랩') || ev.includes('스키트')) return '🥏';
+    return '🏆';
+  };
+  const grouped = {};
+  trainMsgs.forEach(m => {
+    const key = m.event || '기타';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(m);
+  });
+  el.innerHTML = Object.entries(grouped).map(([evName, rows]) => `
+    <div class="train-event-card">
+      <div class="train-event-hdr">
+        <span style="font-size:18px">${catIcon(evName)}</span>
+        <span class="train-event-name">${escHtml(evName)}</span>
+      </div>
+      ${rows.map(m => {
+        const schedText = m.text.replace(/^📋\s*공식훈련\n?/, '').trim();
+        return `<div class="train-row">
+          <span class="train-division">${escHtml(m.division || '')}</span>
+          <span class="train-schedule">${escHtml(schedText)}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
 }
 
 function commLoad() {
@@ -5317,22 +5594,27 @@ function commLoad() {
     ctaBtn?.classList.add('hidden');
     feedHdr?.classList.add('hidden');
     document.getElementById('comm-verified-wrap')?.classList.add('hidden');
+    document.getElementById('comm-tab-wrap')?.classList.add('hidden');
     document.getElementById('comm-feed').innerHTML =
       '<div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 제보가 표시됩니다</div>';
+    const trainFeed = document.getElementById('comm-train-feed');
+    if (trainFeed) trainFeed.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">대회를 선택하면 훈련 일정이 표시됩니다</div>';
     return;
   }
   chipsWrap?.classList.remove('hidden');
   ctaBtn?.classList.remove('hidden');
   feedHdr?.classList.remove('hidden');
+  document.getElementById('comm-tab-wrap')?.classList.remove('hidden');
   if (commState.es) commState.es.close();
   const es = new EventSource(`/api/community/${compId}/stream`);
   commState.es = es;
   es.addEventListener('message', e => {
     commState.msgs.unshift(JSON.parse(e.data));
     _commRenderEventChips();
-    _commRenderGradeChips();
+
     commRenderShortcuts();
     commRender();
+    commRenderTrainingSchedule();
     document.getElementById('comm-live-dot')?.classList.remove('hidden');
   });
   es.addEventListener('agree', e => {
@@ -5345,38 +5627,44 @@ function commLoad() {
     const m = commState.msgs.find(x => x.id === id);
     if (m) { m.disagree = disagree; commRender(); }
   });
+  es.addEventListener('obo', e => {
+    const { id, obo } = JSON.parse(e.data);
+    const m = commState.msgs.find(x => x.id === id);
+    if (m) { m.obo = obo; commRender(); }
+  });
   es.addEventListener('delete', e => {
     const { id } = JSON.parse(e.data);
     commState.msgs = commState.msgs.filter(m => m.id !== id);
-    _commRenderGradeChips();
+
     commRenderShortcuts();
     commRender();
+    commRenderTrainingSchedule();
   });
-  fetch(`/api/community/${compId}`)
+  fetch(`/api/community/${compId}?deviceId=${encodeURIComponent(getDeviceId())}`)
     .then(r => r.json())
     .then(msgs => {
       commState.msgs = [...msgs].reverse();
+      // 서버 기록 기준으로 이 디바이스의 투표 이력 복원 (새로고침 후에도 유지)
+      commState.agreed    = new Set(msgs.filter(m => m._myAgree).map(m => m.id));
+      commState.oboed     = new Set(msgs.filter(m => m._myObo).map(m => m.id));
+      commState.disagreed = new Set(msgs.filter(m => m._myDisagree).map(m => m.id));
       _commRenderEventChips();
-      _commRenderGradeChips();
       commRenderShortcuts();
       commRender();
+      commRenderTrainingSchedule();
     });
 }
 
-function _commChipSync(rowId, val) {
+function _commChipSyncSet(rowId, set) {
   document.querySelectorAll(`#${rowId} .comm-chip`).forEach(b =>
-    b.classList.toggle('active', b.dataset.val === val));
+    b.classList.toggle('active', set.has(b.dataset.val)));
 }
 
 function commChipCat(btn) {
   const val = btn.dataset.val;
-  commState.chipCat   = commState.chipCat === val ? '' : val;
-  commState.chipDist  = '';
-  commState.chipEvent = '';
-  localStorage.setItem('comm-chip-cat', commState.chipCat);
-  localStorage.removeItem('comm-chip-dist');
-  localStorage.removeItem('comm-chip-event');
-  _commChipSync('comm-chips-cat', commState.chipCat);
+  commState.chipCats.has(val) ? commState.chipCats.delete(val) : commState.chipCats.add(val);
+  localStorage.setItem('comm-chip-cats', JSON.stringify([...commState.chipCats]));
+  _commChipSyncSet('comm-chips-cat', commState.chipCats);
   _commRenderDistChips();
   _commRenderEventChips();
   commRenderShortcuts();
@@ -5385,11 +5673,9 @@ function commChipCat(btn) {
 
 function commChipDist(btn) {
   const val = btn.dataset.val;
-  commState.chipDist  = commState.chipDist === val ? '' : val;
-  commState.chipEvent = '';
-  localStorage.setItem('comm-chip-dist', commState.chipDist);
-  localStorage.removeItem('comm-chip-event');
-  _commChipSync('comm-chips-dist', commState.chipDist);
+  commState.chipDists.has(val) ? commState.chipDists.delete(val) : commState.chipDists.add(val);
+  localStorage.setItem('comm-chip-dists', JSON.stringify([...commState.chipDists]));
+  _commChipSyncSet('comm-chips-dist', commState.chipDists);
   _commRenderEventChips();
   commRenderShortcuts();
   commRender();
@@ -5397,57 +5683,57 @@ function commChipDist(btn) {
 
 function commChipEvent(btn) {
   const val = btn.dataset.val;
-  commState.chipEvent = commState.chipEvent === val ? '' : val;
-  localStorage.setItem('comm-chip-event', commState.chipEvent);
-  _commChipSync('comm-chips-event', commState.chipEvent);
+  commState.chipEvents.has(val) ? commState.chipEvents.delete(val) : commState.chipEvents.add(val);
+  localStorage.setItem('comm-chip-events', JSON.stringify([...commState.chipEvents]));
+  _commChipSyncSet('comm-chips-event', commState.chipEvents);
   commRenderShortcuts();
   commRender();
 }
 
 function commShortcut(eventName) {
-  commState.chipEvent = commState.chipEvent === eventName ? '' : eventName;
-  localStorage.setItem('comm-chip-event', commState.chipEvent);
-  _commChipSync('comm-chips-event', commState.chipEvent);
+  commState.chipEvents.has(eventName) ? commState.chipEvents.delete(eventName) : commState.chipEvents.add(eventName);
+  localStorage.setItem('comm-chip-events', JSON.stringify([...commState.chipEvents]));
+  _commChipSyncSet('comm-chips-event', commState.chipEvents);
   commRenderShortcuts();
   commRender();
 }
 
 function commChipGender(btn) {
   const val = btn.dataset.val;
-  commState.chipGender = commState.chipGender === val ? '' : val;
-  commState.chipGrade  = '';
-  localStorage.setItem('comm-chip-gender', commState.chipGender);
-  localStorage.removeItem('comm-chip-grade');
-  _commChipSync('comm-chips-gender', commState.chipGender);
-  _commRenderGradeChips();
+  commState.chipGenders.has(val) ? commState.chipGenders.delete(val) : commState.chipGenders.add(val);
+  localStorage.setItem('comm-chip-genders', JSON.stringify([...commState.chipGenders]));
+  _commChipSyncSet('comm-chips-gender', commState.chipGenders);
   commRender();
 }
 
 function commChipGrade(btn) {
   const val = btn.dataset.val;
-  commState.chipGrade = commState.chipGrade === val ? '' : val;
-  localStorage.setItem('comm-chip-grade', commState.chipGrade);
-  _commChipSync('comm-chips-grade', commState.chipGrade);
+  commState.chipGrades.has(val) ? commState.chipGrades.delete(val) : commState.chipGrades.add(val);
+  localStorage.setItem('comm-chip-grades', JSON.stringify([...commState.chipGrades]));
+  _commChipSyncSet('comm-chips-grade', commState.chipGrades);
   commRender();
 }
 
 function commResetAllChips() {
-  commState.chipCat = commState.chipDist = commState.chipEvent = '';
-  commState.chipGender = commState.chipGrade = '';
-  ['comm-chip-cat','comm-chip-dist','comm-chip-event','comm-chip-gender','comm-chip-grade']
+  commState.chipCats.clear();
+  commState.chipDists.clear();
+  commState.chipEvents.clear();
+  commState.chipGenders.clear();
+  commState.chipGrades.clear();
+  ['comm-chip-cats','comm-chip-dists','comm-chip-events','comm-chip-genders','comm-chip-grades']
     .forEach(k => localStorage.removeItem(k));
-  ['comm-chips-cat','comm-chips-dist','comm-chips-gender','comm-chips-grade']
-    .forEach(id => _commChipSync(id, ''));
+  _commChipSyncSet('comm-chips-cat',    commState.chipCats);
+  _commChipSyncSet('comm-chips-gender', commState.chipGenders);
+  _commChipSyncSet('comm-chips-grade',  commState.chipGrades);
   _commRenderDistChips();
   _commRenderEventChips();
-  _commRenderGradeChips();
   commRenderShortcuts();
   commRender();
 }
 
 function commRender() {
-  // 확정 배너: agree >= 3인 결선시간
-  const verified = commState.msgs.filter(m => m.tag === '결선시간' && (m.agree || 0) >= 3);
+  // 확정 배너: agree >= 3 AND 오보 신고 < 3
+  const verified = commState.msgs.filter(m => m.tag === '결선시간' && (m.agree || 0) >= 3 && (m.obo || 0) < 3);
   const vWrap = document.getElementById('comm-verified-wrap');
   const vList = document.getElementById('comm-verified-list');
   if (verified.length > 0 && vWrap && vList) {
@@ -5467,27 +5753,30 @@ function commRender() {
     vWrap?.classList.add('hidden');
   }
 
-  // 피드 필터링 (3단계 캐스케이드 칩)
-  let msgs = commState.msgs;
-  if (commState.chipEvent) {
-    msgs = msgs.filter(m => (m.event || '') === commState.chipEvent);
-  } else if (commState.chipCat || commState.chipDist) {
+  // 피드 필터링 (다중 선택 OR 로직) — 공식훈련은 훈련 일정 탭 전용
+  let msgs = commState.msgs.filter(m => m.tag !== '공식훈련');
+  if (commState.chipEvents.size > 0) {
+    msgs = msgs.filter(m => commState.chipEvents.has(m.event || ''));
+  } else if (commState.chipCats.size > 0 || commState.chipDists.size > 0) {
     const validNames = new Set(
       _ALL_EVENTS
         .filter(e =>
-          (!commState.chipCat  || e.cat  === commState.chipCat) &&
-          (!commState.chipDist || e.dist === commState.chipDist)
+          (commState.chipCats.size  === 0 || commState.chipCats.has(e.cat)) &&
+          (commState.chipDists.size === 0 || commState.chipDists.has(e.dist))
         )
         .map(e => e.name)
     );
     msgs = msgs.filter(m => !m.event || validNames.has(m.event));
   }
-  if (commState.chipGender) {
-    const gKey = commState.chipGender === '남자' ? '남' : '여';
-    msgs = msgs.filter(m => (m.division || '').includes(gKey));
+  if (commState.chipGenders.size > 0) {
+    const gKeys = [...commState.chipGenders].map(g => g === '남자' ? '남' : '여');
+    msgs = msgs.filter(m => gKeys.some(gk => (m.division || '').includes(gk)));
   }
-  if (commState.chipGrade)
-    msgs = msgs.filter(m => (m.division || '') === commState.chipGrade);
+  if (commState.chipGrades.size > 0) {
+    const _GRADE_KEY = { '초등부':'초', '중등부':'중', '고등부':'고', '대학부':'대', '일반부':'일반' };
+    const gks = [...commState.chipGrades].map(g => _GRADE_KEY[g] || g);
+    msgs = msgs.filter(m => gks.some(gk => (m.division || '').includes(gk)));
+  }
 
   const feedEl = document.getElementById('comm-feed');
   if (!feedEl) return;
@@ -5509,12 +5798,21 @@ function commCard(m) {
   const s = Math.floor((Date.now() - m.ts) / 1000);
   const ago = s < 60 ? '방금 전' : s < 3600 ? Math.floor(s/60)+'분 전'
             : s < 86400 ? Math.floor(s/3600)+'시간 전' : Math.floor(s/86400)+'일 전';
-  const isAgreed    = commState.agreed.has(m.id);
-  const isDisagreed = commState.disagreed.has(m.id);
+  const isAgreed  = commState.agreed.has(m.id);
+  const isOboed   = commState.oboed.has(m.id);
+  const oboCount  = m.obo || 0;
+  const isFinale  = m.tag === '결선시간';
+  const oboWarn   = isFinale && oboCount >= 3;
+  const adminBorder = commState.adminMode ? 'border-color:#FECACA' : '';
+  const oboBorder   = oboWarn ? 'border-color:#FCA5A5' : '';
   return `
-  <div class="comm-feed-card" style="${commState.adminMode?'border-color:#FECACA':''}">
+  <div class="comm-feed-card" style="${adminBorder || oboBorder}">
     ${m.imageUrl ? `<img src="${escHtml(m.imageUrl)}" alt="현장 사진" class="w-full max-h-56 object-cover">` : ''}
     <div class="p-3.5">
+      ${oboWarn ? `<div class="flex items-center gap-1.5 mb-2 bg-red-50 rounded-lg px-2.5 py-1.5">
+        <span class="text-xs">⚠️</span>
+        <span class="text-[11px] font-bold text-red-600">오보 신고 ${oboCount}건 — 정보를 확인해주세요</span>
+      </div>` : ''}
       <div class="flex items-center gap-1.5 mb-2 flex-wrap">
         <span class="text-[10px] font-bold border rounded-md px-1.5 py-0.5 ${tagCls[m.tag]||tagCls['기타']}">${tagIcon[m.tag]||'💬'} ${escHtml(m.tag)}</span>
         ${m.event ? `<span class="text-[10px] font-semibold text-gray-500">${escHtml(m.event)}</span>` : ''}
@@ -5530,11 +5828,16 @@ function commCard(m) {
         </div>
         <div class="flex items-center gap-1.5">
           <button onclick="commAgree('${m.id}')" class="comm-agree ${isAgreed?'active':''}">
-            👍 <span id="comm-ag-${m.id}">${m.agree||0}</span> 맞아요
+            ✅ <span id="comm-ag-${m.id}">${m.agree||0}</span> 맞아요
           </button>
-          <button onclick="commDisagree('${m.id}')" class="comm-disagree ${isDisagreed?'active':''}">
-            👎 <span id="comm-dis-${m.id}">${m.disagree||0}</span> 달라요
-          </button>
+          ${isFinale
+            ? `<button onclick="commObo('${m.id}')" class="comm-disagree ${isOboed?'active':''}" style="${isOboed?'':''}">
+                ⚠️ <span id="comm-obo-${m.id}">${oboCount}</span> 오보신고
+               </button>`
+            : `<button onclick="commDisagree('${m.id}')" class="comm-disagree ${commState.disagreed.has(m.id)?'active':''}">
+                👎 <span id="comm-dis-${m.id}">${m.disagree||0}</span> 달라요
+               </button>`
+          }
         </div>
       </div>
     </div>
@@ -5542,25 +5845,55 @@ function commCard(m) {
 }
 
 function commAgree(id) {
-  if (commState.agreed.has(id) || commState.disagreed.has(id)) return;
-  commState.agreed.add(id);
-  fetch(`/api/community/msg/${id}/agree`, { method: 'POST' })
-    .then(r => r.json())
-    .then(({ agree }) => {
-      const m = commState.msgs.find(x => x.id === id);
-      if (m) { m.agree = agree; commRender(); }
-    });
+  if (commState.oboed.has(id)) return; // 오보 신고한 쪽은 맞아요 불가
+  const wasAgreed = commState.agreed.has(id);
+  if (wasAgreed) commState.agreed.delete(id); else commState.agreed.add(id);
+  commRender();
+  fetch(`/api/community/msg/${id}/agree`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceId: getDeviceId() }),
+  }).then(r => r.json()).then(d => {
+    if (d.error) { // 서버 충돌 시 롤백
+      if (wasAgreed) commState.agreed.add(id); else commState.agreed.delete(id);
+    }
+    const m = commState.msgs.find(x => x.id === id);
+    if (m) { m.agree = d.agree; commRender(); }
+  });
+}
+
+function commObo(id) {
+  if (commState.agreed.has(id)) return; // 맞아요 누른 쪽은 오보 불가
+  const wasOboed = commState.oboed.has(id);
+  if (wasOboed) commState.oboed.delete(id); else commState.oboed.add(id);
+  commRender();
+  fetch(`/api/community/msg/${id}/obo`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceId: getDeviceId() }),
+  }).then(r => r.json()).then(d => {
+    if (d.error) {
+      if (wasOboed) commState.oboed.add(id); else commState.oboed.delete(id);
+    }
+    const m = commState.msgs.find(x => x.id === id);
+    if (m) { m.obo = d.obo; commRender(); }
+  });
 }
 
 function commDisagree(id) {
-  if (commState.agreed.has(id) || commState.disagreed.has(id)) return;
-  commState.disagreed.add(id);
-  fetch(`/api/community/msg/${id}/disagree`, { method: 'POST' })
-    .then(r => r.json())
-    .then(({ disagree }) => {
-      const m = commState.msgs.find(x => x.id === id);
-      if (m) { m.disagree = disagree; commRender(); }
-    });
+  if (commState.agreed.has(id) || commState.disagreed.has(id)) {
+    // 달라요는 일반 게시글용 — 이미 누른 경우 철회
+    if (!commState.disagreed.has(id)) return;
+    commState.disagreed.delete(id);
+  } else {
+    commState.disagreed.add(id);
+  }
+  commRender();
+  fetch(`/api/community/msg/${id}/disagree`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceId: getDeviceId() }),
+  }).then(r => r.json()).then(d => {
+    const m = commState.msgs.find(x => x.id === id);
+    if (m) { m.disagree = d.disagree; commRender(); }
+  });
 }
 
 function commOpenModal() {
@@ -5571,6 +5904,7 @@ function commOpenModal() {
   const saved = localStorage.getItem('comm-nickname');
   const nickEl = document.getElementById('comm-modal-nick');
   if (nickEl && saved && !nickEl.value) nickEl.value = saved;
+  _setCommDrumsToNow();
   commModalTagChange();
 }
 
@@ -5580,19 +5914,83 @@ function commCloseModal() {
 }
 
 function commModalTagChange() {
-  const tag = document.getElementById('comm-modal-tag')?.value;
-  const meta = document.getElementById('comm-modal-meta');
-  const imgWrap = document.getElementById('comm-modal-img-wrap');
-  const req = document.getElementById('comm-img-required');
-  // 종목/부는 항상 표시, 사진도 항상 표시 (결선시간만 필수)
-  meta?.classList.remove('hidden');
-  imgWrap?.classList.remove('hidden');
-  if (req) req.style.display = tag === '결선시간' ? '' : 'none';
+  const tag      = document.getElementById('comm-modal-tag')?.value;
+  const timeSection = document.getElementById('comm-modal-time-section');
+  const textarea = document.getElementById('comm-modal-text');
+  const req      = document.getElementById('comm-img-required');
+  if (tag === '결선시간') {
+    timeSection?.classList.remove('hidden');
+    textarea?.classList.add('hidden');
+    if (req) req.style.display = '';
+  } else {
+    timeSection?.classList.add('hidden');
+    textarea?.classList.remove('hidden');
+    if (req) req.style.display = 'none';
+  }
+  // 태그 바꾸면 중복 경고 초기화
+  document.getElementById('comm-modal-dup-warn')?.classList.add('hidden');
+  const submitBtn = document.getElementById('comm-modal-submit');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; }
+  commModalUpdatePreview();
 }
 
-function commImgPreview() {
-  const input = document.getElementById('comm-modal-img');
-  const file = input?.files?.[0];
+function commModalEventChange() {
+  commModalUpdatePreview();
+  const tag    = document.getElementById('comm-modal-tag')?.value;
+  const event_ = document.getElementById('comm-modal-event')?.value;
+  const warn   = document.getElementById('comm-modal-dup-warn');
+  const warnTxt= document.getElementById('comm-modal-dup-text');
+  const submit = document.getElementById('comm-modal-submit');
+  if (tag === '결선시간' && event_) {
+    const dup = commState.msgs.find(m => m.tag === '결선시간' && m.event === event_);
+    if (dup && warn && warnTxt) {
+      warn.classList.remove('hidden');
+      warnTxt.textContent = `현재 제보: ${dup.text}`;
+      if (submit) { submit.disabled = true; submit.style.opacity = '0.4'; }
+    } else {
+      warn?.classList.add('hidden');
+      if (submit) { submit.disabled = false; submit.style.opacity = ''; }
+    }
+  } else {
+    warn?.classList.add('hidden');
+    if (submit) { submit.disabled = false; submit.style.opacity = ''; }
+  }
+}
+
+function commModalChip(btn, rowId) {
+  document.querySelectorAll(`#${rowId} .comm-chip`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  commModalUpdatePreview();
+}
+
+function commModalUpdatePreview() {
+  const tag    = document.getElementById('comm-modal-tag')?.value;
+  if (tag !== '결선시간') return;
+  const gender = document.querySelector('#comm-modal-gender-row .comm-chip.active')?.dataset.val || '';
+  const grade  = document.querySelector('#comm-modal-grade-row .comm-chip.active')?.dataset.val || '';
+  const event_ = document.getElementById('comm-modal-event')?.value || '';
+  const month  = document.getElementById('comm-modal-month')?.value || '';
+  const day    = document.getElementById('comm-modal-day')?.value || '';
+  const hour   = document.getElementById('comm-modal-hour')?.value;
+  const minute = document.getElementById('comm-modal-minute')?.value;
+  const venue  = document.querySelector('#comm-modal-venue-row .comm-chip.active')?.dataset.val || '';
+  const timePart = (hour !== '' && hour !== undefined && minute !== '' && minute !== undefined)
+    ? `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}` : '';
+  const datePart = (month && day) ? `${month}월 ${day}일` : '';
+  const parts = [gender, grade, event_, datePart, timePart, venue].filter(Boolean);
+  const preview = document.getElementById('comm-modal-preview');
+  const previewText = document.getElementById('comm-modal-preview-text');
+  if (parts.length > 0) {
+    preview?.classList.remove('hidden');
+    if (previewText) previewText.textContent = parts.join(' ');
+  } else {
+    preview?.classList.add('hidden');
+  }
+}
+
+function commImgPreview(src) {
+  const inputId = src === 'cam' ? 'comm-modal-img-cam' : 'comm-modal-img-gal';
+  const file = document.getElementById(inputId)?.files?.[0];
   if (!file) return;
   commCompressImg(file).then(base64 => {
     const preview = document.getElementById('comm-modal-img-preview');
@@ -5605,8 +6003,10 @@ function commImgPreview() {
 }
 
 function commImgClear() {
-  const input = document.getElementById('comm-modal-img');
-  if (input) input.value = '';
+  ['comm-modal-img-cam','comm-modal-img-gal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   const preview = document.getElementById('comm-modal-img-preview');
   if (preview) preview.src = '';
   document.getElementById('comm-modal-img-preview-wrap')?.classList.add('hidden');
@@ -5636,16 +6036,35 @@ async function commPost() {
   const nickname = document.getElementById('comm-modal-nick')?.value.trim();
   const tag      = document.getElementById('comm-modal-tag')?.value;
   const event_   = document.getElementById('comm-modal-event')?.value || '';
-  const division = document.getElementById('comm-modal-div')?.value || '';
-  const text     = document.getElementById('comm-modal-text')?.value.trim();
-  const imgFile  = document.getElementById('comm-modal-img')?.files?.[0];
+  const gender   = document.querySelector('#comm-modal-gender-row .comm-chip.active')?.dataset.val || '';
+  const grade    = document.querySelector('#comm-modal-grade-row .comm-chip.active')?.dataset.val || '';
+  const division = [gender, grade].filter(Boolean).join(' ');
 
-  if (!nickname) { alert('닉네임을 입력하세요'); return; }
-  if (!text)     { alert('내용을 입력하세요'); return; }
-  if (!commState.compId) { alert('대회를 선택하세요'); return; }
+  // 카메라/앨범 둘 다 체크
+  const imgFile = document.getElementById('comm-modal-img-cam')?.files?.[0]
+               || document.getElementById('comm-modal-img-gal')?.files?.[0];
+
+  if (!nickname)        { alert('닉네임을 입력하세요'); return; }
+  if (!commState.compId){ alert('대회를 선택하세요'); return; }
+
+  let text = '';
   if (tag === '결선시간') {
-    if (!imgFile)  { alert('결선시간 제보는 현장 사진이 필수입니다'); return; }
+    const month  = document.getElementById('comm-modal-month')?.value || '';
+    const day    = document.getElementById('comm-modal-day')?.value || '';
+    const hour   = document.getElementById('comm-modal-hour')?.value;
+    const minute = document.getElementById('comm-modal-minute')?.value;
+    const venue  = document.querySelector('#comm-modal-venue-row .comm-chip.active')?.dataset.val || '';
+    const timePart = (hour !== '' && hour != null && minute !== '' && minute != null)
+      ? `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}` : '';
+    const datePart = (month && day) ? `${month}월 ${day}일` : '';
+    text = [gender, grade, event_, datePart, timePart, venue].filter(Boolean).join(' ');
     if (!event_)   { alert('종목을 선택해주세요'); return; }
+    if (!timePart) { alert('결선 시각을 입력하세요'); return; }
+    if (!venue)    { alert('장소(결선장/본선장)를 선택하세요'); return; }
+    if (!imgFile)  { alert('결선시간 제보는 현장 사진이 필수입니다'); return; }
+  } else {
+    text = document.getElementById('comm-modal-text')?.value.trim();
+    if (!text) { alert('내용을 입력하세요'); return; }
   }
 
   let imageData = '';
@@ -5659,13 +6078,28 @@ async function commPost() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nickname, tag, text, event: event_, division, imageData }),
   }).then(r => {
+    if (r.status === 409) {
+      return r.json().then(d => {
+        const ex = d.existing;
+        commCloseModal();
+        alert(`⚠️ 이미 ${ex.event} 결선 시간이 제보되어 있습니다.\n\n📋 제보 내용: ${ex.text}\n\n내용이 틀렸다면 해당 제보의 '오보신고' 버튼을 눌러주세요.`);
+        throw new Error('duplicate');
+      });
+    }
     if (!r.ok) return r.json().then(e => { throw new Error(e.error || `서버 오류 (${r.status})`); });
     return r.json();
   }).then(() => {
     localStorage.setItem('comm-nickname', nickname);
-    document.getElementById('comm-modal-text').value = '';
     document.getElementById('comm-modal-event').value = '';
-    document.getElementById('comm-modal-div').value = '';
+    document.getElementById('comm-modal-text').value = '';
+    document.getElementById('comm-modal-month').value = '';
+    document.getElementById('comm-modal-day').value = '';
+    document.getElementById('comm-modal-hour').value = '';
+    document.getElementById('comm-modal-minute').value = '';
+    _resetCommDrums();
+    ['comm-modal-gender-row','comm-modal-grade-row','comm-modal-venue-row']
+      .forEach(id => document.querySelectorAll(`#${id} .comm-chip`).forEach(b => b.classList.remove('active')));
+    document.getElementById('comm-modal-preview')?.classList.add('hidden');
     commImgClear();
     commCloseModal();
   }).catch(err => {
@@ -5731,7 +6165,7 @@ function commDeleteMsg(id) {
   }).then(r => r.json()).then(d => {
     if (d.error) { alert(d.error); return; }
     commState.msgs = commState.msgs.filter(m => m.id !== id);
-    _commRenderGradeChips();
+
     commRenderShortcuts();
     commRender();
   });
@@ -5779,74 +6213,136 @@ function commLike(id) {
     </div>
 
     <!-- 닉네임 + 태그 -->
-    <div class="flex gap-2 mb-3">
+    <div class="flex gap-2 mb-4">
       <input id="comm-modal-nick" type="text" placeholder="닉네임" maxlength="20"
         class="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy/30">
       <select id="comm-modal-tag" onchange="commModalTagChange()"
         class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-navy focus:outline-none focus:ring-2 focus:ring-navy/30">
         <option value="결선시간">🏆 결선시간</option>
-        <option value="공식훈련">🏃 공식훈련</option>
-        <option value="장비검사">🔧 장비검사</option>
         <option value="기타">💬 기타</option>
       </select>
     </div>
 
-    <!-- 종목 + 부 -->
-    <div id="comm-modal-meta" class="grid grid-cols-2 gap-2 mb-3">
-      <select id="comm-modal-event"
-        class="border border-amber-200 bg-amber-50 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+    <!-- 종목 -->
+    <div class="mb-3">
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">종목</p>
+      <select id="comm-modal-event" onchange="commModalEventChange()"
+        class="w-full border border-amber-200 bg-amber-50 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
         <option value="">종목 선택</option>
-        <option>10m 공기소총</option>
-        <option>50m 3자세</option>
-        <option>50m 복사</option>
-        <option>10m 공기권총</option>
-        <option>25m 화약권총</option>
-        <option>25m 속사권총</option>
-        <option>스키트</option>
-        <option>트랩</option>
-      </select>
-      <select id="comm-modal-div"
-        class="border border-amber-200 bg-amber-50 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
-        <option value="">부 선택</option>
-        <option>남중</option>
-        <option>여중</option>
-        <option>남고</option>
-        <option>여고</option>
-        <option>남대</option>
-        <option>여대</option>
-        <option>남자일반</option>
-        <option>여자일반</option>
-        <option>혼성</option>
+        <optgroup label="소총">
+          <option>10m 공기소총</option>
+          <option>50m 3자세</option>
+          <option>50m 복사</option>
+        </optgroup>
+        <optgroup label="권총">
+          <option>10m 공기권총</option>
+          <option>25m 권총</option>
+          <option>25m 속사권총</option>
+          <option>25m 스탠다드</option>
+          <option>25m 센타파이어</option>
+          <option>50m 권총</option>
+        </optgroup>
+        <optgroup label="클레이">
+          <option>스키트</option>
+          <option>트랩</option>
+        </optgroup>
       </select>
     </div>
 
+    <!-- 중복 경고 (결선시간 + 이미 제보 있을 때) -->
+    <div id="comm-modal-dup-warn" class="hidden mb-3 bg-amber-50 border border-amber-300 rounded-xl px-3 py-2.5">
+      <p class="text-[11px] font-bold text-amber-700 mb-0.5">⚠️ 이미 제보된 종목입니다</p>
+      <p id="comm-modal-dup-text" class="text-xs text-amber-800"></p>
+      <p class="text-[11px] text-amber-600 mt-1">내용이 틀렸다면 해당 제보에서 <strong>오보신고</strong> 버튼을 눌러주세요.</p>
+    </div>
+
+    <!-- 성별 -->
+    <div class="mb-3">
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">성별</p>
+      <div class="flex gap-2" id="comm-modal-gender-row">
+        <button class="comm-chip" data-val="남자" onclick="commModalChip(this,'comm-modal-gender-row')">남자</button>
+        <button class="comm-chip" data-val="여자" onclick="commModalChip(this,'comm-modal-gender-row')">여자</button>
+      </div>
+    </div>
+
+    <!-- 종별 -->
+    <div class="mb-4">
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">종별</p>
+      <div class="flex gap-2 flex-wrap" id="comm-modal-grade-row">
+        <button class="comm-chip" data-val="초등부" onclick="commModalChip(this,'comm-modal-grade-row')">초등부</button>
+        <button class="comm-chip" data-val="중등부" onclick="commModalChip(this,'comm-modal-grade-row')">중등부</button>
+        <button class="comm-chip" data-val="고등부" onclick="commModalChip(this,'comm-modal-grade-row')">고등부</button>
+        <button class="comm-chip" data-val="대학부" onclick="commModalChip(this,'comm-modal-grade-row')">대학부</button>
+        <button class="comm-chip" data-val="일반부" onclick="commModalChip(this,'comm-modal-grade-row')">일반부</button>
+      </div>
+    </div>
+
+    <!-- 구분선 -->
+    <div class="border-t border-gray-100 mb-4"></div>
+
+    <!-- 결선시간 전용: 날짜·시각·장소 -->
+    <div id="comm-modal-time-section" class="mb-4">
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">결선 날짜 / 시각 / 장소</p>
+      <div class="flex items-center gap-1.5 mb-2">
+        <div id="comm-drum-month" class="drum-picker rounded-xl border border-gray-100" style="width:44px"></div>
+        <span class="text-gray-400 text-sm">월</span>
+        <div id="comm-drum-day" class="drum-picker rounded-xl border border-gray-100" style="width:44px"></div>
+        <span class="text-gray-400 text-sm">일</span>
+        <span class="mx-1 text-gray-200">|</span>
+        <div id="comm-drum-hour" class="drum-picker rounded-xl border border-gray-100" style="width:44px"></div>
+        <span class="text-gray-400 text-sm">:</span>
+        <div id="comm-drum-min" class="drum-picker rounded-xl border border-gray-100" style="width:44px"></div>
+        <input type="hidden" id="comm-modal-month">
+        <input type="hidden" id="comm-modal-day">
+        <input type="hidden" id="comm-modal-hour">
+        <input type="hidden" id="comm-modal-minute">
+      </div>
+      <div class="flex gap-2" id="comm-modal-venue-row">
+        <button class="comm-chip" data-val="결선장" onclick="commModalChip(this,'comm-modal-venue-row')">결선장</button>
+        <button class="comm-chip" data-val="본선장" onclick="commModalChip(this,'comm-modal-venue-row')">본선장</button>
+      </div>
+      <!-- 미리보기 -->
+      <div id="comm-modal-preview" class="hidden mt-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+        <p class="text-[10px] font-bold text-amber-600 mb-0.5">미리보기</p>
+        <p id="comm-modal-preview-text" class="text-sm font-bold text-gray-800"></p>
+      </div>
+    </div>
+
+    <!-- 자유 텍스트 (결선시간 제외) -->
+    <textarea id="comm-modal-text" placeholder="내용을 입력하세요" maxlength="300" rows="3"
+      class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-navy/30 mb-3 hidden"></textarea>
+
     <!-- 사진 업로드 -->
-    <div id="comm-modal-img-wrap" class="mb-3">
-      <p class="text-xs font-semibold text-gray-500 mb-1.5">
-        현장 사진
-        <span id="comm-img-required" class="text-red-500 font-bold"> (결선시간 필수)</span>
+    <div id="comm-modal-img-wrap" class="mb-4">
+      <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+        현장 사진<span id="comm-img-required" class="text-red-400 normal-case font-semibold"> (결선시간 필수)</span>
       </p>
-      <input id="comm-modal-img" type="file" accept="image/*" capture="environment" class="hidden" onchange="commImgPreview()">
-      <div id="comm-modal-img-placeholder"
-        onclick="document.getElementById('comm-modal-img').click()"
-        class="border-2 border-dashed border-gray-200 rounded-xl py-7 text-center cursor-pointer hover:border-amber-300 hover:bg-amber-50/50 transition-colors">
-        <div class="text-3xl mb-1">📷</div>
-        <p class="text-xs text-gray-400">탭하여 사진 추가</p>
+      <!-- 두 input: 카메라 / 앨범 -->
+      <input id="comm-modal-img-cam" type="file" accept="image/*" capture="environment" class="hidden" onchange="commImgPreview('cam')">
+      <input id="comm-modal-img-gal" type="file" accept="image/*" class="hidden" onchange="commImgPreview('gal')">
+      <div id="comm-modal-img-placeholder" class="border-2 border-dashed border-gray-200 rounded-xl py-5 text-center">
+        <div class="text-2xl mb-2">📷</div>
+        <div class="flex justify-center gap-2">
+          <button onclick="document.getElementById('comm-modal-img-cam').click()"
+            class="text-xs font-semibold bg-navy text-white px-3 py-1.5 rounded-lg active:scale-95 transition-all" style="background:#0B1E3F">
+            카메라로 찍기
+          </button>
+          <button onclick="document.getElementById('comm-modal-img-gal').click()"
+            class="text-xs font-semibold bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg active:scale-95 transition-all">
+            앨범에서 선택
+          </button>
+        </div>
       </div>
       <div id="comm-modal-img-preview-wrap" class="hidden relative">
         <img id="comm-modal-img-preview" class="w-full max-h-52 object-cover rounded-xl">
         <button onclick="commImgClear()"
-          class="absolute top-2 right-2 w-7 h-7 bg-black/50 text-white rounded-full text-xs flex items-center justify-center leading-none">✕</button>
+          class="absolute top-2 right-2 w-7 h-7 bg-black/50 text-white rounded-full text-xs flex items-center justify-center">✕</button>
       </div>
     </div>
 
-    <!-- 내용 -->
-    <textarea id="comm-modal-text" placeholder="예) 결선 14:00 시작 예정, A관 1번 사대" maxlength="300" rows="3"
-      class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-navy/30 mb-4"></textarea>
-
     <!-- 제출 -->
     <button id="comm-modal-submit" onclick="commPost()"
-      class="w-full bg-navy text-white font-bold py-3.5 rounded-xl text-sm hover:bg-navy/90 active:scale-95 transition-all">
+      class="w-full text-white font-bold py-3.5 rounded-xl text-sm active:scale-95 transition-all" style="background:#0B1E3F">
       제보 올리기
     </button>
   </div>
