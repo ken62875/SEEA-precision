@@ -1331,6 +1331,77 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── GET /api/community/today-finale?comp=I02B ───────────
+  // 오늘 날짜에 경기가 있는 결선 종목+종별 목록 반환
+  if (req.method === 'GET' && req.url.startsWith('/api/community/today-finale')) {
+    const params  = new URL(req.url, 'http://localhost').searchParams;
+    const comp    = (params.get('comp') || '').trim();
+    if (!comp) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'comp required' }));
+      return;
+    }
+    try {
+      let events;
+      const cached = compEventsCache.get(comp);
+      if (cached && Date.now() - cached.ts < 60 * 60 * 1000) {
+        events = cached.data.events;
+      } else {
+        const { events: rawEvts } = await getGamePageHtml(comp);
+        const seen = new Set();
+        events = [];
+        for (const e of rawEvts) {
+          const key = e.playerUrl || `${e.eventLabel}|${e.scheduleDate}`;
+          if (!seen.has(key)) { seen.add(key); events.push(e); }
+        }
+        compEventsCache.set(comp, { data: { comp, events }, ts: Date.now() });
+      }
+      const kstNow = new Date(Date.now() + 9 * 3600 * 1000);
+      const todayM = kstNow.getUTCMonth() + 1;
+      const todayD = kstNow.getUTCDate();
+      const parseDateStr = s => {
+        const m = (s || '').match(/(\d{1,2})월\s*(\d{1,2})일/);
+        return m ? { month: parseInt(m[1]), day: parseInt(m[2]) } : null;
+      };
+      const FINALE_PREFIXES = ['10m 공기소총','10m 공기권총','25m 속사권총','25m 권총','50m 3자세'];
+      const parseLabel = label => {
+        for (const prefix of FINALE_PREFIXES) {
+          if ((label || '').startsWith(prefix))
+            return { event: prefix, division: label.slice(prefix.length).trim() };
+        }
+        return null;
+      };
+      const isFinaleEligible = (event, division) => {
+        if (event === '10m 공기권총' || event === '10m 공기소총') return !division.includes('초등부');
+        if (event === '25m 권총')     return division.startsWith('여자');
+        if (event === '25m 속사권총') return division.startsWith('남자');
+        if (event === '50m 3자세')    return true;
+        return false;
+      };
+      const seen2 = new Set();
+      const result = [];
+      for (const e of events) {
+        const d = parseDateStr(e.scheduleDate);
+        if (!d || d.month !== todayM || d.day !== todayD) continue;
+        const parsed = parseLabel(e.eventLabel || '');
+        if (!parsed) continue;
+        const { event, division } = parsed;
+        if (!isFinaleEligible(event, division)) continue;
+        const key = `${event}|${division}`;
+        if (seen2.has(key)) continue;
+        seen2.add(key);
+        result.push({ event, division });
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ events: result }));
+    } catch (err) {
+      console.error('[today-finale]', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
   // ── GET /api/community/:compId/stream (SSE) ────────────
   const sseMatch = req.url.match(/^\/api\/community\/([^\/]+)\/stream$/);
   if (req.method === 'GET' && sseMatch) {

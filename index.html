@@ -2240,7 +2240,7 @@
      FOOTER
 ═══════════════════════════════════════ -->
 <footer class="bg-navy text-white">
-  <div class="max-w-7xl mx-auto px-6 py-16">
+  <div class="max-w-7xl mx-auto px-6 py-8">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-10">
 
       <!-- Brand -->
@@ -5615,6 +5615,15 @@ function getDeviceId() {
   return id;
 }
 
+// 결선이 있는 종목 목록 (초등부 결선 없음)
+const FINALE_EVENTS = [
+  { event: '10m 공기권총',  label: '10m 공기권총',  divCheck: d => !d.includes('초') },
+  { event: '10m 공기소총',  label: '10m 공기소총',  divCheck: d => !d.includes('초') },
+  { event: '25m 권총',      label: '25m 여자 권총',  divCheck: d => d.includes('여') },
+  { event: '25m 속사권총',  label: '25m 남자 속사',  divCheck: d => d.includes('남') },
+  { event: '50m 3자세',     label: '50m 3자세',      divCheck: () => true },
+];
+
 const commState = {
   compId: '', msgs: [], es: null,
   agreed: new Set(), disagreed: new Set(), oboed: new Set(),
@@ -5623,6 +5632,7 @@ const commState = {
   adminMode: false, adminPw: '',
   nearFilter: false,
   currentTab: 'feed',
+  todayFinaleEvents: null,
   trainExpandedDates: new Set(),
   myPostIds: new Set()
 };
@@ -5828,8 +5838,9 @@ function commInit() {
 
 function commSwitchTab(tab) {
   const isFeed = tab === 'feed';
-  commState.currentTab  = tab;
-  commState.nearFilter  = false;
+  commState.currentTab       = tab;
+  commState.nearFilter       = false;
+  commState.todayFinaleEvents = null;
   document.getElementById('comm-near-btn')?.classList.remove('comm-near-active');
 
   document.getElementById('comm-pane-feed')?.classList.toggle('hidden', !isFeed);
@@ -5884,10 +5895,26 @@ function commRenderTrainingSchedule() {
       return validDates.has(d);
     });
   }
+  // 종목(cat) · 사선(dist) · 세부종목(event) 필터
+  if (commState.chipEvents.size > 0) {
+    trainMsgs = trainMsgs.filter(m => commState.chipEvents.has(m.event || ''));
+  } else if (commState.chipCats.size > 0 || commState.chipDists.size > 0) {
+    const validNames = new Set(
+      _ALL_EVENTS
+        .filter(e =>
+          (commState.chipCats.size  === 0 || commState.chipCats.has(e.cat)) &&
+          (commState.chipDists.size === 0 || commState.chipDists.has(e.dist))
+        )
+        .map(e => e.name)
+    );
+    trainMsgs = trainMsgs.filter(m => !m.event || validNames.has(m.event));
+  }
+  // 성별 필터
   if (commState.chipGenders.size > 0) {
     const gKeys = [...commState.chipGenders].map(g => g === '남자' ? '남' : '여');
     trainMsgs = trainMsgs.filter(m => gKeys.some(gk => (m.division || '').includes(gk)));
   }
+  // 종별 필터
   if (commState.chipGrades.size > 0) {
     const _GRADE_KEY = { '초등부':'초', '중등부':'중', '고등부':'고', '대학부':'대', '일반부':'일반' };
     const gks = [...commState.chipGrades].map(g => _GRADE_KEY[g] || g);
@@ -6070,8 +6097,27 @@ function commToggleNear() {
   commState.nearFilter = !commState.nearFilter;
   const btn = document.getElementById('comm-near-btn');
   btn?.classList.toggle('comm-near-active', commState.nearFilter);
-  commRender();
-  commRenderTrainingSchedule();
+
+  if (commState.nearFilter && commState.currentTab === 'feed') {
+    const compObj  = COMPETITIONS.find(c => c.id === commState.compId);
+    const ksfCode  = compObj?.ksfCode;
+    if (!ksfCode) {
+      commState.todayFinaleEvents = [];
+      commRender();
+      return;
+    }
+    // 로딩 중 표시
+    const feedEl = document.getElementById('comm-feed');
+    if (feedEl) feedEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">오늘 경기 일정 불러오는 중...</div>';
+    fetch(`/api/community/today-finale?comp=${encodeURIComponent(ksfCode)}`)
+      .then(r => r.json())
+      .then(d => { commState.todayFinaleEvents = d.events || []; commRender(); })
+      .catch(() => { commState.todayFinaleEvents = []; commRender(); });
+  } else {
+    commState.todayFinaleEvents = null;
+    commRender();
+    commRenderTrainingSchedule();
+  }
 }
 
 
@@ -6102,6 +6148,7 @@ function commChipCat(btn) {
   _commRenderEventChips();
   commRenderShortcuts();
   commRender();
+  commRenderTrainingSchedule();
   _updateFilterBadge();
 }
 
@@ -6113,6 +6160,7 @@ function commChipDist(btn) {
   _commRenderEventChips();
   commRenderShortcuts();
   commRender();
+  commRenderTrainingSchedule();
   _updateFilterBadge();
 }
 
@@ -6123,6 +6171,7 @@ function commChipEvent(btn) {
   _commChipSyncSet('comm-chips-event', commState.chipEvents);
   commRenderShortcuts();
   commRender();
+  commRenderTrainingSchedule();
   _updateFilterBadge();
 }
 
@@ -6132,6 +6181,7 @@ function commShortcut(eventName) {
   _commChipSyncSet('comm-chips-event', commState.chipEvents);
   commRenderShortcuts();
   commRender();
+  commRenderTrainingSchedule();
   _updateFilterBadge();
 }
 
@@ -6214,7 +6264,58 @@ function commRender() {
     vWrap?.classList.add('hidden');
   }
 
-  // 피드 필터링 (다중 선택 OR 로직) — 공식훈련은 훈련 일정 탭 전용
+  // ── 오늘 경기 결선 모드: 결선 현황판 렌더링 ──────────────────
+  if (commState.nearFilter && commState.currentTab === 'feed') {
+    const feedEl = document.getElementById('comm-feed');
+    if (!feedEl) return;
+
+    // 아직 API 응답 전
+    if (commState.todayFinaleEvents === null) return;
+
+    // 오늘 경기 없음
+    if (commState.todayFinaleEvents.length === 0) {
+      feedEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">오늘은 결선이 있는 경기가 없습니다</div>';
+      return;
+    }
+
+    const kstNow  = new Date(Date.now() + 9 * 3600 * 1000);
+    const todayKst = `${kstNow.getUTCFullYear()}-${kstNow.getUTCMonth()+1}-${kstNow.getUTCDate()}`;
+    const todayReports = commState.msgs.filter(m => {
+      if (m.tag !== '결선시간') return false;
+      const kst = new Date(m.ts + 9 * 3600 * 1000);
+      return `${kst.getUTCFullYear()}-${kst.getUTCMonth()+1}-${kst.getUTCDate()}` === todayKst;
+    });
+
+    const dateLabel = `${kstNow.getUTCMonth()+1}월 ${kstNow.getUTCDate()}일`;
+    let html = `<p class="text-[11px] font-bold text-gray-400 tracking-widest uppercase px-1 mb-3">📍 ${dateLabel} 결선 현황</p>`;
+
+    commState.todayFinaleEvents.forEach(({ event, division }) => {
+      const reports = todayReports.filter(m => m.event === event && m.division === division);
+      if (reports.length > 0) {
+        html += reports.map(commCard).join('');
+      } else {
+        const safeEv = event.replace(/'/g, "\\'");
+        html += `
+        <div class="comm-feed-card mb-2" style="border:1.5px dashed #E5E7EB;background:#FAFAFA;">
+          <div class="px-4 py-3.5 flex items-center justify-between gap-3">
+            <div>
+              <span class="text-[11px] font-bold text-navy/50">🏆 ${escHtml(event)} ${escHtml(division)}</span>
+              <p class="text-xs text-gray-400 mt-0.5">아직 아무도 제보하지 않았습니다</p>
+            </div>
+            <button onclick="commOpenModalWith('${safeEv}')"
+              class="shrink-0 text-xs font-bold text-amber-700 border border-amber-300 rounded-xl px-3 py-1.5 bg-amber-50 active:scale-95 transition-all whitespace-nowrap">
+              제보하기
+            </button>
+          </div>
+        </div>`;
+      }
+    });
+
+    feedEl.innerHTML = html;
+    return;
+  }
+
+  // ── 일반 피드 필터링 (다중 선택 OR 로직) — 공식훈련은 훈련 일정 탭 전용 ──
   let msgs = commState.msgs.filter(m => m.tag !== '공식훈련');
   if (commState.chipEvents.size > 0) {
     msgs = msgs.filter(m => commState.chipEvents.has(m.event || ''));
@@ -6238,22 +6339,11 @@ function commRender() {
     const gks = [...commState.chipGrades].map(g => _GRADE_KEY[g] || g);
     msgs = msgs.filter(m => gks.some(gk => (m.division || '').includes(gk)));
   }
-  if (commState.nearFilter) {
-    const now = new Date();
-    const todayStr = `${now.getMonth()+1}월 ${now.getDate()}일`;
-    msgs = msgs.filter(m => {
-      const kst = new Date(m.ts + 9 * 3600 * 1000);
-      return `${kst.getUTCMonth()+1}월 ${kst.getUTCDate()}일` === todayStr;
-    });
-  }
 
   const feedEl = document.getElementById('comm-feed');
   if (!feedEl) return;
   if (msgs.length === 0) {
-    const emptyMsg = commState.nearFilter && commState.currentTab === 'feed'
-      ? '아직 아무도 결선 시간을 제보하지 않았습니다<br><span class="text-xs">현장에 계시다면 첫 번째로 제보해 주세요! 🏅</span>'
-      : '아직 제보가 없습니다<br><span class="text-xs">첫 번째로 정보를 공유해보세요!</span>';
-    feedEl.innerHTML = `<div class="text-center text-gray-400 text-sm py-10">${emptyMsg}</div>`;
+    feedEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">아직 제보가 없습니다<br><span class="text-xs">첫 번째로 정보를 공유해보세요!</span></div>';
     return;
   }
   feedEl.innerHTML = msgs.map(commCard).join('');
@@ -6411,6 +6501,16 @@ function commOpenModal() {
   if (nickEl && saved && !nickEl.value) nickEl.value = saved;
   _setCommDrumsToNow();
   commModalTagChange();
+}
+
+function commOpenModalWith(eventName) {
+  commOpenModal();
+  // 태그를 결선시간으로 프리셋
+  const tagEl = document.getElementById('comm-modal-tag');
+  if (tagEl) { tagEl.value = '결선시간'; commModalTagChange(); }
+  // 종목 프리셋
+  const evEl = document.getElementById('comm-modal-event');
+  if (evEl) { evEl.value = eventName; }
 }
 
 function commCloseModal() {
