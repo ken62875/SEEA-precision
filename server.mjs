@@ -60,15 +60,20 @@ const BIB_CACHE_FILE = path.join(__dirname, 'bib-cache.json');
 const compPlayersCache = new Map(); // compCode → { players: [], ts: number }
 
 // 서버 시작 시 디스크 캐시 복원 (재배포 후에도 즉시 응답 가능)
+// TTL 만료 여부와 무관하게 전부 복원한다 — KSF 장애 시 만료된 캐시라도
+// stale 폴백으로 응답할 수 있어야 하기 때문. 신선도는 요청 시점에 판단.
 try {
   if (fs.existsSync(BIB_CACHE_FILE)) {
     const saved = JSON.parse(fs.readFileSync(BIB_CACHE_FILE, 'utf8'));
-    const TTL   = 12 * 60 * 60 * 1000;
-    let loaded  = 0;
+    let loaded = 0, stale = 0;
+    const TTL  = 12 * 60 * 60 * 1000;
     for (const [comp, entry] of Object.entries(saved)) {
-      if (Date.now() - entry.ts < TTL) { compPlayersCache.set(comp, entry); loaded++; }
+      if (!entry || !Array.isArray(entry.players)) continue;
+      compPlayersCache.set(comp, entry);
+      loaded++;
+      if (Date.now() - entry.ts >= TTL) stale++;
     }
-    if (loaded) console.log(`[CACHE] 디스크 캐시 복원 — ${loaded}개 대회`);
+    if (loaded) console.log(`[CACHE] 디스크 캐시 복원 — ${loaded}개 대회${stale ? ` (만료 ${stale}개, KSF 장애 대비 보존)` : ''}`);
   }
 } catch (e) { console.log('[CACHE] 디스크 캐시 로드 실패:', e.message); }
 
@@ -130,6 +135,40 @@ function injectBirthYears(players) {
     nameAffIdx.set(k, idx + 1);
     return { ...p, birthYear: births[idx] || '' };
   });
+}
+
+// ── 대회 전체 선수 데이터 확보 (stale-on-error 폴백) ─────────
+// 신선한 캐시가 있으면 즉시 반환. 만료/없으면 KSF 재조회.
+// KSF가 먹통이라 재조회가 실패하면 만료된 캐시라도 그대로 반환한다(stale=true).
+// 캐시도 없고 조회도 실패한 경우에만 { players:null, error } 반환.
+async function getCompPlayers(comp, { maxAge = 12 * 60 * 60 * 1000 } = {}) {
+  const cached = compPlayersCache.get(comp);
+  if (cached && Date.now() - cached.ts < maxAge) {
+    return { players: cached.players, ts: cached.ts, stale: false };
+  }
+  const ageH = c => Math.round((Date.now() - c.ts) / 3600000);
+  try {
+    const result = await searchBib(comp, '', 'name'); // searchName 무관하게 전체 선수 반환
+    if (result.ok && result.allPlayers?.length) {
+      const entry = { players: result.allPlayers, ts: Date.now() };
+      compPlayersCache.set(comp, entry);
+      saveBibCacheToDisk();
+      return { players: entry.players, ts: entry.ts, stale: false };
+    }
+    // KSF 응답은 받았지만 비어있음 → 만료 캐시 폴백
+    if (cached) {
+      console.warn(`[CACHE] ${comp} KSF 빈 응답 → 만료 캐시 폴백 (${cached.players.length}명, ${ageH(cached)}h 경과)`);
+      return { players: cached.players, ts: cached.ts, stale: true };
+    }
+    return { players: null, error: result.error || 'KSF 데이터를 불러올 수 없습니다.' };
+  } catch (err) {
+    // KSF 장애(타임아웃·5xx 등) → 만료 캐시 폴백
+    if (cached) {
+      console.warn(`[CACHE] ${comp} KSF 조회 실패(${err.message}) → 만료 캐시 폴백 (${cached.players.length}명, ${ageH(cached)}h 경과)`);
+      return { players: cached.players, ts: cached.ts, stale: true };
+    }
+    return { players: null, error: err.message };
+  }
 }
 
 // ── .env 파일 로드 ────────────────────────────────────────
@@ -532,18 +571,15 @@ const server = http.createServer(async (req, res) => {
     }
     const cached = compPlayersCache.get(comp);
     const isWarm = cached && Date.now() - cached.ts < 12 * 60 * 60 * 1000;
+    const hasStale = !!(cached && cached.players?.length);
     if (!isWarm) {
-      // 즉시 응답하고 백그라운드에서 데이터 로딩
-      searchBib(comp, '', 'name').then(result => {
-        if (result.ok && result.allPlayers?.length) {
-          compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
-          saveBibCacheToDisk();
-          console.log(`[WARM] ${comp} 캐시 완료 — ${result.allPlayers.length}명`);
-        }
-      }).catch(e => console.log(`[WARM] ${comp} 캐시 실패: ${e.message}`));
+      // 즉시 응답하고 백그라운드에서 데이터 로딩 (실패 시 만료 캐시 유지)
+      getCompPlayers(comp)
+        .then(g => { if (g.players && !g.stale) console.log(`[WARM] ${comp} 캐시 완료 — ${g.players.length}명`); })
+        .catch(e => console.log(`[WARM] ${comp} 캐시 실패: ${e.message}`));
     }
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ cached: isWarm }));
+    res.end(JSON.stringify({ cached: isWarm, hasStale }));
     return;
   }
 
@@ -817,28 +853,15 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      const BIB_CACHE_TTL = 12 * 60 * 60 * 1000; // 12시간
-      const cached = compPlayersCache.get(comp);
-      let allPlayers;
-
-      if (cached && Date.now() - cached.ts < BIB_CACHE_TTL) {
-        // 캐시 히트 → 로컬 검색만 (즉시 응답)
-        console.log(`[/api/bib] 캐시 히트 — ${comp}, "${name}" (${cached.players.length}명 중 검색)`);
-        allPlayers = cached.players;
-      } else {
-        // 캐시 미스 → KSF 스크래핑 후 캐시 저장
-        const result = await searchBib(comp, name, searchMode);
-        if (result.ok && result.allPlayers?.length) {
-          compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
-          saveBibCacheToDisk();
-        }
-        if (!result.ok) {
-          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify(result));
-          return;
-        }
-        allPlayers = result.allPlayers || [];
+      // 신선하면 캐시, 만료/없으면 KSF 재조회. KSF 장애 시 만료 캐시로 폴백.
+      const got = await getCompPlayers(comp, { maxAge: 12 * 60 * 60 * 1000 });
+      if (!got.players) {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, error: got.error || 'KSF 데이터를 불러올 수 없습니다.' }));
+        return;
       }
+      const allPlayers = got.players;
+      console.log(`[/api/bib] ${comp}, "${name}" (${allPlayers.length}명 중 검색)${got.stale ? ' [stale 폴백]' : ''}`);
 
       const searchLower = name.toLowerCase();
       const rawMatched = searchMode === 'team'
@@ -848,7 +871,7 @@ const server = http.createServer(async (req, res) => {
       const matched = injectBirthYears(rawMatched);
 
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: true, total: allPlayers.length, matched, searchMode }));
+      res.end(JSON.stringify({ ok: true, total: allPlayers.length, matched, searchMode, stale: got.stale, cachedAt: got.ts }));
     } catch (err) {
       console.error('[/api/bib]', err.message);
       res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -868,18 +891,17 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     const cached = compPlayersCache.get(comp);
-    if (cached && Date.now() - cached.ts < 12 * 60 * 60 * 1000) {
+    if (cached && cached.players?.length) {
+      // 신선/만료 무관하게 캐시가 있으면 즉시 팀 목록 반환 (KSF 장애에도 동작)
       const teams = [...new Set(cached.players.map(p => p.affiliation).filter(Boolean))];
+      const isStale = Date.now() - cached.ts >= 12 * 60 * 60 * 1000;
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ teams }));
+      res.end(JSON.stringify({ teams, stale: isStale }));
+      // 만료 캐시면 백그라운드에서 갱신 시도 (실패해도 기존 캐시 유지)
+      if (isStale) getCompPlayers(comp).catch(() => {});
     } else {
       // 캐시 없으면 백그라운드에서 전체 선수 fetch 시작
-      searchBib(comp, '', 'name').then(result => {
-        if (result.ok && result.allPlayers?.length) {
-          compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
-          saveBibCacheToDisk();
-        }
-      }).catch(() => {});
+      getCompPlayers(comp).catch(() => {});
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ teams: [], warming: true }));
     }
@@ -947,10 +969,21 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify(cached2.data));
         return;
       }
-      const data = await getEventRankings(rankUrl);
-      rankingsCache.set(cKey, { data, ts: now });
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(data));
+      try {
+        const data = await getEventRankings(rankUrl);
+        rankingsCache.set(cKey, { data, ts: now });
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify(data));
+      } catch (fetchErr) {
+        // KSF 장애 → 만료된 랭킹 캐시라도 있으면 폴백
+        if (cached2) {
+          console.warn(`[/api/bib-result] ${rankUrl} 조회 실패 → 만료 캐시 폴백`);
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ ...cached2.data, stale: true }));
+        } else {
+          throw fetchErr;
+        }
+      }
     } catch (err) {
       console.error('[/api/bib-result]', err.message);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -972,17 +1005,10 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     try {
-      let players;
-      const cached = compPlayersCache.get(comp);
-      if (cached && Date.now() - cached.ts < 2 * 60 * 60 * 1000) {
-        players = cached.players;
-      } else {
-        const result = await searchBib(comp, '', 'name'); // 전체 가져오기
-        if (!result.ok) throw new Error(result.error || '데이터 없음');
-        compPlayersCache.set(comp, { players: result.allPlayers, ts: Date.now() });
-        saveBibCacheToDisk();
-        players = result.allPlayers;
-      }
+      // 앞뒤 사대는 비교적 최신성이 중요 → 2시간. 만료/장애 시 stale 폴백.
+      const got = await getCompPlayers(comp, { maxAge: 2 * 60 * 60 * 1000 });
+      if (!got.players) throw new Error(got.error || '데이터 없음');
+      const players = got.players;
       // 속사(알파벳 사대)와 일반(숫자 사대) 모두 처리
       const isAlpha = /^[A-Za-z]+$/.test(lane);
       const groupPlayers = players
@@ -1100,7 +1126,16 @@ const server = http.createServer(async (req, res) => {
     try {
       const now = Date.now();
       if (!compListCache || now - compListCache.ts > 30 * 60 * 1000) {
-        compListCache = { data: await getCompList(), ts: now };
+        try {
+          compListCache = { data: await getCompList(), ts: now };
+        } catch (fetchErr) {
+          // KSF 장애 → 만료된 대회목록 캐시라도 있으면 폴백
+          if (compListCache) {
+            console.warn(`[/api/comp-list] 갱신 실패(${fetchErr.message}) → 만료 캐시 폴백`);
+          } else {
+            throw fetchErr;
+          }
+        }
       }
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(compListCache.data));
@@ -1121,23 +1156,30 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: 'comp 파라미터가 필요합니다.' }));
       return;
     }
-    // bib 캐시 + 메달 캐시 삭제 후 즉시 재fetch
-    compPlayersCache.delete(comp);
-    compEventsCache.delete(comp);
-    for (const k of teamMedalsCache.keys()) {
-      if (k.startsWith(comp + ':')) teamMedalsCache.delete(k);
-    }
+    // 즉시 재fetch — 성공할 때만 교체한다(KSF 장애 시 기존 캐시 보존)
+    const prevPlayers = compPlayersCache.get(comp);
     try {
       const result = await searchBib(comp, '', 'name');
       if (result.ok && result.allPlayers?.length) {
         compPlayersCache.set(comp, { players: injectBirthYears(result.allPlayers), ts: Date.now() });
         saveBibCacheToDisk();
+        // 갱신 성공 시에만 파생 캐시 무효화
+        compEventsCache.delete(comp);
+        for (const k of teamMedalsCache.keys()) {
+          if (k.startsWith(comp + ':')) teamMedalsCache.delete(k);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: true, players: compPlayersCache.get(comp).players.length }));
+      } else {
+        // KSF 빈 응답 → 기존 캐시 유지하고 그 사실 통지
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, error: result.error || 'KSF 응답 없음', kept: prevPlayers?.players?.length ?? 0 }));
       }
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: true, players: compPlayersCache.get(comp)?.players?.length ?? 0 }));
     } catch (err) {
-      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ error: err.message }));
+      // KSF 장애 → 기존 캐시 유지
+      console.warn(`[/api/cache-refresh] ${comp} 갱신 실패(${err.message}) → 기존 캐시 유지`);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: err.message, kept: prevPlayers?.players?.length ?? 0 }));
     }
     return;
   }

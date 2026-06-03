@@ -3371,7 +3371,8 @@ async function bibSearch() {
     } else if (data.matched.length === 0) {
       result.innerHTML = bibResultNotFound(c, name, data.total, data.searchMode);
     } else {
-      result.innerHTML = bibResultFound(c, name, data.matched, data.total, data.searchMode);
+      result.innerHTML = (data.stale ? bibStaleNotice(data.cachedAt) : '') +
+        bibResultFound(c, name, data.matched, data.total, data.searchMode);
       bibLoadTeamRankings(c.ksfCode, name);
       // 종목+종별 조합키로 필터 구성 (예: "10m 공기소총|여일반부")
       const _evFilter = new Set(
@@ -4530,6 +4531,23 @@ function bibRenderPlayerResults(c, name, data) {
       </div>
       <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">
         출처: 대한사격연맹 공식 사이트 · 실시간 수집
+      </div>
+    </div>`;
+}
+
+// KSF 일시 장애 시 캐시(이전 데이터)로 응답했음을 알리는 배너
+function bibStaleNotice(cachedAt) {
+  let when = '';
+  if (cachedAt) {
+    const d = new Date(cachedAt);
+    when = `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  return `
+    <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-3 flex items-start gap-2.5">
+      <span class="text-base leading-none mt-0.5">⏱️</span>
+      <div class="text-[13px] leading-snug">
+        <span class="font-semibold text-amber-800">이전에 불러온 데이터를 표시 중입니다</span>
+        <span class="text-amber-700/80">— 대한사격연맹(KSF) 사이트가 일시적으로 응답하지 않아 마지막으로 저장된 정보를 보여드립니다.${when ? ` (기준: ${when})` : ''}</span>
       </div>
     </div>`;
 }
