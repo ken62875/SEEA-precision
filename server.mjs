@@ -87,8 +87,58 @@ function saveBibCacheToDisk() {
 
 // 대회 목록 캐시 (30분)
 let compListCache = null; // { data: [], ts: number }
-// 순위 캐시 (5분)
+// 순위 캐시 — 신선 기준 5분, 그 이후엔 stale-while-revalidate (즉시 응답 + 백그라운드 갱신)
 const rankingsCache = new Map(); // url → { data, ts }
+const RANK_FRESH    = 5 * 60 * 1000;
+const RANK_FILE     = path.join(__dirname, 'rankings-cache.json');
+const _rankRefreshing = new Set(); // 중복 백그라운드 갱신 방지
+
+// 서버 시작 시 순위 디스크 캐시 복원 (재배포·KSF 장애에도 결과 즉시 응답)
+try {
+  if (fs.existsSync(RANK_FILE)) {
+    const saved = JSON.parse(fs.readFileSync(RANK_FILE, 'utf8'));
+    let n = 0;
+    for (const [url, entry] of Object.entries(saved)) {
+      if (entry && entry.data) { rankingsCache.set(url, entry); n++; }
+    }
+    if (n) console.log(`[CACHE] 순위 캐시 복원 — ${n}건 (KSF 장애 대비 보존)`);
+  }
+} catch (e) { console.log('[CACHE] 순위 캐시 로드 실패:', e.message); }
+
+let _rankSaveTimer = null;
+function saveRankingsToDisk() {
+  if (_rankSaveTimer) return;             // 디바운스 — 3초 내 변경 묶어서 1회 저장
+  _rankSaveTimer = setTimeout(() => {
+    _rankSaveTimer = null;
+    try {
+      const obj = {};
+      for (const [k, v] of rankingsCache) obj[k] = v;
+      fs.writeFileSync(RANK_FILE, JSON.stringify(obj), 'utf8');
+    } catch {}
+  }, 3000);
+}
+
+async function _fetchRankings(url) {
+  const data = await getEventRankings(url);
+  rankingsCache.set(url, { data, ts: Date.now() });
+  saveRankingsToDisk();
+  return data;
+}
+
+// stale-while-revalidate: 캐시가 있으면 오래됐어도 즉시 반환하고,
+// 5분 지났으면 백그라운드에서 조용히 갱신한다. 캐시가 없을 때만 라이브 대기(최초 1회).
+async function getRankingsSWR(url) {
+  const c = rankingsCache.get(url);
+  if (c) {
+    if (Date.now() - c.ts >= RANK_FRESH && !_rankRefreshing.has(url)) {
+      _rankRefreshing.add(url);
+      _fetchRankings(url).catch(() => {}).finally(() => _rankRefreshing.delete(url));
+    }
+    return c.data;
+  }
+  return _fetchRankings(url);
+}
+
 // 대회 종목 이벤트 캐시 (1시간)
 const compEventsCache = new Map(); // compCode → { events: [], ts: number }
 // 팀 메달 집계 캐시 (5분)
@@ -698,13 +748,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const results = await Promise.all(uniqueEvents.map(async p => {
         try {
-          const cKey    = 'bib-result:' + p.personUrl;
-          const now     = Date.now();
-          const cached2 = rankingsCache.get(cKey);
-          const data    = (cached2 && now - cached2.ts < 5 * 60 * 1000)
-            ? cached2.data
-            : await getEventRankings(p.personUrl);
-          if (!cached2) rankingsCache.set(cKey, { data, ts: now });
+          const data = await getRankingsSWR(p.personUrl);
 
           const { rows = [], headers = [] } = data;
           if (!rows.length) return { event: p.event, rank: '', score: '', record: '', final: '', finalRecord: '', total: 0, date: p.scheduleDate, affiliation: p.affiliation };
@@ -961,29 +1005,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      const now     = Date.now();
-      const cKey    = 'bib-result:' + rankUrl;
-      const cached2 = rankingsCache.get(cKey);
-      if (cached2 && now - cached2.ts < 5 * 60 * 1000) {
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify(cached2.data));
-        return;
-      }
-      try {
-        const data = await getEventRankings(rankUrl);
-        rankingsCache.set(cKey, { data, ts: now });
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify(data));
-      } catch (fetchErr) {
-        // KSF 장애 → 만료된 랭킹 캐시라도 있으면 폴백
-        if (cached2) {
-          console.warn(`[/api/bib-result] ${rankUrl} 조회 실패 → 만료 캐시 폴백`);
-          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ ...cached2.data, stale: true }));
-        } else {
-          throw fetchErr;
-        }
-      }
+      // 캐시 있으면 즉시(stale 포함), 없으면 라이브 1회. KSF 장애 시 캐시 폴백.
+      const data = await getRankingsSWR(rankUrl);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(data));
     } catch (err) {
       console.error('[/api/bib-result]', err.message);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1220,23 +1245,13 @@ const server = http.createServer(async (req, res) => {
         compEventsCache.set(comp, { data: { comp, events }, ts: Date.now() });
       }
 
-      // 순위 캐시 활용 헬퍼
-      const getCachedRankings = async url => {
-        const now = Date.now();
-        const c   = rankingsCache.get(url);
-        if (c && now - c.ts < 5 * 60 * 1000) return c.data;
-        const data = await getEventRankings(url);
-        rankingsCache.set(url, { data, ts: now });
-        return data;
-      };
-
       const personEvents = events.filter(e => e.personUrl);
       const groupEvents  = events.filter(e => e.groupUrl);
 
       const [personResults, groupResults] = await Promise.all([
         Promise.all(personEvents.map(async e => {
           try {
-            const { rows = [] } = await getCachedRankings(e.personUrl);
+            const { rows = [] } = await getRankingsSWR(e.personUrl);
             const rankRows = rows.filter(r => /^\d+$/.test((r[0]||'').trim()));
             const medals = [];
             for (const row of rankRows) {
@@ -1250,7 +1265,7 @@ const server = http.createServer(async (req, res) => {
         })),
         Promise.all(groupEvents.map(async e => {
           try {
-            const { rows = [] } = await getCachedRankings(e.groupUrl);
+            const { rows = [] } = await getRankingsSWR(e.groupUrl);
             const rankRows = rows.filter(r => /^\d+$/.test((r[0]||'').trim()));
             const idx = rankRows.findIndex(r => (r[1]||'').toLowerCase().includes(affLower));
             if (idx < 0) return [];
@@ -1334,15 +1349,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     try {
-      const now    = Date.now();
-      const cached = rankingsCache.get(rankUrl);
-      if (cached && now - cached.ts < 5 * 60 * 1000) {
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify(cached.data));
-        return;
-      }
-      const data = await getEventRankings(rankUrl);
-      rankingsCache.set(rankUrl, { data, ts: now });
+      const data = await getRankingsSWR(rankUrl);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(data));
     } catch (err) {
@@ -1845,7 +1852,45 @@ server.listen(PORT, () => {
     }, 24 * 60 * 60 * 1000);
   }
 
-  // 진행중 대회 자동 캐시 pre-warm (서버 재시작 후 첫 검색도 빠르게)
+  // 진행중 대회 순위 캐시 워밍 — 동시 6개로 제한해 KSF 부담 최소화.
+  // 이미 신선한 항목은 건너뛴다(20분 재워밍 시 중복 fetch 방지).
+  const warmRankingsFor = async (comp) => {
+    try {
+      const { html = '', events = [] } = await getGamePageHtml(comp);
+      // 종목 목록 캐시도 함께 채움 — 재시작 후 첫 결과조회도 즉시(getGamePageHtml 재호출 방지)
+      const titleM = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      const seen = new Set();
+      const unique = [];
+      for (const evt of events) {
+        const key = evt.personUrl || `${evt.eventLabel}|${evt.scheduleDate}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        unique.push({
+          eventLabel:   normalizeEventLabel(evt.eventLabel),
+          personUrl:    evt.personUrl,
+          groupUrl:     evt.groupUrl,
+          scheduleDate: evt.scheduleDate,
+          scheduleTime: evt.scheduleTime,
+        });
+      }
+      compEventsCache.set(comp, { data: { comp, title: titleM ? titleM[1].trim() : comp, events: unique }, ts: Date.now() });
+
+      const urls = [...new Set(events.flatMap(e => [e.personUrl, e.groupUrl].filter(Boolean)))];
+      let i = 0, warmed = 0;
+      const worker = async () => {
+        while (i < urls.length) {
+          const url = urls[i++];
+          const c = rankingsCache.get(url);
+          if (c && Date.now() - c.ts < RANK_FRESH) { warmed++; continue; }
+          try { await _fetchRankings(url); warmed++; } catch {}
+        }
+      };
+      await Promise.all(Array.from({ length: 6 }, worker));
+      console.log(`[PREWARM] ${comp} 순위 ${warmed}/${urls.length}건 워밍`);
+    } catch (e) { console.log(`[PREWARM] ${comp} 순위 워밍 실패: ${e.message}`); }
+  };
+
+  // 진행중 대회 자동 캐시 pre-warm (서버 재시작 후 첫 검색·결과도 빠르게)
   const warmOngoing = () => getCompList().then(comps => {
     const ongoing = comps.filter(c => c.status === 'ongoing');
     if (ongoing.length === 0) return;
@@ -1858,6 +1903,7 @@ server.listen(PORT, () => {
           console.log(`[PREWARM] ${comp.jname} (${comp.name}) 완료 — ${result.allPlayers.length}명`);
         }
       }).catch(e => console.log(`[PREWARM] ${comp.jname} 실패: ${e.message}`));
+      warmRankingsFor(comp.jname);  // 순위도 백그라운드 워밍
     }
   }).catch(e => console.log(`[PREWARM] 대회 목록 조회 실패: ${e.message}`));
 
