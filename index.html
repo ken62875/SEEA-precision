@@ -431,6 +431,10 @@
     .scores-view-btn.active  { background: #0B1E3F; color: white; }
     .scores-view-btn.inactive { color: #9CA3AF; background: transparent; }
     .scores-view-btn.inactive:hover { color: #0B1E3F; }
+    /* 경기결과(소속) 단체/개인 탭 */
+    .bib-res-tab { flex: 1; padding: 8px 0; border-radius: 10px; font-size: 13px; font-weight: 700; color: #9CA3AF; background: #F3F4F6; cursor: pointer; transition: background .15s, color .15s; }
+    .bib-res-tab.on { background: #0B1E3F; color: #fff; }
+    .bib-res-tab:not(.on):hover { color: #0B1E3F; }
     /* 날짜별 보기 칩 */
     .sdc { flex-shrink: 0; padding: 6px 13px; border-radius: 9999px; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid #E5E7EB; color: #6B7280; background: #fff; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
     .sdc:hover { border-color: #0B1E3F; color: #0B1E3F; }
@@ -2961,6 +2965,15 @@ function bibToggleAcc(idx) {
   chevron.style.transform = opening ? 'rotate(180deg)' : '';
 }
 
+// 사대번호 조회(팀) — 날짜별 종목 필터 (전체='' / 'M.D')
+function bibFilterDate(key, el) {
+  document.querySelectorAll('#bib-date-chips .sdc').forEach(b => b.classList.remove('on'));
+  el?.classList.add('on');
+  document.querySelectorAll('.bib-evt-card').forEach(card => {
+    card.classList.toggle('hidden', !!key && card.dataset.bibdate !== key);
+  });
+}
+
 let bibTeamSamples = [];
 let bibNameSamples = [];
 let _bibNameTimer  = null;
@@ -3238,7 +3251,6 @@ async function bibSelectPersonCard(idx) {
       return true;
     });
     result.innerHTML = bibResultFound(c, name, filtered, total, searchMode, true);
-    bibLoadTeamRankings(c.ksfCode, name);
     const _evFilter = new Set(
       filtered.map(p => `${_bibNormalizeEvent(p.event)}|${_bibNormalizeDivision(p.event)}`)
     );
@@ -3392,7 +3404,7 @@ async function bibSearch() {
     } else {
       result.innerHTML = (data.stale ? bibStaleNotice(data.cachedAt) : '') +
         bibResultFound(c, name, data.matched, data.total, data.searchMode);
-      bibLoadTeamRankings(c.ksfCode, name);
+      // 사대번호 조회에는 단체 경기기록을 표시하지 않는다 (경기결과 조회 전용)
       // 종목+종별 조합키로 필터 구성 (예: "10m 공기소총|여일반부")
       const _evFilter = new Set(
         data.matched.map(p => `${_bibNormalizeEvent(p.event)}|${_bibNormalizeDivision(p.event)}`)
@@ -3417,6 +3429,24 @@ function toggleTeamResult(idx) {
   if (!body) return;
   const hidden = body.classList.toggle('hidden');
   chev.style.transform = hidden ? '' : 'rotate(180deg)';
+}
+
+// 경기결과(소속) — 단체/개인 아코디언 토글
+function bibToggleResult(kind, idx) {
+  const body = document.getElementById(`${kind}-res-body-${idx}`);
+  const chev = document.getElementById(`${kind}-res-chev-${idx}`);
+  if (!body) return;
+  const hidden = body.classList.toggle('hidden');
+  if (chev) chev.style.transform = hidden ? '' : 'rotate(180deg)';
+}
+
+// 경기결과(소속) — 단체/개인 탭 전환
+function bibResTab(which) {
+  const isTeam = which === 'team';
+  document.getElementById('bib-res-pane-team')?.classList.toggle('hidden', !isTeam);
+  document.getElementById('bib-res-pane-person')?.classList.toggle('hidden', isTeam);
+  document.getElementById('bib-res-tab-team')?.classList.toggle('on', isTeam);
+  document.getElementById('bib-res-tab-person')?.classList.toggle('on', !isTeam);
 }
 
 async function bibTeamResultSearch(c, name, result) {
@@ -3445,21 +3475,35 @@ async function bibTeamResultSearch(c, name, result) {
       bibSetBtns(false); return;
     }
 
-    const seen = new Set();
+    // 단체(팀) 종목 — groupUrl 보유
+    const seenG = new Set();
     const teamEvents = [];
     for (const p of bibData.matched) {
-      if (p.teamType !== '단체' || !p.groupUrl || seen.has(p.groupUrl)) continue;
-      seen.add(p.groupUrl);
+      if (p.teamType !== '단체' || !p.groupUrl || seenG.has(p.groupUrl)) continue;
+      seenG.add(p.groupUrl);
       teamEvents.push({ event: p.event, groupUrl: p.groupUrl, date: p.scheduleDate, time: p.scheduleTime });
     }
+    // 개인 종목 — personUrl 보유 (단체 미출전 종목 포함, 예: 스키트)
+    const seenP = new Set();
+    const personEvents = [];
+    for (const p of bibData.matched) {
+      if (!p.personUrl || seenP.has(p.personUrl)) continue;
+      seenP.add(p.personUrl);
+      personEvents.push({ event: p.event, personUrl: p.personUrl, date: p.scheduleDate, time: p.scheduleTime });
+    }
 
-    if (!teamEvents.length) {
-      result.innerHTML = bibResultError(c, name, '단체 종목이 없습니다.');
+    if (!teamEvents.length && !personEvents.length) {
+      result.innerHTML = bibResultError(c, name, '경기 종목 정보를 찾을 수 없습니다.');
       bibSetBtns(false); return;
     }
 
+    const parseDateNumR = d => { const m=(d||'').match(/(\d+)월\s*(\d+)일/); return m?parseInt(m[1])*100+parseInt(m[2]):999; };
+    const byDateR = (a,b) => parseDateNumR(a.date)-parseDateNumR(b.date) || (a.time||'').localeCompare(b.time||'');
+    teamEvents.sort(byDateR); personEvents.sort(byDateR);
+
     const fmtShortEvtL = n => n.replace(/[쎈센][터타][화파이]이?어(?:\s*권총)?/g,'센터파이어').replace(/스[탠텐](?:다|더)드(?:\s*권총)?/g,'스탠다드');
-    const cardsHtml = teamEvents.map((g, idx) => {
+    // kind: 'team'(단체) | 'person'(개인)
+    const evtCard = (g, idx, kind) => {
       const em = g.event.match(/^(.+?)\s+((?:남자|여자|혼성)(?:\s*\S+부)?)$/);
       const isF = em && em[2].startsWith('여자');
       const badgeCls = isF ? 'text-pink-500 bg-pink-50 border-pink-100' : 'text-indigo-400 bg-indigo-50 border-indigo-100';
@@ -3467,40 +3511,56 @@ async function bibTeamResultSearch(c, name, result) {
       const divBadge = em ? `<span class="text-[9px] font-semibold border rounded px-1.5 py-0.5 whitespace-nowrap ${badgeCls}">${esc(em[2])}</span>` : '';
       const dateTag  = g.date ? `<span class="shrink-0 text-[10px] font-bold text-gold-dark bg-gold/10 border border-gold/20 px-2 py-0.5 rounded-md whitespace-nowrap">${esc(g.date)}</span>` : '';
       const open = idx === 0;
+      const dataAttr     = kind === 'team' ? `data-gurl="${esc(g.groupUrl)}"` : `data-purl="${esc(g.personUrl)}"`;
+      const loadingLabel = kind === 'team' ? '단체 순위 불러오는 중...' : '개인 순위 불러오는 중...';
       return `
         <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm mb-3">
-          <button onclick="toggleTeamResult(${idx})"
+          <button onclick="bibToggleResult('${kind}',${idx})"
                   class="w-full flex items-center gap-2.5 px-4 py-3.5 text-left hover:bg-gray-50 transition-colors">
             <span class="font-semibold text-[13px] text-navy flex-1 min-w-0 truncate">${esc(evtName)}</span>
             ${divBadge}${dateTag}
-            <svg id="team-res-chev-${idx}" class="shrink-0 w-4 h-4 text-gray-300 transition-transform duration-200${open ? ' rotate-180' : ''}"
+            <svg id="${kind}-res-chev-${idx}" class="shrink-0 w-4 h-4 text-gray-300 transition-transform duration-200${open ? ' rotate-180' : ''}"
                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M6 9l6 6 6-6"/>
             </svg>
           </button>
-          <div id="team-res-body-${idx}" class="${open ? '' : 'hidden'}">
-            <div id="team-res-${idx}" data-gurl="${esc(g.groupUrl)}" data-aff="${esc(name)}" data-event="${esc(g.event)}"
+          <div id="${kind}-res-body-${idx}" class="${open ? '' : 'hidden'}">
+            <div id="${kind}-res-${idx}" ${dataAttr} data-aff="${esc(name)}" data-event="${esc(g.event)}"
                  class="px-4 py-3 border-t border-gray-100">
               <div class="flex items-center gap-1.5 text-[10px] text-gray-400">
                 <svg class="w-3 h-3 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                단체 순위 불러오는 중...
+                ${loadingLabel}
               </div>
             </div>
           </div>
         </div>`;
-    }).join('');
+    };
+
+    const teamCardsHtml = teamEvents.length
+      ? teamEvents.map((g,i)=>evtCard(g,i,'team')).join('')
+      : `<p class="text-center text-gray-400 text-sm py-8">단체(팀) 종목이 없습니다.</p>`;
+    const personCardsHtml = personEvents.length
+      ? personEvents.map((g,i)=>evtCard(g,i,'person')).join('')
+      : `<p class="text-center text-gray-400 text-sm py-8">개인 종목이 없습니다.</p>`;
+
+    const defTeam = teamEvents.length > 0; // 단체 우선, 없으면 개인
 
     result.innerHTML = `
       <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
         ${bibResultHeader(c, name, 'team')}
         <div id="bib-team-medal-summary" class="px-5 py-3 border-b border-gray-100">
-          <div class="text-[9px] font-bold text-gold uppercase tracking-widest mb-2">단체전 성과</div>
+          <div class="text-[9px] font-bold text-gold uppercase tracking-widest mb-2">성과 요약</div>
           <div class="flex items-center gap-1.5 text-[10px] text-gray-400">
             <svg class="w-3 h-3 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
             메달 집계 중...
           </div>
         </div>
-        <div class="p-4">${cardsHtml}</div>
+        <div class="flex gap-2 px-4 pt-4">
+          <button id="bib-res-tab-team"   onclick="bibResTab('team')"   class="bib-res-tab ${defTeam?'on':''}">단체</button>
+          <button id="bib-res-tab-person" onclick="bibResTab('person')" class="bib-res-tab ${defTeam?'':'on'}">개인</button>
+        </div>
+        <div id="bib-res-pane-team"   class="p-4 ${defTeam?'':'hidden'}">${teamCardsHtml}</div>
+        <div id="bib-res-pane-person" class="p-4 ${defTeam?'hidden':''}">${personCardsHtml}</div>
         <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">출처: 대한사격연맹 공식 사이트 · 실시간 수집</div>
       </div>`;
     bibLoadTeamRankings(c.ksfCode, name);
@@ -3618,6 +3678,19 @@ async function bibLoadTeamRankings(compCode, aff) {
       .catch(() => { el.innerHTML = `<p class="text-[10px] text-gray-400 py-2">단체 순위를 불러올 수 없습니다.</p>`; });
   }));
 
+  // 개인전 카드: 소속 선수들의 개인 순위 렌더링
+  const pels = Array.from(document.querySelectorAll('[data-purl]'));
+  Promise.all(pels.map(el => {
+    const purl  = el.dataset.purl;
+    const event = el.dataset.event || '';
+    if (!purl) return Promise.resolve();
+    delete el.dataset.purl;
+    return fetch(`/api/event-rankings?url=${encodeURIComponent(purl)}`)
+      .then(r => r.json())
+      .then(data => { el.innerHTML = renderPersonRankCard(data, aff, event); })
+      .catch(() => { el.innerHTML = `<p class="text-[10px] text-gray-400 py-2">개인 순위를 불러올 수 없습니다.</p>`; });
+  }));
+
   // 메달 집계 완료되면 바로 요약 표시 (카드 완료 대기 없음)
   const { indivMedals = [], teamMedals = [] } = await medalsPromise;
   const summaryEl = document.getElementById('bib-team-medal-summary');
@@ -3654,6 +3727,48 @@ function renderTeamMedalSummary(teamItems, indivItems = []) {
         <div class="flex items-center gap-1 text-[12px] leading-none">${medalRow(teamItems)}</div>
       </div>
     </div>`;
+}
+
+// 개인 순위 카드 — 해당 소속 선수들의 개인 성적 (순위·이름·점수·기록)
+function renderPersonRankCard(data, aff, eventName = '') {
+  const { rows = [], headers = [] } = data;
+  if (!rows.length) return `<p class="text-[10px] text-gray-400 py-2">개인 결과가 아직 게시되지 않았습니다.</p>`;
+
+  const affLower  = (aff || '').toLowerCase();
+  const RECORDS   = ['대회신','한국신','세계신','아시아신','주니어신','학생신'];
+  const totalIdx  = headers.indexOf('총점');
+  const finalIdx  = headers.lastIndexOf('결선');
+  // 본선 행: row[0]=순위(숫자, 미경기 시 0), row[1]=소속, row[2]=이름
+  const mine = rows.filter(r => /^\d+$/.test((r[0]||'').trim()) && (r[1]||'').toLowerCase().includes(affLower) && (r[2]||'').trim());
+  if (!mine.length) return `<p class="text-[10px] text-gray-400 py-2">${esc(aff)} 개인 결과를 찾을 수 없습니다.</p>`;
+
+  mine.sort((a,b) => (parseInt(a[0])||999) - (parseInt(b[0])||999));
+  const cell = (r, idx) => (idx >= 0 && r.length > 3 + idx) ? (r[3 + idx] || '').trim() : '';
+
+  const rowsHtml = mine.map(r => {
+    const rankN   = parseInt(r[0]);
+    const hasRank = rankN >= 1;
+    const name    = r[2] || '';
+    const total   = cell(r, totalIdx);
+    const finalV  = cell(r, finalIdx);
+    const rec     = r.find(c => RECORDS.includes((c||'').trim()));
+    const medal   = hasRank && rankN <= 3 ? ['🥇','🥈','🥉'][rankN-1] : '';
+    const rankCls = rankN===1 ? 'text-yellow-600' : rankN===2 ? 'text-slate-500' : rankN===3 ? 'text-amber-700' : 'text-gray-500';
+    const rankText  = hasRank ? `${medal}${rankN}위` : '예정';
+    const scoreText = !hasRank ? '결과 대기'
+                    : (finalV && finalV !== '-') ? `${total || '-'} <span class="text-gray-300">→</span> 결선 ${finalV}`
+                    : (total || '-');
+    return `<div class="flex items-center justify-between py-1.5 border-t border-gray-50 first:border-0 text-[12px]">
+      <span class="flex items-center gap-1.5 min-w-0">
+        <span class="font-bold ${hasRank ? rankCls : 'text-gray-300'} shrink-0" style="min-width:36px">${rankText}</span>
+        <span class="font-semibold text-navy truncate">${esc(name)}</span>
+        ${rec ? `<span class="shrink-0 text-[9px] font-bold text-rose-500 bg-rose-50 border border-rose-100 rounded px-1">${esc(rec)}</span>` : ''}
+      </span>
+      <span class="font-mono text-gray-600 shrink-0 ml-2">${scoreText}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="text-[9px] font-bold text-indigo-400 tracking-widest uppercase mb-1.5">개인 순위 · ${mine.length}명</div>${rowsHtml}`;
 }
 
 function renderTeamRankCard(data, aff, eventName = '') {
@@ -3778,13 +3893,13 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
     // 팀 내 동명이인 파악
     const teamNameCounts = matched.reduce((m, p) => { m[p.name] = (m[p.name] || 0) + 1; return m; }, {});
     const parseDateNum = d => { const m = (d||'').match(/(\d+)월\s*(\d+)일/); return m ? parseInt(m[1])*100+parseInt(m[2]) : 999; };
+    const _parseBibDate = s => { const m=(s||'').match(/(\d{1,2})월\s*(\d{1,2})일/); if(!m) return null; const dow=(s.match(/\(([월화수목금토일])\)/)||[])[1]||''; return { month:+m[1], day:+m[2], dow }; };
     const groups = [...eventGroups.values()].sort((a, b) => {
       const dc = parseDateNum(a.scheduleDate) - parseDateNum(b.scheduleDate);
       return dc !== 0 ? dc : (a.scheduleTime||'').localeCompare(b.scheduleTime||'');
     });
 
     const accordionHtml = groups.map((g, idx) => {
-      const teamPlayer = g.players.find(p => p.teamType === '단체' && p.groupUrl);
       const playerRows = g.players.map(p => {
         const bib   = p.group && p.lane ? `${p.group}-${p.lane}` : p.bib || '—';
         const badge = p.teamType === '단체'
@@ -3796,15 +3911,6 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
           <td class="px-4 py-2.5 text-center font-mono font-bold text-navy">${esc(bib)}</td>
         </tr>`;
       }).join('');
-      const teamRankHtml = teamPlayer
-        ? `<div id="bib-team-rank-${idx}" data-gurl="${esc(teamPlayer.groupUrl)}" data-aff="${esc(name)}" data-event="${esc(g.event)}"
-               class="border-b border-indigo-100 bg-indigo-50/40 px-4 py-3">
-             <div class="flex items-center gap-1.5 text-[10px] text-gray-400">
-               <svg class="w-3 h-3 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-               단체 순위 불러오는 중...
-             </div>
-           </div>`
-        : '';
 
       const _dt = g.scheduleDate, _tm = g.scheduleTime || '';
       const _halfTime = _tm.includes('전반');
@@ -3817,8 +3923,10 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
           : `<span class="shrink-0 text-[10px] font-bold text-gold-dark bg-gold/10 border border-gold/20 px-2 py-1 rounded-md whitespace-nowrap">${esc(_dt)}${_tm ? ' ' + esc(_tm) : ''}</span>`)
         : (_tm ? `<span class="shrink-0 text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">${esc(_tm)}</span>` : '');
 
+      const _bd = _parseBibDate(_dt);
+      const _dkey = _bd ? `${_bd.month}.${_bd.day}` : '';
       return `
-        <div class="border-b border-gray-100 last:border-0">
+        <div class="bib-evt-card border-b border-gray-100 last:border-0" data-bibdate="${_dkey}">
           <button class="w-full flex items-center gap-2.5 px-4 py-3.5 text-left hover:bg-gray-50/80 transition-colors"
                   onclick="bibToggleAcc(${idx})">
             ${dateTag}
@@ -3830,7 +3938,6 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
             </svg>
           </button>
           <div id="bib-acc-body-${idx}" class="hidden">
-            ${teamRankHtml}
             <table class="w-full">
               <thead class="bg-gray-50/80 text-gray-400 text-[10px]">
                 <tr>
@@ -3844,6 +3951,19 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
         </div>`;
     }).join('');
 
+    // 날짜별 보기 칩 (전체 · 오늘 경기 · 날짜) — 날짜가 2개 이상일 때만 표시
+    const _dateMap = new Map();
+    groups.forEach(g => { const d=_parseBibDate(g.scheduleDate); if(d){ const k=`${d.month}.${d.day}`; if(!_dateMap.has(k)) _dateMap.set(k,d); } });
+    let dateBar = '';
+    if (_dateMap.size >= 2) {
+      const _dates = [..._dateMap.entries()].sort((a,b)=>a[1].month-b[1].month||a[1].day-b[1].day);
+      const _now = new Date(); const _todayKey = `${_now.getMonth()+1}.${_now.getDate()}`;
+      let _chips = `<button class="sdc on" onclick="bibFilterDate('',this)">전체</button>`;
+      if (_dateMap.has(_todayKey)) _chips += `<button class="sdc sdc-today" onclick="bibFilterDate('${_todayKey}',this)">오늘 경기</button>`;
+      _chips += _dates.map(([k,d])=>`<button class="sdc" onclick="bibFilterDate('${k}',this)">${d.month}/${d.day}${d.dow?`(${d.dow})`:''}</button>`).join('');
+      dateBar = `<div id="bib-date-chips" class="flex gap-1.5 overflow-x-auto px-4 py-3 border-b border-gray-100">${_chips}</div>`;
+    }
+
     return `
       <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
         ${bibResultHeader(c, name, searchMode)}
@@ -3851,6 +3971,7 @@ function bibResultFound(c, name, matched, total, searchMode, skipPersonCheck = f
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
           <p class="text-emerald-700 text-sm"><strong>${matched.length}명</strong> 선수 · <strong>${groups.length}개</strong> 종목 <span class="text-emerald-500 font-normal">(전체 ${total}명 중)</span></p>
         </div>
+        ${dateBar}
         <div>${accordionHtml}</div>
         <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 text-right">
           출처: 대한사격연맹 공식 사이트 · 실시간 수집
