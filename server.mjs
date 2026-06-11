@@ -1258,7 +1258,7 @@ const server = http.createServer(async (req, res) => {
               if (!(row[1]||'').toLowerCase().includes(affLower)) continue;
               const rank = parseInt(row[0]);
               if (rank < 1 || rank > 3 || /기준점수/.test(row.slice(3).join(' '))) continue;
-              medals.push({ rank, event: e.eventLabel });
+              medals.push({ rank, event: e.eventLabel, name: (row[2] || '').trim() });
             }
             return medals;
           } catch { return []; }
