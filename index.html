@@ -1191,6 +1191,23 @@
     </div>
     <!-- /CATEGORY CARDS -->
 
+    <!-- 접속자 통계 -->
+    <div class="max-w-md mx-auto px-6 pb-16">
+      <div class="grid grid-cols-3 gap-2.5 text-center">
+        <div class="bg-white border border-gray-100 rounded-xl py-3.5 shadow-sm">
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">오늘 접속</p>
+          <p class="text-2xl font-extrabold text-navy leading-none"><span id="visit-today">–</span><span class="text-xs font-semibold text-gray-400 ml-0.5">명</span></p>
+        </div>
+        <div class="bg-white border border-gray-100 rounded-xl py-3.5 shadow-sm">
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">어제 접속</p>
+          <p class="text-2xl font-extrabold text-gray-500 leading-none"><span id="visit-yesterday">–</span><span class="text-xs font-semibold text-gray-400 ml-0.5">명</span></p>
+        </div>
+        <div class="bg-white border border-gray-100 rounded-xl py-3.5 shadow-sm">
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">누적</p>
+          <p class="text-2xl font-extrabold text-gold leading-none"><span id="visit-total">–</span><span class="text-xs font-semibold text-gray-400 ml-0.5">명</span></p>
+        </div>
+      </div>
+    </div>
 
   </section>
   <!-- /HOME -->
@@ -2398,6 +2415,7 @@ window.addEventListener('DOMContentLoaded', () => {
   bibPopulateCompetitions();
   feedTickerInit();
   homeFeedInit();
+  loadVisitStats();
   // 닉네임 복원
   const savedNick = localStorage.getItem('comm-nickname');
   if (savedNick) { const el = document.getElementById('comm-nickname'); if (el) el.value = savedNick; }
@@ -5912,6 +5930,19 @@ function _scoresClearTimers() {
 }
 
 // ── COMMUNITY ─────────────────────────────────────────
+// 접속자 통계 — 방문 기록 후 오늘/어제/누적 표시
+function loadVisitStats() {
+  fetch(`/api/visit?id=${encodeURIComponent(getDeviceId())}`)
+    .then(r => r.json())
+    .then(d => {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = (v ?? 0).toLocaleString(); };
+      set('visit-today', d.today);
+      set('visit-yesterday', d.yesterday);
+      set('visit-total', d.total);
+    })
+    .catch(() => {});
+}
+
 function getDeviceId() {
   let id = localStorage.getItem('comm-device-id');
   if (!id) {

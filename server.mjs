@@ -404,6 +404,71 @@ const MIME = {
   '.ttf':  'font/ttf',
 };
 
+// ── 방문자 통계 (일자별 고유 deviceId, KST 기준) ───────────
+const VISITS_FILE = path.join(__dirname, 'visits.json');
+const visitDays   = new Map(); // 'YYYY-MM-DD' → Set<deviceId>
+const visitAllIds = new Set(); // 전체 기간 고유 방문자
+try {
+  if (fs.existsSync(VISITS_FILE)) {
+    const saved = JSON.parse(fs.readFileSync(VISITS_FILE, 'utf8'));
+    for (const [day, ids] of Object.entries(saved.days || {})) visitDays.set(day, new Set(ids));
+    (saved.allIds || []).forEach(id => visitAllIds.add(id));
+    console.log(`[VISIT] 방문자 통계 복원 — 누적 ${visitAllIds.size}명`);
+  }
+} catch (e) { console.log('[VISIT] 통계 로드 실패:', e.message); }
+
+const kstDate = (offsetDays = 0) =>
+  new Date(Date.now() + offsetDays * 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+
+let _visitSaveTimer = null;
+function saveVisits() {
+  if (_visitSaveTimer) return;          // 디바운스 — 5초 내 변경 묶어서 1회 저장
+  _visitSaveTimer = setTimeout(() => {
+    _visitSaveTimer = null;
+    try {
+      const days = {};
+      for (const [day, set] of visitDays) days[day] = [...set];
+      fs.writeFileSync(VISITS_FILE, JSON.stringify({ days, allIds: [...visitAllIds] }), 'utf8');
+    } catch {}
+  }, 5000);
+}
+function pruneVisitDays() {            // 최근 60일만 보관
+  const keep = new Set();
+  for (let i = 0; i < 60; i++) keep.add(kstDate(-i));
+  for (const day of visitDays.keys()) if (!keep.has(day)) visitDays.delete(day);
+}
+
+// Supabase 영구 저장 — 재배포(디스크 초기화)에도 누적 유지
+const _sbV = {
+  url: process.env.SUPABASE_URL,
+  key: process.env.SUPABASE_ANON_KEY,
+  get headers() { return { 'Content-Type':'application/json', 'apikey': this.key||'', 'Authorization':`Bearer ${this.key||''}` }; },
+  get on() { return !!(this.url && this.key); },
+};
+async function loadVisitsFromSupabase() {
+  if (!_sbV.on) return;
+  try {
+    const since = kstDate(-59);
+    const [vdRes, vRes] = await Promise.all([
+      fetch(`${_sbV.url}/rest/v1/visit_days?day=gte.${since}&select=day,device_id&limit=200000`, { headers: _sbV.headers }),
+      fetch(`${_sbV.url}/rest/v1/visitors?select=device_id&limit=2000000`, { headers: _sbV.headers }),
+    ]);
+    if (vdRes.ok) for (const r of await vdRes.json()) {
+      if (!visitDays.has(r.day)) visitDays.set(r.day, new Set());
+      visitDays.get(r.day).add(r.device_id);
+    }
+    if (vRes.ok) for (const r of await vRes.json()) visitAllIds.add(r.device_id);
+    console.log(`[VISIT] Supabase 복원 — 누적 ${visitAllIds.size}명`);
+  } catch (e) { console.log('[VISIT] Supabase 복원 실패:', e.message); }
+}
+function pushVisitToSupabase(day, id) { // 중복은 PK 충돌로 무시됨 (fire-and-forget)
+  if (!_sbV.on) return;
+  const opt = { method:'POST', headers:{ ..._sbV.headers, 'Prefer':'resolution=ignore-duplicates,return=minimal' } };
+  fetch(`${_sbV.url}/rest/v1/visit_days`, { ...opt, body: JSON.stringify({ day, device_id: id }) }).catch(()=>{});
+  fetch(`${_sbV.url}/rest/v1/visitors`,   { ...opt, body: JSON.stringify({ device_id: id }) }).catch(()=>{});
+}
+loadVisitsFromSupabase();
+
 // ── HTTP 서버 ─────────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1144,6 +1209,26 @@ const server = http.createServer(async (req, res) => {
       });
       return;
     }
+  }
+
+  // ── GET /api/visit?id=<deviceId> — 방문 기록 + 통계 반환 ──
+  if (req.method === 'GET' && req.url.startsWith('/api/visit')) {
+    const id = (new URL(req.url, 'http://localhost').searchParams.get('id') || '').toString().slice(0, 64);
+    const today = kstDate(0), yest = kstDate(-1);
+    if (id) {
+      if (!visitDays.has(today)) visitDays.set(today, new Set());
+      const set = visitDays.get(today);
+      const changed = !set.has(id) || !visitAllIds.has(id);
+      set.add(id); visitAllIds.add(id);
+      if (changed) { pruneVisitDays(); saveVisits(); pushVisitToSupabase(today, id); }
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({
+      today:     visitDays.get(today)?.size || 0,
+      yesterday: visitDays.get(yest)?.size  || 0,
+      total:     visitAllIds.size,
+    }));
+    return;
   }
 
   // ── GET /api/comp-list ──────────────────────────────────
