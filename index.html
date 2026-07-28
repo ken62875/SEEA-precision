@@ -4237,6 +4237,7 @@ function _normalizeEvtLabel(n) {
 function _bibNormalizeEvent(evtName) {
   return evtName
     .replace(/\s+(?:남자|여자|혼성).*$/, '')               // 성별·부 제거
+    .replace(/^(10m\s+공기소총)\s*복사$/, '$1')            // 장애부 "10m 공기소총 복사"(SH1/SH2) → "10m 공기소총"
     .replace(/^(50m)\s+소총\s+/, '$1 ')                    // "50m 소총 3자세" → "50m 3자세"
     .replace(/^(50m)\s+권총\s+/, '$1 ')
     .replace(/[쎈센][터타][화파이]이?어(?:\s*권총)?/g, '센터파이어')  // 센타화이어권총·쎈터파이어 등 모든 변형
@@ -4248,6 +4249,8 @@ function _bibNormalizeEvent(evtName) {
 
 // KSF 종목명 문자열에서 종별 추출 → 훈련포스트 division 형식(예: "여고부")
 function _bibNormalizeDivision(evtName) {
+  // 장애부는 KSF가 "… 남자 장애인 SH1" 형태로 표기 → 훈련포스트 division "장애부"로 통일
+  if (/장애인/.test(evtName)) return '장애부';
   const m = evtName.match(/\s+((?:남자|여자|혼성)(?:\s+\S+부)?)$/);
   if (!m) return '';
   return m[1]
