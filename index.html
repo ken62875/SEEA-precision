@@ -4237,7 +4237,8 @@ function _normalizeEvtLabel(n) {
 function _bibNormalizeEvent(evtName) {
   return evtName
     .replace(/\s+(?:남자|여자|혼성).*$/, '')               // 성별·부 제거
-    .replace(/^(10m\s+공기소총)\s*복사$/, '$1')            // 장애부 "10m 공기소총 복사"(SH1/SH2) → "10m 공기소총"
+    .replace(/^(10m\s+공기소총)\s*(?:복사|의탁)$/, '$1')   // 장애부 소총복사(SH1/SH2)·초등부 의탁사격 → 10m 공기소총
+    .replace(/^(10m\s+공기권총)양손(?:파지)?$/, '$1')      // 초등부 공기권총양손파지 → 10m 공기권총
     .replace(/^(50m)\s+소총\s+/, '$1 ')                    // "50m 소총 3자세" → "50m 3자세"
     .replace(/^(50m)\s+권총\s+/, '$1 ')
     .replace(/[쎈센][터타][화파이]이?어(?:\s*권총)?/g, '센터파이어')  // 센타화이어권총·쎈터파이어 등 모든 변형
