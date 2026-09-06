@@ -491,6 +491,12 @@
     .train-division { flex-shrink:0; font-size:10px; font-weight:600; color:#9CA3AF; background:#F9FAFB; border-radius:6px; padding:2px 7px; margin-top:1px; }
     .train-schedule { font-size:11px; color:#374151; line-height:1.7; white-space:pre-wrap; }
     .train-changed { background:#FFF3CD; border-left:3px solid #F59E0B; }
+    /* 대회 공지 배너 — 훈련일정 탭 상단, 필터와 무관하게 항상 노출 */
+    .train-notice { display:flex; gap:9px; align-items:flex-start; background:#FFF7ED; border:1px solid #FED7AA; border-left:3px solid #EA580C; border-radius:10px; padding:11px 13px; margin-bottom:12px; }
+    .train-notice-icon { flex-shrink:0; font-size:13px; line-height:1.5; }
+    .train-notice-body { min-width:0; }
+    .train-notice-title { font-size:12px; font-weight:700; color:#9A3412; margin-bottom:3px; line-height:1.5; }
+    .train-notice-text { font-size:11px; color:#7C2D12; line-height:1.7; white-space:pre-wrap; }
     .train-date-hdr { width:100%; display:flex; align-items:center; justify-content:space-between; padding:10px 4px 8px; font-size:13px; font-weight:700; color:#374151; letter-spacing:.02em; background:transparent; border:none; cursor:pointer; }
     .train-date-hdr:hover { color:#0B1E3F; }
     .train-date-hdr-today { color:#0B1E3F; }
@@ -4285,7 +4291,8 @@ function bibCommLoad(compId, eventFilter) {
     const msgs = (_bibCommMsgsCache[compId] || [])
       .filter(m =>
         _bibCommTrainTags.has(m.tag) &&
-        (!ef || ef.size === 0 || ef.has(`${m.event}|${m.division || ''}`))
+        // 종목이 비어 있으면 전 종목 공통(대회 공지·장비검사) → 종목 필터 면제
+        (!m.event || !ef || ef.size === 0 || ef.has(`${m.event}|${m.division || ''}`))
       )
       .sort((a, b) => _bibTrainSortKey(a) - _bibTrainSortKey(b));
     const lEl = document.getElementById(`bib-comm-list-${compId}`);
@@ -4317,7 +4324,7 @@ function bibCommLoad(compId, eventFilter) {
     if (!_bibCommMsgsCache[compId]) _bibCommMsgsCache[compId] = [];
     _bibCommMsgsCache[compId].unshift(msg);
     const ef = _bibCommFilterMap[compId];
-    if (ef && ef.size > 0 && !ef.has(`${msg.event}|${msg.division || ''}`)) return;
+    if (msg.event && ef && ef.size > 0 && !ef.has(`${msg.event}|${msg.division || ''}`)) return;
     const lEl = document.getElementById(`bib-comm-list-${compId}`);
     if (lEl) {
       lEl.querySelector('.bib-comm-empty')?.remove();
@@ -4343,7 +4350,7 @@ function bibCommShowAll(compId) {
   const msgs = (_bibCommMsgsCache[compId] || [])
     .filter(m =>
       _bibCommTrainTags.has(m.tag) &&
-      (!ef || ef.size === 0 || ef.has(`${m.event}|${m.division || ''}`))
+      (!m.event || !ef || ef.size === 0 || ef.has(`${m.event}|${m.division || ''}`))
     )
     .sort((a, b) => _bibTrainSortKey(a) - _bibTrainSortKey(b));
   const listEl = document.getElementById(`bib-comm-list-${compId}`);
@@ -6217,10 +6224,32 @@ function _trainSortDate(d) {
 function commRenderTrainingSchedule() {
   const el = document.getElementById('comm-train-feed');
   if (!el) return;
-  let trainMsgs = commState.msgs.filter(m => m.tag === '공식훈련');
+  const allTrain = commState.msgs.filter(m => m.tag === '공식훈련');
+
+  // 📢 로 시작하는 메시지는 일정이 아니라 대회 공지(취소·변경 등) → 상단 배너로 분리.
+  // 필터를 적용하기 전에 빼내므로 종목·성별·종별 칩과 무관하게 항상 노출된다.
+  const _isNotice  = m => m.text.trimStart().startsWith('📢');
+  const notices    = allTrain.filter(_isNotice);
+  let   trainMsgs  = allTrain.filter(m => !_isNotice(m));
+
+  const noticeHtml = notices.map(m => {
+    const body  = m.text.replace(/^\s*📢\s*/, '');
+    const nl    = body.indexOf('\n');
+    const title = nl < 0 ? body : body.slice(0, nl);
+    const rest  = nl < 0 ? ''   : body.slice(nl + 1).trim();
+    return `<div class="train-notice">
+      <span class="train-notice-icon">📢</span>
+      <div class="train-notice-body">
+        <div class="train-notice-title">${escHtml(title)}</div>
+        ${rest ? `<div class="train-notice-text">${escHtml(rest)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
 
   if (trainMsgs.length === 0) {
-    el.innerHTML = '<div class="text-center text-gray-400 text-sm py-10">공식훈련 일정이 없습니다</div>';
+    // 공지가 있으면 그것만으로 충분 — "일정이 없습니다"를 덧붙이면 취소 사실이 묻힌다
+    el.innerHTML = noticeHtml ||
+      '<div class="text-center text-gray-400 text-sm py-10">공식훈련 일정이 없습니다</div>';
     return;
   }
 
@@ -6263,7 +6292,8 @@ function commRenderTrainingSchedule() {
   }
 
   if (trainMsgs.length === 0) {
-    el.innerHTML = '<div class="text-center text-gray-400 text-sm py-6">조건에 맞는 훈련 일정이 없습니다</div>';
+    el.innerHTML = noticeHtml +
+      '<div class="text-center text-gray-400 text-sm py-6">조건에 맞는 훈련 일정이 없습니다</div>';
     return;
   }
 
@@ -6283,7 +6313,7 @@ function commRenderTrainingSchedule() {
   const now = new Date();
   const todayStr = `${now.getMonth()+1}월 ${now.getDate()}일`;
 
-  el.innerHTML = sortedDates.map((d, idx) => {
+  el.innerHTML = noticeHtml + sortedDates.map((d, idx) => {
     const normalizedD = d.replace(/\s*\([^)]*\)/, '').trim();
     const isToday = normalizedD === todayStr;
 
