@@ -2780,6 +2780,7 @@ const COMPETITIONS = [
   { id:'2026-13', name:'제19회 대통령경호처장기 전국사격대회',                          start:'2026-08-31', end:'2026-09-06', venue:'나주',  ksfCode:null },
   { id:'2026-14', name:'제38회 대학연맹기 전국대학생사격대회',                          start:'2026-09-12', end:'2026-09-13', venue:'춘천',  ksfCode:null },
   { id:'2026-15', name:'2026 춘천시장배 전국사격대회',                                 start:'2026-09-14', end:'2026-09-18', venue:'춘천',  ksfCode:null },
+  { id:'2026-15b',name:'2026 한국실업사격연맹회장배 전국사격대회',                       start:'2026-10-05', end:'2026-10-09', venue:'창원',  ksfCode:null },
   { id:'2026-16', name:'제107회 전국체육대회',                                         start:'2026-10-16', end:'2026-10-20', venue:'창원',  ksfCode:null },
 ];
 
@@ -5222,9 +5223,15 @@ async function scoresInit() {
     const past       = comps.filter(c => c.status === 'past').sort((a,b) => toDateNum(b.endDate) - toDateNum(a.endDate));
 
     // COMPETITIONS 배열에서 KSF 미등록 upcoming 보완
+    // 주의: 로컬 ksfCode 는 BIB 조회 시점에 채워지므로 초기값이 null이다.
+    // ksfCode 만으로 중복 판정하면 KSF가 이미 공개한 대회가 두 번 나온다 → 이름으로도 대조.
+    const _normName = s => (s || '').replace(/\s+/g, '');
     const ksfJnames = new Set(comps.map(c => c.jname).filter(Boolean));
+    const ksfNames  = new Set(comps.map(c => _normName(c.name)));
     const localUpcoming = COMPETITIONS
-      .filter(c => compStatus(c) === 'upcoming' && (!c.ksfCode || !ksfJnames.has(c.ksfCode)))
+      .filter(c => compStatus(c) === 'upcoming'
+                && !ksfNames.has(_normName(c.name))
+                && (!c.ksfCode || !ksfJnames.has(c.ksfCode)))
       .sort((a, b) => new Date(a.start) - new Date(b.start))
       .map(c => {
         const s = new Date(c.start), e = new Date(c.end);
