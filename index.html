@@ -3025,6 +3025,25 @@ function _startNameRotation() {
   }, 3000);
 }
 
+// 로컬 COMPETITIONS 항목 ↔ KSF comp-list 항목 매칭 (ksfCode 미정 대회용)
+// 1순위 시작일, 2순위 이름. KSF가 공식훈련·장비검사일을 시작일로 등록하면
+// (전국체전 등) 날짜가 어긋나므로, 이름 대조 없이는 사대번호가 공개돼도 못 찾는다.
+const _ksfNormName = s => (s || '').replace(/[\s·,.()]/g, '').replace(/체전/g, '체육대회');
+function ksfNameMatch(k, c) {
+  const kn = _ksfNormName(k.name), ln = _ksfNormName(c.name);
+  if (kn.length < 6 || ln.length < 6) return false;
+  return kn.includes(ln) || ln.includes(kn);
+}
+function findKsfComp(list, c) {
+  const cStart = new Date(c.start);
+  const byDate = list.find(k => {
+    // startDate 우선, 없으면 dateStr 파싱 ("3.16.~22." 형식)
+    const m = (k.startDate || k.dateStr || '').match(/^(\d+)\.(\d+)/);
+    return m && +m[1] === cStart.getMonth() + 1 && +m[2] === cStart.getDate();
+  });
+  return byDate || list.find(k => ksfNameMatch(k, c)) || null;
+}
+
 function pollNameSamples(ksfCode, retries = 8) {
   fetch(`/api/player-names?comp=${encodeURIComponent(ksfCode)}`)
     .then(r => r.json())
@@ -3130,13 +3149,7 @@ function bibUpdateCompetitionInfo() {
   if (!c.ksfCode) {
     if (compStatus(c) === 'past') {
       fetch('/api/comp-list').then(r => r.json()).then(list => {
-        const cStart = new Date(c.start);
-        const matched = list.find(k => {
-          const src = k.startDate || k.dateStr || '';
-          const m = src.match(/^(\d+)\.(\d+)/);
-          if (!m) return false;
-          return +m[1] === cStart.getMonth() + 1 && +m[2] === cStart.getDate();
-        });
+        const matched = findKsfComp(list, c);
         if (matched) {
           c.ksfCode = matched.jname;
           bibUpdateCompetitionInfo(); // 재호출
@@ -3327,14 +3340,7 @@ async function bibSearch() {
     </div>`;
     try {
       const ksfList = await fetch('/api/comp-list').then(r => r.json());
-      const cStart  = new Date(c.start);
-      const matched = ksfList.find(k => {
-        // startDate 우선, 없으면 dateStr 파싱 ("3.16.~22." 형식)
-        const src = k.startDate || k.dateStr || '';
-        const m = src.match(/^(\d+)\.(\d+)/);
-        if (!m) return false;
-        return +m[1] === cStart.getMonth() + 1 && +m[2] === cStart.getDate();
-      });
+      const matched = findKsfComp(ksfList, c);
       if (matched) {
         c.ksfCode = matched.jname; // 캐시: 이후 같은 선택 시 즉시 사용
       } else {
@@ -3609,7 +3615,7 @@ async function bibResultSearch() {
   empty.classList.add('hidden');
   result.classList.remove('hidden');
 
-  // ── KSF 코드가 없으면 comp-list에서 날짜로 자동 매칭 (사대번호 조회와 동일) ──
+  // ── KSF 코드가 없으면 comp-list에서 날짜·이름으로 자동 매칭 (사대번호 조회와 동일) ──
   // team/name 두 모드 모두 적용 — 경기결과를 먼저 눌러도 동작해야 함
   if (!c.ksfCode) {
     result.innerHTML = `<div class="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
@@ -3621,13 +3627,7 @@ async function bibResultSearch() {
     </div>`;
     try {
       const ksfList = await fetch('/api/comp-list').then(r => r.json());
-      const cStart  = new Date(c.start);
-      const matched = ksfList.find(k => {
-        const src = k.startDate || k.dateStr || '';
-        const m = src.match(/^(\d+)\.(\d+)/);
-        if (!m) return false;
-        return +m[1] === cStart.getMonth() + 1 && +m[2] === cStart.getDate();
-      });
+      const matched = findKsfComp(ksfList, c);
       if (matched) {
         c.ksfCode = matched.jname; // 캐시: 이후 같은 선택 시 즉시 사용
       } else {
@@ -5225,12 +5225,10 @@ async function scoresInit() {
     // COMPETITIONS 배열에서 KSF 미등록 upcoming 보완
     // 주의: 로컬 ksfCode 는 BIB 조회 시점에 채워지므로 초기값이 null이다.
     // ksfCode 만으로 중복 판정하면 KSF가 이미 공개한 대회가 두 번 나온다 → 이름으로도 대조.
-    const _normName = s => (s || '').replace(/\s+/g, '');
     const ksfJnames = new Set(comps.map(c => c.jname).filter(Boolean));
-    const ksfNames  = new Set(comps.map(c => _normName(c.name)));
     const localUpcoming = COMPETITIONS
       .filter(c => compStatus(c) === 'upcoming'
-                && !ksfNames.has(_normName(c.name))
+                && !comps.some(k => ksfNameMatch(k, c))
                 && (!c.ksfCode || !ksfJnames.has(c.ksfCode)))
       .sort((a, b) => new Date(a.start) - new Date(b.start))
       .map(c => {
