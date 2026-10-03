@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+.claude
+node_modules
+Doc
+data
+uploads
+community.json
+bib-cache.json
+rankings-cache.json
+visits.json
+feed.json
+watcher-state.json

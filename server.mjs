@@ -12,14 +12,21 @@ import { searchBib, getCompInfo, getGamePageHtml, getCompList, getEventRankings 
 import { startWatcher } from './watcher.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT      = 3000;
+const PORT      = Number(process.env.PORT) || 3000;
+
+// ── 런타임 데이터 디렉토리 ────────────────────────────────
+// 커뮤니티·방문·캐시·업로드 등 실행 중 생기는 파일은 모두 여기에 쓴다.
+// Docker(Coolify) 배포 시 DATA_DIR 만 영구 볼륨으로 매핑하면 재배포해도 보존된다.
+// 미지정 시 기존처럼 프로젝트 루트 (로컬 개발 호환)
+const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : __dirname;
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // ── 업로드 디렉토리 ──────────────────────────────────────
-const UPLOAD_DIR = path.join(__dirname, 'uploads');
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // ── 커뮤니티 메시지 저장 ─────────────────────────────────
-const COMMUNITY_FILE      = path.join(__dirname, 'community.json');
+const COMMUNITY_FILE      = path.join(DATA_DIR, 'community.json');
 const COMMUNITY_SEED_FILE = path.join(__dirname, 'community-seed.json');
 const communitySSE        = new Map(); // compId → Set<res>
 
@@ -56,7 +63,7 @@ function broadcastCommunity(compId, event, payload) {
 }
 
 // 대회별 전체 선수 캐시 (메모리 + 디스크 퍼시스턴스)
-const BIB_CACHE_FILE = path.join(__dirname, 'bib-cache.json');
+const BIB_CACHE_FILE = path.join(DATA_DIR, 'bib-cache.json');
 const compPlayersCache = new Map(); // compCode → { players: [], ts: number }
 
 // 서버 시작 시 디스크 캐시 복원 (재배포 후에도 즉시 응답 가능)
@@ -90,7 +97,7 @@ let compListCache = null; // { data: [], ts: number }
 // 순위 캐시 — 신선 기준 5분, 그 이후엔 stale-while-revalidate (즉시 응답 + 백그라운드 갱신)
 const rankingsCache = new Map(); // url → { data, ts }
 const RANK_FRESH    = 5 * 60 * 1000;
-const RANK_FILE     = path.join(__dirname, 'rankings-cache.json');
+const RANK_FILE     = path.join(DATA_DIR, 'rankings-cache.json');
 const _rankRefreshing = new Set(); // 중복 백그라운드 갱신 방지
 
 // 서버 시작 시 순위 디스크 캐시 복원 (재배포·KSF 장애에도 결과 즉시 응답)
@@ -404,16 +411,20 @@ const MIME = {
   '.ttf':  'font/ttf',
 };
 
-// ── 방문자 통계 (일자별 고유 deviceId, KST 기준) ───────────
-const VISITS_FILE = path.join(__dirname, 'visits.json');
-const visitDays   = new Map(); // 'YYYY-MM-DD' → Set<deviceId>
-const visitAllIds = new Set(); // 전체 기간 고유 방문자
+// ── 방문 통계 (조회수=재방문 포함, 방문자=일자별 고유 deviceId, KST) ──
+const VISITS_FILE   = path.join(DATA_DIR, 'visits.json');
+const dayVisitors   = new Map(); // 'YYYY-MM-DD' → Set<deviceId>  (고유 방문자)
+const dayViews      = new Map(); // 'YYYY-MM-DD' → number          (조회수/재방문 포함)
+const visitAllIds   = new Set(); // 전체 기간 고유 방문자
+let   totalViews    = 0;         // 전체 누적 조회수
 try {
   if (fs.existsSync(VISITS_FILE)) {
     const saved = JSON.parse(fs.readFileSync(VISITS_FILE, 'utf8'));
-    for (const [day, ids] of Object.entries(saved.days || {})) visitDays.set(day, new Set(ids));
+    for (const [day, ids] of Object.entries(saved.days  || {})) dayVisitors.set(day, new Set(ids));
+    for (const [day, n]   of Object.entries(saved.views || {})) dayViews.set(day, Number(n) || 0);
     (saved.allIds || []).forEach(id => visitAllIds.add(id));
-    console.log(`[VISIT] 방문자 통계 복원 — 누적 ${visitAllIds.size}명`);
+    totalViews = Number(saved.totalViews) || 0;
+    console.log(`[VISIT] 통계 복원 — 누적 방문자 ${visitAllIds.size}명 / 조회수 ${totalViews}`);
   }
 } catch (e) { console.log('[VISIT] 통계 로드 실패:', e.message); }
 
@@ -426,16 +437,27 @@ function saveVisits() {
   _visitSaveTimer = setTimeout(() => {
     _visitSaveTimer = null;
     try {
-      const days = {};
-      for (const [day, set] of visitDays) days[day] = [...set];
-      fs.writeFileSync(VISITS_FILE, JSON.stringify({ days, allIds: [...visitAllIds] }), 'utf8');
+      const days = {}, views = {};
+      for (const [day, set] of dayVisitors) days[day]  = [...set];
+      for (const [day, n]   of dayViews)    views[day] = n;
+      fs.writeFileSync(VISITS_FILE, JSON.stringify({ days, views, allIds: [...visitAllIds], totalViews }), 'utf8');
     } catch {}
   }, 5000);
 }
-function pruneVisitDays() {            // 최근 60일만 보관
+function pruneVisitDays() {            // 최근 60일만 메모리 보관
   const keep = new Set();
   for (let i = 0; i < 60; i++) keep.add(kstDate(-i));
-  for (const day of visitDays.keys()) if (!keep.has(day)) visitDays.delete(day);
+  for (const day of dayVisitors.keys()) if (!keep.has(day)) dayVisitors.delete(day);
+  for (const day of dayViews.keys())    if (!keep.has(day)) dayViews.delete(day);
+}
+// 차트용 최근 n일 시계열 [{ day, views, visitors }]
+function buildVisitSeries(n = 14) {
+  const arr = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const day = kstDate(-i);
+    arr.push({ day, views: dayViews.get(day) || 0, visitors: dayVisitors.get(day)?.size || 0 });
+  }
+  return arr;
 }
 
 // Supabase 영구 저장 — 재배포(디스크 초기화)에도 누적 유지
@@ -449,23 +471,42 @@ async function loadVisitsFromSupabase() {
   if (!_sbV.on) return;
   try {
     const since = kstDate(-59);
-    const [vdRes, vRes] = await Promise.all([
+    const [vdRes, vRes, vcRes] = await Promise.all([
       fetch(`${_sbV.url}/rest/v1/visit_days?day=gte.${since}&select=day,device_id&limit=200000`, { headers: _sbV.headers }),
       fetch(`${_sbV.url}/rest/v1/visitors?select=device_id&limit=2000000`, { headers: _sbV.headers }),
+      fetch(`${_sbV.url}/rest/v1/visit_counts?select=day,views&limit=100000`, { headers: _sbV.headers }),
     ]);
     if (vdRes.ok) for (const r of await vdRes.json()) {
-      if (!visitDays.has(r.day)) visitDays.set(r.day, new Set());
-      visitDays.get(r.day).add(r.device_id);
+      if (!dayVisitors.has(r.day)) dayVisitors.set(r.day, new Set());
+      dayVisitors.get(r.day).add(r.device_id);
     }
     if (vRes.ok) for (const r of await vRes.json()) visitAllIds.add(r.device_id);
-    console.log(`[VISIT] Supabase 복원 — 누적 ${visitAllIds.size}명`);
+    if (vcRes.ok) {
+      let sum = 0;
+      for (const r of await vcRes.json()) { dayViews.set(r.day, Number(r.views)||0); sum += Number(r.views)||0; }
+      totalViews = sum;  // 전체 조회수 = 모든 일자 합
+    }
+    console.log(`[VISIT] Supabase 복원 — 누적 방문자 ${visitAllIds.size}명 / 조회수 ${totalViews}`);
   } catch (e) { console.log('[VISIT] Supabase 복원 실패:', e.message); }
 }
-function pushVisitToSupabase(day, id) { // 중복은 PK 충돌로 무시됨 (fire-and-forget)
+function pushVisitorToSupabase(day, id) { // 중복은 PK 충돌로 무시됨 (fire-and-forget)
   if (!_sbV.on) return;
   const opt = { method:'POST', headers:{ ..._sbV.headers, 'Prefer':'resolution=ignore-duplicates,return=minimal' } };
   fetch(`${_sbV.url}/rest/v1/visit_days`, { ...opt, body: JSON.stringify({ day, device_id: id }) }).catch(()=>{});
   fetch(`${_sbV.url}/rest/v1/visitors`,   { ...opt, body: JSON.stringify({ device_id: id }) }).catch(()=>{});
+}
+let _viewSaveTimer = null;
+function scheduleViewCountSave() {        // 오늘 조회수 카운트를 디바운스로 upsert
+  if (_viewSaveTimer || !_sbV.on) return;
+  _viewSaveTimer = setTimeout(() => {
+    _viewSaveTimer = null;
+    const day = kstDate(0);
+    fetch(`${_sbV.url}/rest/v1/visit_counts`, {
+      method: 'POST',
+      headers: { ..._sbV.headers, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ day, views: dayViews.get(day) || 0 }),
+    }).catch(() => {});
+  }, 10000);
 }
 loadVisitsFromSupabase();
 
@@ -1216,17 +1257,24 @@ const server = http.createServer(async (req, res) => {
     const id = (new URL(req.url, 'http://localhost').searchParams.get('id') || '').toString().slice(0, 64);
     const today = kstDate(0), yest = kstDate(-1);
     if (id) {
-      if (!visitDays.has(today)) visitDays.set(today, new Set());
-      const set = visitDays.get(today);
-      const changed = !set.has(id) || !visitAllIds.has(id);
+      // 조회수: 방문(=페이지 로드)마다 1 증가 (재방문 포함)
+      dayViews.set(today, (dayViews.get(today) || 0) + 1);
+      totalViews++;
+      // 방문자: 하루 1회만 고유 집계
+      if (!dayVisitors.has(today)) dayVisitors.set(today, new Set());
+      const set = dayVisitors.get(today);
+      const newVisitor = !set.has(id) || !visitAllIds.has(id);
       set.add(id); visitAllIds.add(id);
-      if (changed) { pruneVisitDays(); saveVisits(); pushVisitToSupabase(today, id); }
+      pruneVisitDays(); saveVisits();
+      if (newVisitor) pushVisitorToSupabase(today, id);
+      scheduleViewCountSave();
     }
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
-      today:     visitDays.get(today)?.size || 0,
-      yesterday: visitDays.get(yest)?.size  || 0,
-      total:     visitAllIds.size,
+      today:     { views: dayViews.get(today) || 0, visitors: dayVisitors.get(today)?.size || 0 },
+      yesterday: { views: dayViews.get(yest)  || 0, visitors: dayVisitors.get(yest)?.size  || 0 },
+      total:     { views: totalViews, visitors: visitAllIds.size },
+      series:    buildVisitSeries(14),
     }));
     return;
   }
@@ -1873,6 +1921,14 @@ const server = http.createServer(async (req, res) => {
 
   if (!fullPath.startsWith(__dirname + path.sep) && fullPath !== __dirname) {
     res.writeHead(403); res.end('Forbidden'); return;
+  }
+  // 소스·설정·런타임 데이터는 정적 서빙 금지 (.env, *.json, *.mjs, data/, Doc/ 등)
+  // 프론트는 index.html·brand_logo 만 정적으로 받고 나머지는 /api 경유.
+  const relPath = path.relative(__dirname, fullPath).split(path.sep).join('/');
+  if (/(^|\/)\./.test(relPath)
+      || /^(data|Doc|node_modules|rules)(\/|$)/i.test(relPath)
+      || /\.(json|mjs|ya?ml|md|lock)$/i.test(relPath)) {
+    res.writeHead(404); res.end('Not found'); return;
   }
 
   const serveFile = (filePath, data, stat) => {

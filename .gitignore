@@ -12,3 +12,6 @@ rankings-cache.json
 visits.json
 feed.json
 # rules/ 폴더는 포함 (규정집 PDF 배포 필요)
+
+# 런타임 데이터 (DATA_DIR)
+data/

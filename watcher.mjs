@@ -10,7 +10,8 @@ import { fileURLToPath } from 'url';
 import { searchBib } from './bib-scraper.mjs';
 
 const __dirname  = path.dirname(fileURLToPath(import.meta.url));
-const STATE_FILE = path.join(__dirname, 'watcher-state.json');
+const DATA_DIR   = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : __dirname;
+const STATE_FILE = path.join(DATA_DIR, 'watcher-state.json');
 
 const KSF_LIST_URL    = 'https://www.shooting.or.kr/score/score_2015_list.asp';
 const POLL_INTERVAL   = 60 * 60 * 1000; // 1시간
