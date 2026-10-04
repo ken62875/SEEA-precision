@@ -182,6 +182,7 @@ function parseGameLinks(html) {
       .replace(/산탄총\s*/g, '')                               // 산탄총 접두어 제거
       .replace(/(\d+)M\b/g, '$1m')                           // 50M → 50m 정규화
       .replace(/(\d+m)\s+\1/g, '$1')                         // 50m 50m → 50m 중복 제거
+      .replace(/(^|\s)[-~–]+(?=\s|$)/g, ' ')                  // 시간 제거 후 남은 단독 "-" (25m 완사·급사 "09:00 - 11:30" 등)
       .replace(/\s+/g, ' ').trim();
 
     if (eventLabel.length < 3) eventLabel = '';
